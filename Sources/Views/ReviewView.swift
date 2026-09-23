@@ -130,7 +130,7 @@ struct LessonView: View {
 
                 Button {
                     session = QuizSession(mode: .topic(track, topic.id),
-                                          items: ContentStore.shared.items(for: track, topic: topic).shuffled(),
+                                          items: ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier),
                                           title: topic.title)
                 } label: {
                     Label("Mettiti alla prova", systemImage: "bolt.fill")

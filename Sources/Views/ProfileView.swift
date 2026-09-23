@@ -25,6 +25,44 @@ struct ProfileView: View {
                 }
 
                 Section {
+                    RankCard()
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
+                }
+
+                Section {
+                    ForEach(Rank.all) { rank in
+                        let reached = state.xp >= rank.minXP
+                        let current = rank == state.rank
+                        HStack(spacing: 12) {
+                            RankBadge(tier: rank.tier, size: 32)
+                                .saturation(reached ? 1 : 0)
+                                .opacity(reached ? 1 : 0.45)
+                            Text(rank.name)
+                                .fontWeight(current ? .bold : .regular)
+                                .foregroundStyle(reached ? .primary : .secondary)
+                            Spacer()
+                            if current {
+                                Text("Sei qui")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(rank.tier.gradient, in: Capsule())
+                            } else {
+                                Text("\(rank.minXP.formatted(.number.locale(.app))) XP")
+                                    .font(.subheadline.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Gradi")
+                } footer: {
+                    Text("Ogni risposta giusta vale 10, 20 o 30 XP in base alla difficoltà, piena solo la prima volta. Il quiz del giorno aggiunge un bonus, più alto se lo streak è lungo. Salendo di grado le domande si fanno più difficili.")
+                }
+
+                Section {
                     ForEach(Track.allCases) { track in
                         Toggle(isOn: Binding(
                             get: { state.tracks.contains(track) },
@@ -80,7 +118,7 @@ struct ProfileView: View {
                     Text("Notifiche")
                 } footer: {
                     Text(notificationsDenied
-                         ? "Le notifiche sono disattivate nelle Impostazioni di iOS: attivale lì per Pronto."
+                         ? "Le notifiche sono disattivate nelle Impostazioni di iOS: attivale lì per Interviews."
                          : "Suona solo nei giorni in cui non hai ancora fatto il quiz.")
                 }
 

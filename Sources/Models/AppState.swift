@@ -29,6 +29,39 @@ struct SavedState: Codable {
     var reminderEnabled = true
     var reminderHour = 19
     var reminderMinute = 0
+    var startingTier: Tier = .junior
+    var xp = 0
+    /// Domande già indovinate almeno una volta: danno XP pieni solo la prima volta.
+    var mastered: Set<String> = []
+
+    init() {}
+
+    /// Decodifica tollerante: i campi aggiunti nelle versioni nuove prendono il default
+    /// invece di far buttare via tutto il salvataggio (streak compreso).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = SavedState()
+        func v<T: Decodable>(_ key: CodingKeys, _ fallback: T) -> T {
+            (try? c.decodeIfPresent(T.self, forKey: key)) ?? fallback
+        }
+        hasOnboarded = v(.hasOnboarded, d.hasOnboarded)
+        enabledTracks = v(.enabledTracks, d.enabledTracks)
+        activeTrack = v(.activeTrack, d.activeTrack)
+        completedDays = v(.completedDays, d.completedDays)
+        bestStreak = v(.bestStreak, d.bestStreak)
+        dailyResults = v(.dailyResults, d.dailyResults)
+        topicStats = v(.topicStats, d.topicStats)
+        lessonsRead = v(.lessonsRead, d.lessonsRead)
+        mistakes = v(.mistakes, d.mistakes)
+        totalAnswered = v(.totalAnswered, d.totalAnswered)
+        totalCorrect = v(.totalCorrect, d.totalCorrect)
+        reminderEnabled = v(.reminderEnabled, d.reminderEnabled)
+        reminderHour = v(.reminderHour, d.reminderHour)
+        reminderMinute = v(.reminderMinute, d.reminderMinute)
+        startingTier = v(.startingTier, d.startingTier)
+        xp = v(.xp, d.xp)
+        mastered = v(.mastered, d.mastered)
+    }
 }
 
 @Observable
@@ -37,7 +70,7 @@ final class AppState {
         didSet { persist() }
     }
 
-    private static let key = "pronto.state.v1"
+    private static let key = "interviews.state.v1"
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -66,8 +99,11 @@ final class AppState {
 
     var platforms: Set<Platform> { Set(tracks.map(\.platform)) }
 
-    func completeOnboarding(platforms: Set<Platform>, reminderEnabled: Bool, hour: Int, minute: Int) {
+    func completeOnboarding(platforms: Set<Platform>, tier: Tier, reminderEnabled: Bool, hour: Int, minute: Int) {
         let chosen = Track.allCases.filter { platforms.contains($0.platform) }
+        saved.startingTier = tier
+        // Chi dichiara di essere Mid o Senior parte dal primo gradino di quella fascia.
+        saved.xp = max(saved.xp, Rank.start(of: tier).minXP)
         saved.enabledTracks = chosen
         saved.activeTrack = chosen.first ?? .swift
         saved.reminderEnabled = reminderEnabled
@@ -123,37 +159,72 @@ final class AppState {
 
     var todayResult: DailyResult? { saved.dailyResults[Day.today.description] }
 
-    var dailyItems: [QuizItem] { ContentStore.shared.dailyItems(for: tracks, day: .today) }
+    var dailyItems: [QuizItem] { ContentStore.shared.dailyItems(for: tracks, tier: tier, day: .today) }
+
+    // MARK: XP e gradi
+
+    var xp: Int { saved.xp }
+    var rank: Rank { Rank.forXP(saved.xp) }
+    var tier: Tier { rank.tier }
+
+    /// Avanzamento verso il grado successivo, da 0 a 1.
+    var rankProgress: Double {
+        guard let next = rank.next else { return 1 }
+        return Double(saved.xp - rank.minXP) / Double(next.minXP - rank.minXP)
+    }
+
+    var xpToNextRank: Int? { rank.next.map { $0.minXP - saved.xp } }
+
+    private func addXP(_ amount: Int) { saved.xp += amount }
 
     // MARK: Risultati
 
-    func record(_ item: QuizItem, correct: Bool) {
+    /// Registra una risposta e restituisce gli XP guadagnati.
+    @discardableResult
+    func record(_ item: QuizItem, correct: Bool, awardsXP: Bool = true) -> Int {
         let key = "\(item.track.rawValue)/\(item.topicID)"
         var stat = saved.topicStats[key] ?? TopicStat()
         stat.answered += 1
         if correct { stat.correct += 1 }
         saved.topicStats[key] = stat
         saved.totalAnswered += 1
-        if correct {
-            saved.totalCorrect += 1
-            saved.mistakes.remove(item.id)
-        } else {
+        guard correct else {
             saved.mistakes.insert(item.id)
+            return 0
         }
+        saved.totalCorrect += 1
+        saved.mistakes.remove(item.id)
+        let firstTime = !saved.mastered.contains(item.id)
+        saved.mastered.insert(item.id)
+        guard awardsXP else { return 0 }
+        let gained = XP.forCorrect(difficulty: item.question.difficulty, firstTime: firstTime)
+        addXP(gained)
+        return gained
     }
 
-    func finishTopicQuiz(track: Track, topicID: String, correct: Int, total: Int) {
+    /// Restituisce il bonus XP del quiz.
+    func finishTopicQuiz(track: Track, topicID: String, correct: Int, total: Int) -> Int {
         let key = "\(track.rawValue)/\(topicID)"
         var stat = saved.topicStats[key] ?? TopicStat()
+        let score = total == 0 ? 0 : correct * 100 / total
+        // Il bonus arriva solo quando si migliora il proprio record oltre l'80%.
+        let bonus = score >= 80 && score > stat.bestScore ? XP.topicPassBonus : 0
         stat.completedRuns += 1
-        stat.bestScore = max(stat.bestScore, total == 0 ? 0 : correct * 100 / total)
+        stat.bestScore = max(stat.bestScore, score)
         saved.topicStats[key] = stat
+        addXP(bonus)
+        return bonus
     }
 
-    func finishDaily(correct: Int, total: Int) {
+    /// Restituisce il bonus XP del quiz del giorno (zero se era già stato fatto oggi).
+    func finishDaily(correct: Int, total: Int) -> Int {
+        guard !didDailyToday else { return 0 }
         saved.dailyResults[Day.today.description] = DailyResult(correct: correct, total: total)
         saved.completedDays.insert(.today)
         saved.bestStreak = max(saved.bestStreak, currentStreak)
+        let bonus = XP.dailyBonus + (correct == total ? XP.perfectBonus : 0) + XP.streakBonus(currentStreak)
+        addXP(bonus)
+        return bonus
     }
 
     func stat(_ track: Track, _ topicID: String) -> TopicStat {
@@ -193,6 +264,8 @@ final class AppState {
         saved.reminderEnabled = keep.reminderEnabled
         saved.reminderHour = keep.reminderHour
         saved.reminderMinute = keep.reminderMinute
+        saved.startingTier = keep.startingTier
+        saved.xp = Rank.start(of: keep.startingTier).minXP
     }
 
     #if DEBUG

@@ -137,19 +137,44 @@ final class ContentStore {
     }
 
     /// Le domande del giorno: stesse per tutta la giornata, diverse ogni giorno,
-    /// pescate in modo equo fra i track scelti.
-    func dailyItems(for tracks: [Track], day: Day, count: Int = 5) -> [QuizItem] {
+    /// pescate in modo equo fra i track scelti e dosate sulla fascia dell'utente.
+    func dailyItems(for tracks: [Track], tier: Tier, day: Day, count: Int = 5) -> [QuizItem] {
         guard !tracks.isEmpty else { return [] }
-        var rng = SeededGenerator(seed: UInt64(truncatingIfNeeded: day.ordinal &* 2_654_435_761))
-        var pools = tracks.map { allItems(for: [$0]).shuffled(using: &rng) }
+        var rng = SeededGenerator(seed: UInt64(truncatingIfNeeded: day.ordinal &* 2_654_435_761 &+ tier.rawValue))
+        // pools[track][difficoltà] = domande mescolate
+        var pools = tracks.map { track in
+            Dictionary(grouping: allItems(for: [track]).shuffled(using: &rng), by: \.question.difficulty)
+        }
+        // Quote fisse per quiz (metodo dei resti più grandi): un Mid riceve sempre
+        // 1 junior, 3 mid e 1 senior. Estrarre a caso ogni slot dava giornate da 3 senior e 0 mid.
+        let weights = tier.difficultyWeights
+        var quota = weights.mapValues { Int($0 * Double(count)) }
+        let byRemainder = weights.sorted { ($0.value * Double(count)).truncatingRemainder(dividingBy: 1)
+                                         > ($1.value * Double(count)).truncatingRemainder(dividingBy: 1) }
+        for (difficulty, _) in byRemainder.prefix(count - quota.values.reduce(0, +)) {
+            quota[difficulty, default: 0] += 1
+        }
+        let wanted = quota.sorted { $0.key < $1.key }
+            .flatMap { Array(repeating: $0.key, count: $0.value) }
+            .shuffled(using: &rng)
+
         var result: [QuizItem] = []
-        var i = 0
-        while result.count < count, pools.contains(where: { !$0.isEmpty }) {
-            let k = i % pools.count
-            if !pools[k].isEmpty { result.append(pools[k].removeFirst()) }
-            i += 1
+        for (slot, difficulty) in wanted.enumerated() {
+            let k = slot % pools.count
+            // Se quella pila è finita ripiega sulla difficoltà più vicina.
+            let order = [difficulty, difficulty + 1, difficulty - 1, difficulty + 2, difficulty - 2]
+            guard let d = order.first(where: { !(pools[k][$0]?.isEmpty ?? true) }) else { continue }
+            result.append(pools[k][d]!.removeFirst())
         }
         return result.shuffled(using: &rng)
+    }
+
+    /// Le domande di un argomento adatte alla fascia, dalla più facile alla più difficile.
+    func topicItems(for track: Track, topic: Topic, tier: Tier) -> [QuizItem] {
+        let all = items(for: track, topic: topic)
+        let fitting = all.filter { tier.topicDifficulties.contains($0.question.difficulty) }
+        let chosen = fitting.count >= 5 ? fitting : all
+        return chosen.shuffled().sorted { $0.question.difficulty < $1.question.difficulty }
     }
 }
 

@@ -28,6 +28,7 @@ struct HomeView: View {
                     TrackSwitcher()
                         .padding(.horizontal, -20)
                     StreakCard()
+                    RankCard()
                     dailyCard
                     if !state.mistakeItems.isEmpty { mistakesCard }
                     topicsSection
@@ -109,7 +110,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(items.count) domande, circa 2 minuti")
                         .font(.system(.title2, design: .rounded).weight(.bold))
-                    Text("Mix di " + tracks.map(\.name).formatted(.list(type: .and).locale(.app)))
+                    Text("Livello \(state.tier.name) · " + tracks.map(\.name).formatted(.list(type: .and).locale(.app)))
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.85))
                 }
@@ -222,7 +223,8 @@ struct TopicTile: View {
                 .font(.headline)
                 .lineLimit(2, reservesSpace: true)
                 .multilineTextAlignment(.leading)
-            Text(stat.completedRuns > 0 ? "Record \(stat.bestScore)%" : "\(topic.questions.count) domande")
+            Text(stat.completedRuns > 0 ? "Record \(stat.bestScore)%"
+                 : "\(ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier).count) domande")
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }

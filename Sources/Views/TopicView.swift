@@ -32,11 +32,11 @@ struct TopicView: View {
 
                 Button {
                     session = QuizSession(mode: .topic(track, topic.id),
-                                          items: ContentStore.shared.items(for: track, topic: topic).shuffled(),
+                                          items: ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier),
                                           title: topic.title)
                 } label: {
                     ActionRow(icon: "bolt.fill", title: "Fai il quiz",
-                              subtitle: "\(topic.questions.count) domande, dalla junior alla senior", theme: theme)
+                              subtitle: "\(ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier).count) domande per il livello \(state.tier.name)", theme: theme)
                 }
                 .buttonStyle(.plain)
             }

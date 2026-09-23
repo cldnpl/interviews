@@ -4,7 +4,9 @@ struct OnboardingView: View {
     @Environment(AppState.self) private var state
 
     @State private var step = 0
+    @State private var forward = true
     @State private var platforms: Set<Platform> = []
+    @State private var tier: Tier?
     @State private var reminderTime = Calendar.current.date(from: DateComponents(hour: 19, minute: 0)) ?? .now
 
     /// Colore dell'onboarding: segue la prima piattaforma scelta, arancio Swift finché non si sceglie.
@@ -23,7 +25,7 @@ struct OnboardingView: View {
                 if step > 0 {
                     HStack {
                         Button {
-                            withAnimation(.snappy) { step -= 1 }
+                            go(to: step - 1)
                         } label: {
                             Image(systemName: "chevron.left")
                                 .font(.headline)
@@ -32,7 +34,7 @@ struct OnboardingView: View {
                         }
                         .foregroundStyle(.primary)
                         Spacer()
-                        PageDots(count: 3, index: step, color: theme.primary)
+                        PageDots(count: 4, index: step, color: theme.primary)
                         Spacer()
                         Color.clear.frame(width: 40, height: 40)
                     }
@@ -44,11 +46,13 @@ struct OnboardingView: View {
                     switch step {
                     case 0: welcome
                     case 1: platformPicker
+                    case 2: levelPicker
                     default: reminder
                     }
                 }
-                .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity),
-                                        removal: .move(edge: .leading).combined(with: .opacity)))
+                // Avanti entra da destra, indietro da sinistra.
+                .transition(.asymmetric(insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
+                                        removal: .move(edge: forward ? .leading : .trailing).combined(with: .opacity)))
             }
         }
     }
@@ -61,7 +65,7 @@ struct OnboardingView: View {
             AppMark()
                 .frame(width: 128, height: 128)
             VStack(spacing: 12) {
-                Text("Pronto")
+                Text("Interviews")
                     .font(.system(size: 44, weight: .heavy, design: .rounded))
                 Text("Preparati ai colloqui tecnici mobile.\nCinque domande al giorno, lezioni brevi, zero ansia.")
                     .font(.title3)
@@ -72,7 +76,7 @@ struct OnboardingView: View {
                 ForEach(Track.allCases) { TrackChip(track: $0) }
             }
             Spacer()
-            Button("Iniziamo") { withAnimation(.snappy) { step = 1 } }
+            Button("Iniziamo") { go(to: 1) }
                 .buttonStyle(PrimaryButtonStyle(gradient: Track.swift.theme.linear))
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
@@ -104,10 +108,41 @@ struct OnboardingView: View {
 
             Spacer()
 
-            Button("Continua") { withAnimation(.snappy) { step = 2 } }
+            Button("Continua") { go(to: 2) }
                 .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
                 .disabled(platforms.isEmpty)
                 .opacity(platforms.isEmpty ? 0.4 : 1)
+                .padding(.bottom, 16)
+        }
+        .padding(.horizontal, 24)
+    }
+
+    // MARK: Livello
+
+    private var levelPicker: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Qual è il tuo livello?")
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                Text("Le domande si adattano a te. Rispondendo guadagni XP e sali di grado, fino a Staff.")
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 24)
+
+            VStack(spacing: 14) {
+                ForEach(Tier.selectable) { t in
+                    LevelCard(tier: t, selected: tier == t) {
+                        withAnimation(.snappy) { tier = t }
+                    }
+                }
+            }
+
+            Spacer()
+
+            Button("Continua") { go(to: 3) }
+                .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
+                .disabled(tier == nil)
+                .opacity(tier == nil ? 0.4 : 1)
                 .padding(.bottom, 16)
         }
         .padding(.horizontal, 24)
@@ -156,13 +191,18 @@ struct OnboardingView: View {
         .padding(.horizontal, 24)
     }
 
+    private func go(to newStep: Int) {
+        forward = newStep > step
+        withAnimation(.snappy) { step = newStep }
+    }
+
     private func finish(reminders: Bool) {
         let c = Calendar.current.dateComponents([.hour, .minute], from: reminderTime)
         Task {
             var enabled = reminders
             if reminders { enabled = await Reminders.requestPermission() }
             await MainActor.run {
-                state.completeOnboarding(platforms: platforms, reminderEnabled: enabled,
+                state.completeOnboarding(platforms: platforms, tier: tier ?? .junior, reminderEnabled: enabled,
                                          hour: c.hour ?? 19, minute: c.minute ?? 0)
             }
             await Reminders.reschedule(for: state)
@@ -209,6 +249,45 @@ private struct PlatformCard: View {
                     .strokeBorder(selected ? platform.theme.primary : .clear, lineWidth: 2.5)
             }
             .shadow(color: selected ? platform.theme.primary.opacity(0.25) : .black.opacity(0.05), radius: 14, y: 6)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: selected)
+    }
+}
+
+private struct LevelCard: View {
+    let tier: Tier
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                RankBadge(tier: tier, size: 58)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(tier.name)
+                        .font(.title3.weight(.bold))
+                    Text(tier.experience)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .font(.title2)
+                    .foregroundStyle(selected ? tier.color : Color.secondary.opacity(0.4))
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .padding(16)
+            .background {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color(.secondarySystemGroupedBackground))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(selected ? tier.color : .clear, lineWidth: 2.5)
+            }
+            .shadow(color: selected ? tier.color.opacity(0.25) : .black.opacity(0.05), radius: 14, y: 6)
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.selection, trigger: selected)

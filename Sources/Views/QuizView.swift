@@ -11,6 +11,9 @@ struct QuizView: View {
     @State private var correctCount = 0
     @State private var finished = false
     @State private var streakBefore = 0
+    @State private var rankBefore = Rank.all[0]
+    @State private var xpGained = 0
+    @State private var lastGain = 0
 
     private var item: QuizItem { session.items[index] }
     private var theme: Theme { item.track.theme }
@@ -20,14 +23,18 @@ struct QuizView: View {
             Color(.systemGroupedBackground).ignoresSafeArea()
 
             if finished {
-                QuizResultView(session: session, correct: correctCount, streakBefore: streakBefore) { dismiss() }
+                QuizResultView(session: session, correct: correctCount, streakBefore: streakBefore,
+                               xpGained: xpGained, rankBefore: rankBefore) { dismiss() }
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
             } else if !session.items.isEmpty {
                 quiz
             }
         }
         .animation(.snappy, value: finished)
-        .onAppear { streakBefore = state.currentStreak }
+        .onAppear {
+            streakBefore = state.currentStreak
+            rankBefore = state.rank
+        }
     }
 
     private var quiz: some View {
@@ -56,9 +63,7 @@ struct QuizView: View {
                     .padding(20)
                     .id(index)
                     .background(alignment: .top) { Color.clear.frame(height: 1).id("top") }
-                    // La domanda vecchia sparisce subito, la nuova entra da destra: niente sovrapposizioni.
-                    .transition(.asymmetric(insertion: .offset(x: 60).combined(with: .opacity),
-                                            removal: .opacity.animation(.linear(duration: 0.08))))
+                    .modifier(SlideIn())
                 }
                 .scrollIndicators(.hidden)
                 .safeAreaInset(edge: .bottom) {
@@ -82,7 +87,6 @@ struct QuizView: View {
             }
         }
         .animation(.snappy, value: selected)
-        .animation(.snappy, value: index)
         .sensoryFeedback(trigger: selected) { _, new in
             guard let new else { return nil }
             return new == item.question.answer ? .success : .error
@@ -127,9 +131,18 @@ struct QuizView: View {
     private var explanation: some View {
         let right = selected == item.question.answer
         return VStack(alignment: .leading, spacing: 8) {
-            Label(right ? "Esatto!" : "Non proprio", systemImage: right ? "checkmark.seal.fill" : "lightbulb.fill")
-                .font(.headline)
-                .foregroundStyle(right ? Color.correct : Color.flame)
+            HStack {
+                Label(right ? "Esatto!" : "Non proprio", systemImage: right ? "checkmark.seal.fill" : "lightbulb.fill")
+                    .font(.headline)
+                    .foregroundStyle(right ? Color.correct : Color.flame)
+                Spacer()
+                if right && lastGain > 0 {
+                    Text("+\(lastGain) XP")
+                        .font(.subheadline.weight(.heavy))
+                        .foregroundStyle(state.tier.color)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
             RichText(text: item.question.explanation, font: .callout)
                 .foregroundStyle(.primary.opacity(0.85))
         }
@@ -152,13 +165,21 @@ struct QuizView: View {
         selected = i
         let right = i == item.question.answer
         if right { correctCount += 1 }
-        state.record(item, correct: right)
+        // Rifare il quiz di oggi per allenarsi non deve far salire di grado.
+        lastGain = state.record(item, correct: right, awardsXP: session.mode != .practice)
+        xpGained += lastGain
     }
 
     private func next() {
         if index + 1 < session.items.count {
-            selected = nil
-            index += 1
+            // La domanda vecchia sparisce senza animazione (altrimenti sfuma sotto la nuova);
+            // l'ingresso della nuova lo anima SlideIn.
+            var instant = Transaction()
+            instant.disablesAnimations = true
+            withTransaction(instant) {
+                selected = nil
+                index += 1
+            }
         } else {
             complete()
         }
@@ -167,14 +188,26 @@ struct QuizView: View {
     private func complete() {
         switch session.mode {
         case .daily:
-            state.finishDaily(correct: correctCount, total: session.items.count)
+            xpGained += state.finishDaily(correct: correctCount, total: session.items.count)
             Task { await Reminders.reschedule(for: state) }
         case .topic(let track, let topicID):
-            state.finishTopicQuiz(track: track, topicID: topicID, correct: correctCount, total: session.items.count)
+            xpGained += state.finishTopicQuiz(track: track, topicID: topicID, correct: correctCount, total: session.items.count)
         case .mistakes, .practice:
             break
         }
         finished = true
+    }
+}
+
+/// Ingresso della domanda: entra da destra ogni volta che la view nasce.
+private struct SlideIn: ViewModifier {
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(x: shown ? 0 : 50)
+            .onAppear { withAnimation(.snappy(duration: 0.35)) { shown = true } }
     }
 }
 
@@ -247,6 +280,8 @@ struct QuizResultView: View {
     let session: QuizSession
     let correct: Int
     let streakBefore: Int
+    let xpGained: Int
+    let rankBefore: Rank
     let onDone: () -> Void
 
     @State private var appeared = false
@@ -255,6 +290,7 @@ struct QuizResultView: View {
     private var ratio: Double { total == 0 ? 0 : Double(correct) / Double(total) }
     private var theme: Theme { (session.items.first?.track ?? state.activeTrack).theme }
     private var isDaily: Bool { session.mode == .daily }
+    private var rankedUp: Bool { state.rank.minXP > rankBefore.minXP }
 
     var body: some View {
         VStack(spacing: 28) {
@@ -290,6 +326,8 @@ struct QuizResultView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
 
+            xpSummary
+
             Spacer()
             Button("Fine", action: onDone)
                 .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
@@ -300,6 +338,50 @@ struct QuizResultView: View {
             withAnimation(.spring(duration: 1.0, bounce: 0.35).delay(0.15)) { appeared = true }
         }
         .sensoryFeedback(.success, trigger: appeared)
+    }
+
+    /// XP guadagnati e, se è il caso, il nuovo grado.
+    @ViewBuilder
+    private var xpSummary: some View {
+        if rankedUp {
+            HStack(spacing: 14) {
+                RankBadge(tier: state.rank.tier, size: 56)
+                    .scaleEffect(appeared ? 1 : 0.3)
+                    .rotationEffect(.degrees(appeared ? 0 : -30))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Nuovo grado!")
+                        .font(.caption.weight(.heavy))
+                        .textCase(.uppercase)
+                        .foregroundStyle(state.rank.tier.color)
+                    Text(state.rank.name)
+                        .font(.title2.weight(.bold))
+                    Text("+\(xpGained) XP")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+            .card()
+            .padding(.horizontal, 20)
+            .sensoryFeedback(.success, trigger: appeared)
+        } else {
+            VStack(spacing: 10) {
+                HStack {
+                    Text(xpGained > 0 ? "+\(xpGained) XP" : "Nessun XP questa volta")
+                        .font(.headline)
+                        .foregroundStyle(xpGained > 0 ? state.rank.tier.color : .secondary)
+                    Spacer()
+                    Text(state.rank.name)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                XPBar(progress: appeared ? state.rankProgress : 0, tier: state.rank.tier)
+            }
+            .padding(16)
+            .card()
+            .padding(.horizontal, 20)
+        }
     }
 
     private var message: String {

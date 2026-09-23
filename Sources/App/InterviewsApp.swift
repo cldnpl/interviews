@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct ProntoApp: App {
+struct InterviewsApp: App {
     @State private var state = AppState()
     @Environment(\.scenePhase) private var scenePhase
 

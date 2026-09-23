@@ -165,3 +165,77 @@ struct CardBackground: ViewModifier {
 extension View {
     func card() -> some View { modifier(CardBackground()) }
 }
+
+/// Il distintivo del grado: esagono nel metallo della fascia.
+struct RankBadge: View {
+    let tier: Tier
+    var size: CGFloat = 44
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "hexagon.fill")
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(tier.gradient)
+                .shadow(color: tier.color.opacity(0.35), radius: size * 0.12, y: size * 0.06)
+            Image(systemName: tier.symbol)
+                .font(.system(size: size * 0.36, weight: .bold))
+                .foregroundStyle(.white)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+/// Barra degli XP verso il prossimo grado.
+struct XPBar: View {
+    let progress: Double
+    let tier: Tier
+    var height: CGFloat = 10
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(tier.color.opacity(0.15))
+                Capsule().fill(tier.gradient)
+                    .frame(width: max(height, geo.size.width * min(max(progress, 0), 1)))
+            }
+        }
+        .frame(height: height)
+    }
+}
+
+/// Card del grado attuale, usata in home e nel profilo.
+struct RankCard: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        let rank = state.rank
+        HStack(spacing: 14) {
+            RankBadge(tier: rank.tier, size: 54)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(rank.name)
+                        .font(.headline)
+                    Spacer()
+                    Text("\(state.xp.formatted(.number.locale(.app))) XP")
+                        .font(.subheadline.weight(.bold).monospacedDigit())
+                        .foregroundStyle(rank.tier.color)
+                        .contentTransition(.numericText(value: Double(state.xp)))
+                }
+                XPBar(progress: state.rankProgress, tier: rank.tier)
+                Group {
+                    if let next = rank.next, let missing = state.xpToNextRank {
+                        Text("Ancora \(missing.formatted(.number.locale(.app))) XP per diventare **\(next.name)**")
+                    } else {
+                        Text("Grado massimo raggiunto. Rispetto.")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
+        .card()
+        .animation(.snappy, value: state.xp)
+    }
+}

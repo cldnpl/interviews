@@ -4,7 +4,7 @@ import UserNotifications
 /// I promemoria sono notifiche singole per i prossimi giorni, non una ripetizione
 /// giornaliera: così oggi non suona se il quiz l'hai già fatto.
 enum Reminders {
-    private static let prefix = "pronto.daily."
+    private static let prefix = "interviews.daily."
     private static let daysAhead = 14
 
     static func requestPermission() async -> Bool {
