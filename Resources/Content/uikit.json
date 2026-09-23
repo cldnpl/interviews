@@ -51,7 +51,13 @@
           ],
           "answer": 1,
           "explanation": "`viewDidLoad` segue `loadView` e avviene una volta per caricamento; gli altri possono ripetersi a ogni comparsa o layout.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`viewWillAppear` sembra un'inizializzazione, ma viene chiamato **a ogni comparsa**, per esempio ogni volta che torni su questo VC con un pop.",
+            null,
+            "Attenzione: `viewDidLayoutSubviews` scatta a **ogni passaggio di layout** (rotazione, cambio di dimensioni, `setNeedsLayout`), quindi può ripetersi molte volte.",
+            "`viewDidAppear` arriva a ogni comparsa della view, non una volta sola: se la schermata viene coperta e poi riscoperta, viene richiamato."
+          ]
         },
         {
           "id": "uikit-view-lifecycle-2",
@@ -65,7 +71,13 @@
           ],
           "answer": 3,
           "explanation": "La view viene prima creata (`loadView`), poi configurata (`viewDidLoad`); il layout avviene tra `viewWillAppear` e `viewDidAppear`.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`viewDidLoad` non può precedere `loadView`: è proprio `loadView` a creare la view, e solo dopo UIKit chiama `viewDidLoad` per configurarla.",
+            "Il layout non avviene prima di `viewWillAppear`: la view viene inserita nella gerarchia dopo quella callback, e solo allora arriva `viewDidLayoutSubviews`.",
+            "Qui D è messo dopo E, ma il primo layout è necessario prima che la view sia visibile: `viewDidLayoutSubviews` precede `viewDidAppear`.",
+            null
+          ]
         },
         {
           "id": "uikit-view-lifecycle-3",
@@ -79,7 +91,13 @@
           ],
           "answer": 3,
           "explanation": "In `viewDidLoad` la view esiste ma ha la dimensione del nib o di default; la geometria reale si ha dopo il passaggio di layout.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Non è zero per forza: in `viewDidLoad` `bounds` ha già una dimensione, quella del nib o dello schermo, solo che **non è ancora quella definitiva**.",
+            "`viewDidLoad` gira sul **main thread** come tutte le callback di UIKit; il problema è di tempi di layout, non di thread.",
+            "La view esiste già: `viewDidLoad` arriva proprio dopo `loadView`. Il valore è sbagliato perché il layout non è ancora avvenuto.",
+            null
+          ]
         },
         {
           "id": "uikit-view-lifecycle-4",
@@ -93,7 +111,13 @@
           ],
           "answer": 2,
           "explanation": "Gli outlet vengono collegati solo quando la view viene caricata: meglio passare il dato in una property e applicarlo in `viewDidLoad`.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "È tentante pensarlo, ma `instantiateViewController` crea solo il VC: gli outlet si collegano quando la view viene caricata, quindi qui sono ancora `nil`.",
+            "Un outlet `@IBOutlet` è implicitly unwrapped (`UILabel!`): accederci quando è `nil` non viene ignorato, ma provoca un **crash**.",
+            null,
+            "UIKit non rimanda l'assegnazione: la riga viene eseguita subito, trova l'outlet `nil` e l'app crasha prima ancora del `present`."
+          ]
         },
         {
           "id": "uikit-view-lifecycle-5",
@@ -107,7 +131,13 @@
           ],
           "answer": 2,
           "explanation": "Lo stile `.automatic` diventa `.pageSheet` e A resta visibile: niente callback di disappear, e alla chiusura niente `viewWillAppear`.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Non c'è una via di mezzo: con `.pageSheet` A resta visibile sotto la sheet, quindi UIKit non invia **nessuna** delle due callback di disappear.",
+            "Il push sostituisce del tutto la view di A, la sheet no: con `.automatic` → `.pageSheet` A resta in gerarchia e non riceve callback.",
+            null,
+            "L'animazione non c'entra: conta lo stile di presentazione. Con `.pageSheet` A resta visibile e `viewDidDisappear` non arriva comunque."
+          ]
         },
         {
           "id": "uikit-view-lifecycle-6",
@@ -121,7 +151,13 @@
           ],
           "answer": 3,
           "explanation": "Con le scene ogni finestra appartiene a una `UIWindowScene`, creata quando la scena si connette.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Era il posto giusto prima di iOS 13; con le scene l'`AppDelegate` non gestisce più le finestre, che appartengono a una `UIWindowScene`.",
+            "Il root VC vive **dentro** la window: non può crearla lui, perché serve una window già esistente per mostrarlo.",
+            "`sceneDidBecomeActive` può essere chiamato molte volte (ogni ritorno in primo piano): creare lì la window la ricreerebbe ogni volta.",
+            null
+          ]
         },
         {
           "id": "uikit-view-lifecycle-7",
@@ -135,7 +171,13 @@
           ],
           "answer": 0,
           "explanation": "`addChild` chiama già `willMove(toParent:)`, ma `didMove(toParent:)` va chiamato a mano dopo aver aggiunto la view.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Non serve: `addChild(_:)` chiama già `willMove(toParent:)` automaticamente. Ciò che va fatto a mano è `didMove(toParent:)`.",
+            "`loadView()` non va mai chiamato direttamente: accedere a `child.view` basta già a caricare la view del figlio.",
+            "Sembra completo, ma senza `didMove(toParent: self)` il figlio non viene avvisato che la transizione di containment è finita."
+          ]
         },
         {
           "id": "uikit-view-lifecycle-8",
@@ -149,7 +191,13 @@
           ],
           "answer": 2,
           "explanation": "Introdotto in iOS 17 e disponibile da iOS 13, è il punto ideale per aggiornamenti che dipendono da dimensioni e trait, una volta per comparsa.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Arriva **dopo** `viewWillAppear` e a ogni comparsa, non una volta sola: nasce proprio per avere la geometria già pronta.",
+            "Non segue `viewDidAppear` e non si ripete a ogni layout: viene chiamato una volta per comparsa, prima che la transizione finisca.",
+            null,
+            "Per i cambi di trait esistono altre API (`registerForTraitChanges`); `viewIsAppearing` è legato alla comparsa della view."
+          ]
         },
         {
           "id": "uikit-view-lifecycle-9",
@@ -163,7 +211,13 @@
           ],
           "answer": 1,
           "explanation": "La scena passa prima da active a inactive e poi va in background; `sceneDidDisconnect` avviene solo se il sistema scarica la scena.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Ordine invertito: la scena deve prima smettere di essere attiva (`sceneWillResignActive`) e solo poi passa in background.",
+            null,
+            "In un'app con scene le callback di stato arrivano al `SceneDelegate`: `applicationDidEnterBackground` non è l'unica, e spesso non viene usata.",
+            "Premere Home non disconnette la scena: `sceneDidDisconnect` avviene solo se il sistema la scarica per liberare risorse."
+          ]
         },
         {
           "id": "uikit-view-lifecycle-10",
@@ -177,7 +231,13 @@
           ],
           "answer": 3,
           "explanation": "`super.loadView()` cerca un nib o crea una `UIView` vuota: lavoro inutile se poi la sostituisci.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Funziona, ma `super.loadView()` crea una `UIView` vuota (o carica un nib) solo per mettere la tua view dentro: lavoro inutile e una view in più.",
+            "`loadView()` non va chiamato a mano, e in `viewDidLoad` la view esiste già: è UIKit a chiamare `loadView` quando serve.",
+            "Assegnare `view` in `init` forza il caricamento troppo presto, e un `loadView` vuoto lascia `view` a `nil` se non l'hai già impostata.",
+            null
+          ]
         }
       ]
     },
@@ -231,7 +291,13 @@
           ],
           "answer": 3,
           "explanation": "Hugging più basso significa minore resistenza a crescere: è la view che assorbe lo spazio extra.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "L'hugging più alto è la resistenza a **crescere**: `left` con 251 \"abbraccia\" il contenuto e resta stretta, quindi cresce l'altra.",
+            "Con priorità di hugging diverse non c'è pareggio: Auto Layout fa crescere solo la view con hugging più basso.",
+            "Le priorità diverse servono proprio a eliminare l'ambiguità; e comunque un layout ambiguo non crasha, dà solo un risultato imprevedibile.",
+            null
+          ]
         },
         {
           "id": "uikit-auto-layout-2",
@@ -245,7 +311,13 @@
           ],
           "answer": 0,
           "explanation": "Con il flag a `true` UIKit crea constraint dal frame/autoresizing mask, che confliggono con quelli espliciti.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "`NSLayoutConstraint.activate` e `isActive = true` sono equivalenti: nessuno dei due genera constraint di autoresizing.",
+            "L'assenza di `intrinsicContentSize` può rendere il layout ambiguo, ma non produce constraint `NSAutoresizingMaskLayoutConstraint`.",
+            "Priorità a 1000 possono causare conflitti tra i tuoi constraint, ma quelli di tipo `NSAutoresizingMaskLayoutConstraint` nascono solo dal flag lasciato a `true`."
+          ]
         },
         {
           "id": "uikit-auto-layout-3",
@@ -259,7 +331,13 @@
           ],
           "answer": 3,
           "explanation": "Cambiare `constant` non anima nulla: serve `layoutIfNeeded()` dentro il blocco perché i frame cambino durante l'animazione.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Sembra naturale, ma cambiare `constant` aggiorna solo il modello dei constraint: i frame cambiano al layout, fuori dal blocco di animazione.",
+            "Nessun crash: modificare un constraint dentro `animate` è lecito. Semplicemente manca `layoutIfNeeded()` per animare i frame.",
+            "`viewDidAppear` non c'entra: l'animazione non viene rimandata, semplicemente non c'è niente da animare nel blocco.",
+            null
+          ]
         },
         {
           "id": "uikit-auto-layout-4",
@@ -273,7 +351,13 @@
           ],
           "answer": 2,
           "explanation": "`setNeedsLayout` è asincrono e raggruppa le richieste; `layoutIfNeeded` forza il layout sincrono se ci sono modifiche pendenti.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Non sono equivalenti: uno si limita a segnare la view come da ridisporre, l'altro esegue il layout **subito**, in modo sincrono.",
+            "Il comportamento è invertito: `setNeedsLayout` rimanda al prossimo ciclo, `layoutIfNeeded` esegue immediatamente.",
+            null,
+            "Stai pensando a `setNeedsUpdateConstraints` e `setNeedsDisplay`: entrambi i metodi della domanda riguardano il layout, non il disegno."
+          ]
         },
         {
           "id": "uikit-auto-layout-5",
@@ -287,7 +371,13 @@
           ],
           "answer": 2,
           "explanation": "Compression resistance più bassa significa minore resistenza a rimpicciolirsi: quella label cede e mostra i puntini.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "La compression resistance più alta significa che `price` **resiste** a restringersi: è l'altra label a cedere.",
+            "Con priorità diverse non c'è ripartizione proporzionale: cede solo la view con compression resistance più bassa.",
+            null,
+            "Auto Layout cerca di rispettare i constraint required con i bordi, sacrificando la priorità più bassa: `name` si tronca, non esce dallo schermo."
+          ]
         },
         {
           "id": "uikit-auto-layout-6",
@@ -301,7 +391,13 @@
           ],
           "answer": 2,
           "explanation": "Passare da required a opzionale su un constraint installato non è supportato: crealo con 999 se dovrai cambiarlo.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Il cambio sarebbe lecito tra due priorità opzionali, ma passare da required (1000) a opzionale su un constraint installato non è supportato.",
+            "UIKit non lo ignora in silenzio: questa transizione viola un'asserzione interna e solleva un'eccezione.",
+            null,
+            "Cambiare la priorità non disattiva il constraint (servirebbe `isActive = false`); qui si ottiene un'eccezione."
+          ]
         },
         {
           "id": "uikit-auto-layout-7",
@@ -315,7 +411,13 @@
           ],
           "answer": 1,
           "explanation": "Lo stack view osserva `isHidden` e ricalcola il layout; la view resta in `arrangedSubviews`.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Questo accadrebbe con `alpha = 0`: con `isHidden = true` lo stack view toglie la view dal layout e le altre ne occupano lo spazio.",
+            null,
+            "La view resta in `arrangedSubviews`: lo stack view la salta solo nel calcolo del layout, finché `isHidden` è `true`.",
+            "Nessuna ambiguità: lo stack view gestisce da sé i constraint e ricalcola la disposizione senza la view nascosta."
+          ]
         },
         {
           "id": "uikit-auto-layout-8",
@@ -329,7 +431,13 @@
           ],
           "answer": 0,
           "explanation": "Auto Layout mette in cache la dimensione intrinseca: va invalidata esplicitamente quando cambia il contenuto.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "`setNeedsDisplay()` richiede solo di ridisegnare il contenuto con `draw(_:)`: non dice ad Auto Layout che la dimensione intrinseca è cambiata.",
+            "`sizeToFit()` ridimensiona il frame di chi lo riceve, qui la superview, e non invalida la dimensione intrinseca in cache della tua view.",
+            "Rimettere il flag a `true` genera constraint dal frame, in conflitto con gli altri; la dimensione intrinseca resterebbe comunque in cache."
+          ]
         },
         {
           "id": "uikit-auto-layout-9",
@@ -343,7 +451,13 @@
           ],
           "answer": 0,
           "explanation": "Il sistema sceglie un constraint da rompere per soddisfare gli altri e lo logga; l'app continua ma il layout può essere sbagliato.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Niente crash: il conflitto viene risolto rompendo un constraint e loggando \"Unable to simultaneously satisfy constraints\".",
+            "Il motore non butta via tutto: rinuncia a **un** constraint e cerca di rispettare tutti gli altri.",
+            "L'ordine di aggiunta non decide nulla, e il sistema stampa sempre un log in console quando rompe un constraint."
+          ]
         },
         {
           "id": "uikit-auto-layout-10",
@@ -357,7 +471,13 @@
           ],
           "answer": 1,
           "explanation": "Il vincolo required limita a 280; quello opzionale a 300 non può essere soddisfatto e viene avvicinato il più possibile.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "300 pt sarebbero rispettati solo se il limite lo permettesse, ma il vincolo required impone al massimo 320 − 40 = 280 pt.",
+            null,
+            "La larghezza della superview entra con `constant: -40` e con `lessThanOrEqualTo`: non può arrivare a 320.",
+            "Priorità diverse (750 contro required) non lasciano ambiguità: vince il vincolo required e l'altro viene avvicinato il più possibile."
+          ]
         }
       ]
     },
@@ -411,7 +531,13 @@
           ],
           "answer": 2,
           "explanation": "Allocare una cella per ogni riga sarebbe costoso: si tengono in vita solo quelle visibili più una piccola coda di riuso.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Il riuso fa l'opposto: una cella riusata porta con sé lo stato della riga precedente, ed è per questo che va riconfigurata ogni volta.",
+            "Le celle si possono deallocare senza problemi; il riuso è una scelta di efficienza, non un vincolo.",
+            null,
+            "Le animazioni di inserimento esistono a prescindere dal riuso: il motivo è limitare allocazioni e memoria alle celle visibili."
+          ]
         },
         {
           "id": "uikit-table-collection-2",
@@ -425,7 +551,13 @@
           ],
           "answer": 1,
           "explanation": "La cella catturata può mostrare un'altra riga quando arriva la risposta: cancella il task in `prepareForReuse` o verifica l'identità.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "`dequeue` non è casuale: restituisce una cella dalla coda di riuso, che però può essere stata usata da un'altra riga.",
+            null,
+            "La closure parte una volta per richiesta; il problema è che scrive su una cella che **nel frattempo** mostra un'altra riga.",
+            "Spostare l'assegnazione in `willDisplay` non risolve: il download asincrono può comunque arrivare quando la cella è già stata riusata."
+          ]
         },
         {
           "id": "uikit-table-collection-3",
@@ -439,7 +571,13 @@
           ],
           "answer": 2,
           "explanation": "La table verifica che il numero di righe dopo l'update sia quello precedente più gli inserimenti: il data source non torna e l'app crasha.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "La table non crea celle dal nulla: confronta il numero di righe prima e dopo e, se non torna con il data source, lancia un'eccezione.",
+            "UIKit non ignora l'incoerenza: controlla che `numberOfRows` valga le righe precedenti più gli inserimenti, e altrimenti crasha.",
+            null,
+            "`insertRows` non si trasforma in `reloadData()`: con il data source invariato la verifica di coerenza fallisce e l'app crasha."
+          ]
         },
         {
           "id": "uikit-table-collection-4",
@@ -453,7 +591,13 @@
           ],
           "answer": 3,
           "explanation": "La variante con `for:` restituisce sempre una cella non opzionale, quindi senza registrazione solleva un'eccezione.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Lo fa la vecchia variante senza `for:`, che restituisce un optional: quella con `for:` restituisce una cella non opzionale e crasha.",
+            "UIKit non inventa una cella di default: senza registrazione non sa quale classe o nib usare e solleva un'eccezione.",
+            "Non c'è alcun ripiego sulla prima cella registrata: ogni identifier va registrato, altrimenti l'app crasha.",
+            null
+          ]
         },
         {
           "id": "uikit-table-collection-5",
@@ -467,7 +611,13 @@
           ],
           "answer": 3,
           "explanation": "Il diffing si basa sull'hash; identifier duplicati generano un errore quando applichi lo snapshot.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "`Codable` serve a serializzare, ma il diffing si basa su hash e uguaglianza: il requisito è `Hashable`.",
+            "Gli identifier possono essere qualsiasi tipo `Hashable`, anche `UUID` o stringhe; non servono interi, né tantomeno consecutivi.",
+            "Vanno benissimo anche struct ed enum: l'identità viene da `Hashable`, non dall'essere un reference type.",
+            null
+          ]
         },
         {
           "id": "uikit-table-collection-6",
@@ -481,7 +631,13 @@
           ],
           "answer": 0,
           "explanation": "`reloadItems` sostituisce la cella con una nuova; `reconfigureItems` (iOS 15) richiama la configurazione sulla cella già visibile, più efficiente.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "`reconfigureItems` agisce sulle singole celle indicate, non rifà il layout dell'intera collection.",
+            "Tutti gli identifier di uno snapshot diffable devono essere `Hashable`, anche per `reconfigureItems`.",
+            "Serve comunque `apply` dello snapshot: `reconfigureItems` segna solo gli item, l'aggiornamento parte quando applichi."
+          ]
         },
         {
           "id": "uikit-table-collection-7",
@@ -495,7 +651,13 @@
           ],
           "answer": 3,
           "explanation": "Gli item stanno nei group, i group formano una section e le section compongono il layout.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "La section contiene i group, non il contrario: si parte dal basso, dagli item, che sono gli elementi più piccoli.",
+            "Il group è un contenitore di item, quindi l'item viene prima del group, non dopo.",
+            "L'item non va direttamente nella section: deve stare in un group, che a sua volta forma la section.",
+            null
+          ]
         },
         {
           "id": "uikit-table-collection-8",
@@ -509,7 +671,13 @@
           ],
           "answer": 3,
           "explanation": "Il prefetch è un'ottimizzazione che il sistema può saltare, per esempio con scroll molto veloci.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Il prefetch non è garantito né sistematico: il sistema può saltarlo, per esempio con scroll molto veloci.",
+            "Non sostituisce nulla: `cellForRowAt` resta obbligatorio e deve funzionare anche se il prefetch non è mai arrivato.",
+            "`prefetchRowsAt` viene chiamato sul **main thread**; sta a te spostare il lavoro pesante in background.",
+            null
+          ]
         },
         {
           "id": "uikit-table-collection-9",
@@ -523,7 +691,13 @@
           ],
           "answer": 1,
           "explanation": "I dati della nuova riga vanno impostati in `cellForRowAt`; `prepareForReuse` serve a ripulire ciò che la riga precedente ha lasciato.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "La configurazione con i nuovi dati va fatta in `cellForRowAt`, dove conosci l'`IndexPath`: in `prepareForReuse` non sai ancora quale riga arriverà.",
+            null,
+            "Ricreare le subview a ogni riuso annulla il vantaggio del riuso: basta resettare lo stato, non ricostruire la gerarchia.",
+            "Chiamare `reloadData()` da una cella riavvierebbe il riuso di tutte le celle: rischi loop e lavoro enorme ad ogni scroll."
+          ]
         },
         {
           "id": "uikit-table-collection-10",
@@ -537,7 +711,13 @@
           ],
           "answer": 1,
           "explanation": "Un batch update vuoto (o `beginUpdates`/`endUpdates`) fa ricalcolare le altezze animando, senza rifare il dequeue.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "`setNeedsDisplay()` fa solo ridisegnare il contenuto della cella: la table non ricalcola l'altezza delle righe.",
+            null,
+            "`layoutIfNeeded()` ridispone le subview della table, ma non le chiede di interrogare di nuovo le altezze delle righe.",
+            "Con `rowHeight` a 0 le righe collassano: per le celle self-sizing serve `UITableView.automaticDimension`, non 0."
+          ]
         }
       ]
     },
@@ -591,7 +771,13 @@
           ],
           "answer": 0,
           "explanation": "Da iOS 13 `.automatic` si risolve quasi sempre in `.pageSheet`, chiudibile con swipe verso il basso.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "`.fullScreen` era il comportamento precedente a iOS 13; da allora `.automatic` produce quasi sempre una sheet.",
+            "`.overFullScreen` va chiesto esplicitamente per lasciare visibile il presenter; `.automatic` non ci arriva mai da solo.",
+            "`.formSheet` su iPhone in verticale si comporta come una page sheet, ma lo stile risolto da `.automatic` è `.pageSheet`."
+          ]
         },
         {
           "id": "uikit-navigation-2",
@@ -605,7 +791,13 @@
           ],
           "answer": 3,
           "explanation": "`prepare(for:sender:)` riceve la segue con la sua `destination` già istanziata, prima che venga mostrata.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`performSegue` avvia la segue, ma non ti dà accesso alla destinazione: il VC di arrivo lo ottieni in `prepare(for:sender:)`.",
+            "Da `viewDidLoad` la destinazione non sa chi l'ha aperta: è il VC di origine a doverle passare i dati prima.",
+            "`shouldPerformSegue` serve solo a decidere **se** eseguire la segue; lì la destinazione non è ancora istanziata.",
+            null
+          ]
         },
         {
           "id": "uikit-navigation-3",
@@ -619,7 +811,13 @@
           ],
           "answer": 1,
           "explanation": "Il back button rappresenta il VC a cui si torna, quindi legge il `navigationItem` del VC precedente.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Sembra logico, ma il back button mostrato in B rappresenta A, il VC a cui torni: UIKit legge il `navigationItem` di A.",
+            null,
+            "Sostituire il `leftBarButtonItem` elimina il back button di sistema e il gesto di swipe: non è così che si cambia solo il titolo.",
+            "`topItem` cambia man mano che fai push: usarlo è fragile, e comunque il titolo del back va impostato sul `navigationItem` di A."
+          ]
         },
         {
           "id": "uikit-navigation-4",
@@ -633,7 +831,13 @@
           ],
           "answer": 2,
           "explanation": "Con `.fullScreen` UIKit rimuove la view sottostante al termine della transizione; con `.overFullScreen` resta visibile sotto contenuti trasparenti.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "La chiusura con swipe riguarda le sheet (`.pageSheet`/`.formSheet`): entrambi gli stili a schermo intero non la offrono.",
+            "È il contrario: `.fullScreen` rimuove la view del presenter, quindi dietro contenuti trasparenti vedresti il nero.",
+            null,
+            "Non sono alias: `.fullScreen` toglie la view sottostante a fine transizione, `.overFullScreen` la lascia in gerarchia."
+          ]
         },
         {
           "id": "uikit-navigation-5",
@@ -647,7 +851,13 @@
           ],
           "answer": 0,
           "explanation": "`weak` si applica solo a reference type: il protocol va dichiarato `: AnyObject` per poterlo usare.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`weak` è proprio pensato per le optional: un riferimento weak deve poter diventare `nil`, quindi deve essere optional.",
+            "`unowned` non è obbligatorio, ed è anzi più rischioso per un delegate: se l'oggetto sparisce, l'accesso crasha.",
+            "`@objc` serve solo per metodi opzionali o interoperabilità con Objective-C; l'errore di compilazione nasce dal `weak` su un protocol non vincolato a class."
+          ]
         },
         {
           "id": "uikit-navigation-6",
@@ -661,7 +871,13 @@
           ],
           "answer": 0,
           "explanation": "In `didShow` confronti il VC di partenza del `transitionCoordinator` con lo stack: se non c'è più, il flusso è finito e rimuovi il child.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Un coordinator di solito non è un `UIViewController`, quindi non riceve callback come `viewWillDisappear`.",
+            "Il navigation controller resta vivo durante il pop, quindi il suo `deinit` non scatta: non ti avvisa del singolo flusso finito.",
+            "In un'extension non si può fare override di un metodo della classe in modo affidabile; e il back di sistema non passa comunque per il tuo codice."
+          ]
         },
         {
           "id": "uikit-navigation-7",
@@ -675,7 +891,13 @@
           ],
           "answer": 2,
           "explanation": "Se il VC non sta presentando nulla, `dismiss` viene inoltrato al presenting view controller.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Non è così: chiamato su B, `dismiss` viene inoltrato al presenting view controller, che chiude B.",
+            "A non viene chiuso: A è il presenter e rimane; ciò che viene rimosso è il VC presentato, cioè B.",
+            null,
+            "Nessun crash: UIKit gestisce la chiamata inoltrandola al presenting view controller, un caso d'uso comunissimo."
+          ]
         },
         {
           "id": "uikit-navigation-8",
@@ -689,7 +911,13 @@
           ],
           "answer": 0,
           "explanation": "Un VC può presentarne uno solo alla volta: il secondo `present` fallisce con un warning \"already presenting\".",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Un VC può presentarne solo uno alla volta: per impilarli B dovrebbe essere presentato **da** `alertA`, non dallo stesso VC.",
+            "UIKit non sostituisce la presentazione in corso: il secondo `present` viene rifiutato con un warning.",
+            "Non viene lanciata un'eccezione: il secondo `present` fallisce e UIKit stampa solo un warning \"already presenting\"."
+          ]
         },
         {
           "id": "uikit-navigation-9",
@@ -703,7 +931,13 @@
           ],
           "answer": 0,
           "explanation": "`isModalInPresentation` blocca il dismiss interattivo; con il delegate della presentation puoi anche chiedere conferma.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Anche `.formSheet` si chiude con lo swipe: cambiare stile non blocca il dismiss interattivo.",
+            "Disabilitare l'interazione rende il form inutilizzabile e non ferma il gesto di swipe, che è gestito dalla presentation.",
+            "Il dismiss con swipe non passa dal tuo override di `dismiss`: la chiusura interattiva la gestisce il presentation controller."
+          ]
         },
         {
           "id": "uikit-navigation-10",
@@ -717,7 +951,13 @@
           ],
           "answer": 1,
           "explanation": "Da iOS 13 la closure `creator` riceve il `NSCoder` e ti lascia chiamare un `init?(coder:...)` con dipendenze.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "`instantiateInitialViewController()` senza `creator` usa `init?(coder:)` standard: non puoi passare dipendenze all'init.",
+            null,
+            "In `prepare(for:sender:)` la destinazione è già stata creata: puoi assegnare property, ma non chiamare un `init` custom.",
+            "`UINib` carica un nib, non una scena di storyboard, e non offre un modo per iniettare dipendenze nell'init."
+          ]
         }
       ]
     },
@@ -766,7 +1006,13 @@
           ],
           "answer": 2,
           "explanation": "`UIImageView` e `UILabel` disabilitano l'interazione di default, quindi l'hit-test le salta.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Le image view supportano le gesture come ogni `UIView`; il problema è che hanno l'interazione disabilitata di default.",
+            "`cancelsTouchesInView` decide se cancellare i tocchi alla view, ma non fa arrivare tocchi a una view esclusa dall'hit-test.",
+            null,
+            "Un target `nil` non abilita nulla: il recognizer non riceve proprio i tocchi, perché l'hit-test salta la image view."
+          ]
         },
         {
           "id": "uikit-events-gestures-2",
@@ -780,7 +1026,13 @@
           ],
           "answer": 0,
           "explanation": "L'hit-test scende solo nelle view che contengono il punto: se la superview dice no, le sue subview non vengono esaminate.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "UIKit non disabilita nulla: il bottone è abilitato, ma l'hit-test non arriva a esaminarlo perché la superview rifiuta il punto.",
+            "`masksToBounds = true` taglierebbe via la parte esterna: la renderebbe invisibile, non cliccabile.",
+            "Portare il bottone in primo piano cambia l'ordine tra fratelli, ma non risolve il fatto che il punto è fuori dalla superview."
+          ]
         },
         {
           "id": "uikit-events-gestures-3",
@@ -794,7 +1046,13 @@
           ],
           "answer": 1,
           "explanation": "Lo sfondo trasparente non conta: vengono escluse solo le view nascoste, con alpha sotto 0.01 o non interattive.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Sembra visibile per l'hit-test, ma con alpha sotto **0.01** la view viene esclusa: 0.005 è sotto la soglia.",
+            null,
+            "Le view con `isHidden = true` vengono saltate dall'hit-test, quindi non ricevono tocchi.",
+            "`isUserInteractionEnabled = false` è proprio il flag che esclude la view (e le sue subview) dall'hit-test."
+          ]
         },
         {
           "id": "uikit-events-gestures-4",
@@ -808,7 +1066,13 @@
           ],
           "answer": 1,
           "explanation": "L'azione scatta quando il dito si solleva dentro il bottone, così l'utente può annullare trascinando fuori.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`.touchDown` scatta appena il dito tocca: non permette all'utente di annullare trascinando fuori, quindi non è il tap classico.",
+            null,
+            "`.valueChanged` serve per controlli con un valore, come `UISwitch` o `UISlider`, non per il tap di un bottone.",
+            "`.primaryActionTriggered` non è limitato all'iPad, ma il classico evento del tap su `UIButton` resta `.touchUpInside`."
+          ]
         },
         {
           "id": "uikit-events-gestures-5",
@@ -822,7 +1086,13 @@
           ],
           "answer": 0,
           "explanation": "Con target `nil` UIKit cerca il primo responder nella catena che risponde al selector (nil-targeted action).",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Il target `nil` è lecito e voluto: attiva la nil-targeted action, che cerca un destinatario nella responder chain.",
+            "Qualcosa succede: UIKit risale la responder chain e chiama `copy(_:)` sul primo responder che lo implementa.",
+            "`UIApplication` è solo uno degli ultimi anelli: la ricerca parte dal first responder e si ferma al primo che risponde."
+          ]
         },
         {
           "id": "uikit-events-gestures-6",
@@ -836,7 +1106,13 @@
           ],
           "answer": 1,
           "explanation": "`hitTest` scorre le subview in ordine inverso: l'ultima aggiunta è la più in alto e vince.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "L'ordine di aggiunta conta al contrario: la prima aggiunta sta sotto, e `hitTest` esamina prima l'ultima subview.",
+            null,
+            "L'hit-test restituisce **una sola** view: la prima che contiene il punto, scorrendo le subview dall'alto verso il basso.",
+            "Le subview non si annullano: una view che contiene il punto viene trovata, e il container riceve il tocco solo se nessuna lo accetta."
+          ]
         },
         {
           "id": "uikit-events-gestures-7",
@@ -850,7 +1126,13 @@
           ],
           "answer": 2,
           "explanation": "Il single tap aspetta che il double tap fallisca prima di riconoscere, al costo di un piccolo ritardo.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "È invertito: così è il double tap ad aspettare il single, che quindi scatta comunque al primo tocco.",
+            "`cancelsTouchesInView` riguarda i tocchi inoltrati alla view, non la competizione tra due recognizer.",
+            null,
+            "`numberOfTouchesRequired` conta le **dita**, non i tocchi: così il single tap richiederebbe due dita insieme."
+          ]
         },
         {
           "id": "uikit-events-gestures-8",
@@ -864,7 +1146,13 @@
           ],
           "answer": 2,
           "explanation": "Quando il recognizer riconosce, la view riceve `touchesCancelled`; impostando `cancelsTouchesInView = false` la selezione torna a funzionare.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Le table view ricevono i tocchi normalmente; il punto è che il recognizer, riconoscendo, cancella quelli diretti alla table.",
+            "Un gesture recognizer non è un responder e non diventa first responder: il problema è `cancelsTouchesInView`.",
+            null,
+            "`endEditing` chiude la tastiera e basta: non tocca la selezione della table, che viene invece cancellata dal recognizer."
+          ]
         },
         {
           "id": "uikit-events-gestures-9",
@@ -878,7 +1166,13 @@
           ],
           "answer": 2,
           "explanation": "La root view inoltra al suo VC; dal VC la catena prosegue verso la superview della view o il parent.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "La window arriva più avanti nella catena: prima della superview, la root view passa dal suo view controller.",
+            "`UIApplication` è quasi in fondo alla catena: dalla root view si passa prima al VC, poi a superview, window e app.",
+            null,
+            "La root view inoltra al VC che la possiede; solo dal VC la catena può salire verso il container, come il navigation controller."
+          ]
         },
         {
           "id": "uikit-events-gestures-10",
@@ -892,7 +1186,13 @@
           ],
           "answer": 0,
           "explanation": "Il controllo non trattiene il target, ma una closure `UIAction` che cattura `self` in modo strong può creare un retain cycle.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Il controllo non trattiene il target: per questo, se il target viene deallocato, l'azione semplicemente non viene più inviata.",
+            "La closure di `UIAction` viene trattenuta dal controllo: se cattura `self` in modo strong può creare un retain cycle.",
+            "`UIAction` non indebolisce nulla da sola: le catture sono strong di default, sei tu a dover scrivere `[weak self]`."
+          ]
         }
       ]
     },
@@ -946,7 +1246,13 @@
           ],
           "answer": 0,
           "explanation": "Il VC diventa il posto di default per ogni responsabilità perché è il punto d'incontro tra model e view.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Gli storyboard spostano la costruzione della UI fuori dal codice: se mai alleggeriscono il VC, non lo rendono massive.",
+            "Molte subview rendono pesante la gerarchia, ma il problema del Massive VC è il numero di **responsabilità**, non di view.",
+            "Auto Layout è solo un sistema di layout; il VC si gonfia quando accumula networking, logica e navigazione."
+          ]
         },
         {
           "id": "uikit-architecture-2",
@@ -960,7 +1266,13 @@
           ],
           "answer": 3,
           "explanation": "Senza UIKit e senza riferimenti alla view il ViewModel si testa con semplici unit test.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "È la view a osservare il ViewModel, non il contrario: un riferimento strong alla view lo accoppierebbe a UIKit.",
+            "Un ViewModel che estende `UIViewController` torna a essere un view controller e perde tutta la testabilità.",
+            "Le constraint appartengono alla view: il ViewModel espone stato, non gestisce layout né oggetti UIKit.",
+            null
+          ]
         },
         {
           "id": "uikit-architecture-3",
@@ -974,7 +1286,13 @@
           ],
           "answer": 2,
           "explanation": "L'Interactor esegue i casi d'uso; il Presenter prepara i dati per la view e il Router gestisce la navigazione.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Il Presenter fa da ponte: prepara i dati per la view e reagisce agli input, ma delega i casi d'uso all'Interactor.",
+            "Il Router si occupa solo della navigazione tra moduli, non della logica di business.",
+            null,
+            "L'Entity è il modello dei dati, di solito semplici struct senza logica: i casi d'uso stanno nell'Interactor."
+          ]
         },
         {
           "id": "uikit-architecture-4",
@@ -988,7 +1306,13 @@
           ],
           "answer": 1,
           "explanation": "Delegate e closure sono uno-a-uno; `NotificationCenter` è pensato per broadcast uno-a-molti.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Un delegate collega un oggetto a **un solo** destinatario: per avvisare molte schermate servirebbero tanti delegate.",
+            null,
+            "Una closure di callback è uno-a-uno come il delegate: non si presta a un broadcast verso schermate indipendenti.",
+            "`UIApplication` non espone una property di logout da osservare, e KVO richiede `@objc dynamic`: non è lo strumento giusto."
+          ]
         },
         {
           "id": "uikit-architecture-5",
@@ -1002,7 +1326,13 @@
           ],
           "answer": 3,
           "explanation": "È il modello di `UITableViewDataSource`: un protocol raggruppa molte interazioni con un contratto chiaro.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Con una sola callback la closure è di solito più semplice e leggibile: il delegate rende di più con molte callback correlate.",
+            "Né delegate né closure sono pensati per molti destinatari: per il broadcast c'è `NotificationCenter`.",
+            "Le closure non vincono sempre: con molti metodi correlati, o che restituiscono valori, un protocol è più chiaro.",
+            null
+          ]
         },
         {
           "id": "uikit-architecture-6",
@@ -1016,7 +1346,13 @@
           ],
           "answer": 3,
           "explanation": "KVO si basa sul runtime Objective-C: servono `@objc dynamic` e il token `NSKeyValueObservation` va conservato.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "`@Published` è di Combine: si osserva con `$property`, non con KVO, che richiede il runtime Objective-C.",
+            "Il protocollo `Observable` appartiene al framework Observation, non a KVO; i due meccanismi sono distinti.",
+            "KVO funziona solo con istanze di classi `NSObject`: una `struct` con `didSet` non è osservabile via KVO.",
+            null
+          ]
         },
         {
           "id": "uikit-architecture-7",
@@ -1030,7 +1366,13 @@
           ],
           "answer": 2,
           "explanation": "Scartando l'`AnyCancellable` la subscription si cancella alla deallocazione; `@Published` invia però subito il valore corrente in modo sincrono.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "L'`AnyCancellable` scartato viene deallocato subito, e la sua deallocazione cancella la subscription: non vive quanto il VC.",
+            "Scartare il cancellable è permesso (con `_ =` non c'è nemmeno warning): nessun crash, solo una subscription che muore subito.",
+            null,
+            "`@Published` invia il valore corrente in modo sincrono durante `sink`, quindi quello iniziale arriva prima della cancellazione."
+          ]
         },
         {
           "id": "uikit-architecture-8",
@@ -1044,7 +1386,13 @@
           ],
           "answer": 2,
           "explanation": "ViewModel e VC segnalano l'intenzione; la navigazione resta nel coordinator, che conosce i flussi.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Così il ViewModel dipenderebbe da UIKit e dal navigation controller: in MVVM-C segnala l'intenzione, non naviga.",
+            "La cella conosce solo la sua riga: decidere la navigazione lì mescola la view con i flussi dell'app.",
+            null,
+            "Il model non sa nulla di UI: la navigazione è una decisione di flusso, che nel pattern spetta al coordinator."
+          ]
         },
         {
           "id": "uikit-architecture-9",
@@ -1058,7 +1406,13 @@
           ],
           "answer": 0,
           "explanation": "Per testarlo serve caricare la view e simulare il ciclo di vita; spostare la logica in oggetti separati risolve.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Un VC può avere dipendenze senza problemi, per esempio iniettate via init: non è questo a renderlo difficile da testare.",
+            "Il VC può contenere logica, ed è proprio il problema: la logica è legata alla view e al suo ciclo di vita.",
+            "I VC si possono creare anche via codice con `init`: gli storyboard non sono l'unico modo di istanziarli."
+          ]
         },
         {
           "id": "uikit-architecture-10",
@@ -1072,7 +1426,13 @@
           ],
           "answer": 1,
           "explanation": "Con l'API a blocchi il center conserva la closure finché non chiami `removeObserver(token)`: serve `[weak self]`.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "La coda indica solo dove eseguire la closure: `OperationQueue.main` non trattiene il view controller.",
+            null,
+            "Il `token` trattiene l'osservatore, non il VC; il ciclo nasce perché il center trattiene la closure che cattura `self` strong.",
+            "Con l'API a blocchi non serve `@objc`: basta al metodo che la closure lo chiami. `@objc` serve solo con `#selector`."
+          ]
         }
       ]
     },
@@ -1126,7 +1486,13 @@
           ],
           "answer": 1,
           "explanation": "La sessione condivisa usa una delegate queue seriale in background, quindi gli aggiornamenti di UI vanno riportati sul main.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`URLSession.shared` non torna in automatico sul main: la completion gira sulla sua delegate queue in background.",
+            null,
+            "`resume()` avvia il task e ritorna subito: la completion non viene eseguita sul thread chiamante, ma sulla coda della sessione.",
+            "La sessione usa la propria delegate queue (una `OperationQueue` seriale), non una specifica coda global con QoS `.userInteractive`."
+          ]
         },
         {
           "id": "uikit-threading-ui-2",
@@ -1140,7 +1506,13 @@
           ],
           "answer": 0,
           "explanation": "`sync` attende la fine del blocco, che però non può partire perché il main è occupato ad aspettare.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`sync` sul main dal main non può partire: il main è bloccato ad aspettare sé stesso, quindi il testo non viene mai aggiornato.",
+            "Questo sarebbe il comportamento di `async`: con `sync` il main resta bloccato e il run loop non avanza più.",
+            "GCD non converte `sync` in `async`: rileva il deadlock e fa crashare l'app."
+          ]
         },
         {
           "id": "uikit-threading-ui-3",
@@ -1154,7 +1526,13 @@
           ],
           "answer": 1,
           "explanation": "Il blocco viene accodato sul main e parte solo quando il codice corrente ha finito.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "`async` non esegue il blocco subito: lo accoda sul main, che è occupato fino alla fine del codice corrente.",
+            null,
+            "Il blocco non può scavalcare `print(\"1\")`, che è già stato eseguito prima ancora dell'accodamento.",
+            "Tutto avviene sulla stessa coda seriale, il main: l'ordine è deterministico, il blocco accodato parte per ultimo."
+          ]
         },
         {
           "id": "uikit-threading-ui-4",
@@ -1168,7 +1546,13 @@
           ],
           "answer": 0,
           "explanation": "Ogni `enter` deve avere il suo `leave` su tutti i percorsi: usa `defer { group.leave() }`.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`enter` va chiamato **prima** di avviare il lavoro asincrono: dentro la closure il group potrebbe risultare già vuoto.",
+            "`notify` può essere registrato in qualunque momento; il problema è il `leave` mancante nel ramo di errore.",
+            "`DispatchGroup` funziona benissimo con le closure; qui si blocca solo perché l'`enter` non viene sempre bilanciato."
+          ]
         },
         {
           "id": "uikit-threading-ui-5",
@@ -1182,7 +1566,13 @@
           ],
           "answer": 0,
           "explanation": "Le barrier funzionano solo su code concorrenti create da te; le code globali sono condivise con il sistema.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Una barrier su una coda globale non blocca nulla: le code globali sono condivise con il sistema e la ignorano.",
+            "La QoS non c'entra con le barrier: su una coda globale il flag `.barrier` viene semplicemente ignorato.",
+            "Nessun crash: il flag viene ignorato e il blocco gira come un normale `async` concorrente."
+          ]
         },
         {
           "id": "uikit-threading-ui-6",
@@ -1196,7 +1586,13 @@
           ],
           "answer": 1,
           "explanation": "Accessi concorrenti allo stato di UIKit producono glitch e crash non deterministici.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Tutti i thread condividono la stessa memoria del processo: il motivo è la mancanza di thread-safety di UIKit.",
+            null,
+            "Tecnicamente si può allocare una view su un altro thread; il problema è che accedere allo stato di UIKit in concorrenza non è sicuro.",
+            "Vale anche sul dispositivo: UIKit non è thread-safe ovunque, e il Main Thread Checker lo segnala in entrambi."
+          ]
         },
         {
           "id": "uikit-threading-ui-7",
@@ -1210,7 +1606,13 @@
           ],
           "answer": 3,
           "explanation": "`addDependency`, `cancel()` e `maxConcurrentOperationCount` sono integrati, mentre in GCD vanno costruiti a mano.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "`OperationQueue` è costruita sopra GCD e aggiunge overhead: il vantaggio è nelle funzionalità, non nella velocità.",
+            "Una `OperationQueue()` creata da te esegue in background; solo `OperationQueue.main` usa il main thread.",
+            "Nessuna coda evita le race condition da sola: con più operazioni concorrenti devi comunque sincronizzare lo stato condiviso.",
+            null
+          ]
         },
         {
           "id": "uikit-threading-ui-8",
@@ -1224,7 +1626,13 @@
           ],
           "answer": 3,
           "explanation": "`count += 1` non è atomico: letture e scritture concorrenti si sovrappongono (data race).",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Sembra ovvio che faccia 1000, ma le iterazioni girano in parallelo e `count += 1` non è atomico: alcuni incrementi si perdono.",
+            "`concurrentPerform` è sincrono: quando arriva il `print` tutte le iterazioni sono finite, quindi il valore non resta a 0.",
+            "In Swift 5 compila senza errori: la data race non viene rilevata dal compilatore, al massimo emerge a runtime.",
+            null
+          ]
         },
         {
           "id": "uikit-threading-ui-9",
@@ -1238,7 +1646,13 @@
           ],
           "answer": 2,
           "explanation": "Seriale significa un task alla volta; il thread sottostante può cambiare tra un task e l'altro.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Solo la main queue è legata al main thread: le code seriali create da te girano su thread in background.",
+            "Parallelo e seriale si escludono: una coda seriale esegue un task per volta, mai due insieme.",
+            null,
+            "GCD non dedica un thread fisso alla coda: il thread sottostante può cambiare tra un task e l'altro."
+          ]
         },
         {
           "id": "uikit-threading-ui-10",
@@ -1252,7 +1666,13 @@
           ],
           "answer": 0,
           "explanation": "Una funzione sincrona gira sull'executor del chiamante: per spostare il lavoro serve `Task.detached` o una funzione `@concurrent`.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Il `Task` eredita l'isolamento `@MainActor` del VC, e una funzione sincrona gira sull'executor del chiamante: resta sul main.",
+            "`Task` non crea thread dedicati: usa gli executor esistenti, e qui eredita quello del main actor.",
+            "La QoS influenza la priorità, non l'isolamento: il codice gira sul main perché il `Task` eredita `@MainActor`."
+          ]
         }
       ]
     },
@@ -1306,7 +1726,13 @@
           ],
           "answer": 2,
           "explanation": "`bounds.origin` di norma è zero ma cambia, per esempio, con lo scroll di una `UIScrollView`.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Coincidono solo in casi particolari: basta un'origine diversa da zero, un transform o uno scroll perché differiscano.",
+            "`bounds` usa il sistema di coordinate **proprio** della view; nessuno dei due è espresso in coordinate della window.",
+            null,
+            "`bounds` non include la safe area, che si legge da `safeAreaInsets`; è vero invece che `frame` riflette il transform."
+          ]
         },
         {
           "id": "uikit-memory-performance-2",
@@ -1320,7 +1746,13 @@
           ],
           "answer": 3,
           "explanation": "Il transform non tocca `bounds`, mentre `frame` diventa il bounding box della view ruotata.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Il transform non cambia `bounds`, ma cambia `frame`: il bounding box di un quadrato ruotato di 45° è più grande.",
+            "Hai invertito i due valori: è `frame` a diventare il bounding box di circa 141 pt, mentre `bounds` resta 100×100.",
+            "`bounds` non si azzera con il transform: conserva la dimensione originale di 100×100.",
+            null
+          ]
         },
         {
           "id": "uikit-memory-performance-3",
@@ -1334,7 +1766,13 @@
           ],
           "answer": 1,
           "explanation": "Spesso il delegate possiede l'oggetto (il VC possiede la table): un riferimento strong di ritorno chiuderebbe il ciclo.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`weak` non velocizza il dispatch: anzi, ogni accesso deve verificare che l'oggetto sia ancora vivo.",
+            null,
+            "I protocol supportano riferimenti strong senza problemi: `weak` è una scelta per evitare cicli, e richiede un protocol `AnyObject`.",
+            "Un riferimento `weak` non è di per sé thread-safe: serve a evitare retain cycle, non a proteggere dagli accessi concorrenti."
+          ]
         },
         {
           "id": "uikit-memory-performance-4",
@@ -1348,7 +1786,13 @@
           ],
           "answer": 1,
           "explanation": "`invalidate` in `deinit` non arriva mai: va chiamato prima (es. `viewWillDisappear`) o si usa il timer a blocco con `[weak self]`.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "`#selector` è solo un nome di metodo, non trattiene nulla: il riferimento strong a `self` lo tiene il timer tramite `target`.",
+            null,
+            "Dopo il pop il navigation controller rilascia il VC: è il timer, trattenuto dal run loop, a tenerlo in vita.",
+            "`userInfo` è solo un payload facoltativo: con `nil` non trattiene niente e non influisce sulla deallocazione."
+          ]
         },
         {
           "id": "uikit-memory-performance-5",
@@ -1362,7 +1806,13 @@
           ],
           "answer": 1,
           "explanation": "Un ciclo richiede che `self` trattenga la closure; qui la trattiene UIKit solo fino alla fine dell'animazione.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Il VC non trattiene la closure, quindi non c'è ciclo: UIKit la tiene solo per la durata dell'animazione e poi la rilascia.",
+            null,
+            "`@escaping` significa che la closure può sopravvivere alla chiamata, ma senza che `self` la trattenga non si forma alcun ciclo.",
+            "`self` non diventa mai `unowned` in automatico: la cattura è strong, ma qui è innocua perché temporanea."
+          ]
         },
         {
           "id": "uikit-memory-performance-6",
@@ -1376,7 +1826,13 @@
           ],
           "answer": 0,
           "explanation": "Senza `shadowPath` Core Animation deve calcolare la forma dal contenuto in un passaggio offscreen a ogni frame.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`masksToBounds = true` taglia tutto ciò che sta fuori dai bounds, **ombra compresa**: l'ombra sparisce invece di diventare veloce.",
+            "Un raggio più grande rende l'ombra più costosa da calcolare, non meno: peggiorerebbe lo scroll.",
+            "Disegnare l'ombra in `draw(_:)` sposta il lavoro sulla CPU a ogni ridisegno: in genere è ancora più lento."
+          ]
         },
         {
           "id": "uikit-memory-performance-7",
@@ -1390,7 +1846,13 @@
           ],
           "answer": 3,
           "explanation": "`unowned` presuppone che l'oggetto sia vivo; se non lo è l'accesso è un errore fatale. `weak` invece diventa `nil`.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Questo è il comportamento di `weak`: un riferimento `unowned` non diventa `nil` e non è nemmeno optional.",
+            "Non esiste un \"ultimo valore valido\": l'oggetto è deallocato e il runtime lo rileva con un errore fatale.",
+            "Il compilatore non può sapere quando l'oggetto verrà deallocato: il problema emerge solo a runtime.",
+            null
+          ]
         },
         {
           "id": "uikit-memory-performance-8",
@@ -1404,7 +1866,13 @@
           ],
           "answer": 3,
           "explanation": "Time Profiler campiona gli stack e mostra dove il main thread passa il tempo; Leaks e Allocations riguardano la memoria.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Leaks cerca oggetti non più raggiungibili in memoria, ma non dice dove il main thread passa il tempo.",
+            "Allocations traccia quanta memoria allochi e dove, non quanto tempo impiega il codice sul main thread.",
+            "Network analizza le richieste di rete, che di norma non girano sul main e non spiegano gli scatti dello scroll.",
+            null
+          ]
         },
         {
           "id": "uikit-memory-performance-9",
@@ -1418,7 +1886,13 @@
           ],
           "answer": 3,
           "explanation": "La bitmap decodificata costa larghezza × altezza × 4 byte: serve il downsampling alla dimensione mostrata.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "2 MB è la dimensione del file **compresso**: una volta decodificata, la bitmap occupa larghezza × altezza × 4 byte.",
+            "12 MB è il numero di pixel: ogni pixel però occupa 4 byte in RGBA, quindi il totale è circa quattro volte tanto.",
+            "Mostrarla piccola non riduce la memoria: senza downsampling viene decodificata tutta l'immagine a piena risoluzione.",
+            null
+          ]
         },
         {
           "id": "uikit-memory-performance-10",
@@ -1432,7 +1906,13 @@
           ],
           "answer": 2,
           "explanation": "Il layer gestisce contenuto e animazioni; la view aggiunge eventi, responder chain e layout.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`CALayer` viene da Core Animation e non deriva da `UIView`: è la view a possedere un layer, non il contrario.",
+            "Ogni view ha **sempre** un layer: `cornerRadius` è solo una delle sue property.",
+            null,
+            "È il contrario: il layer si occupa del contenuto e del rendering, mentre la view gestisce i tocchi e la responder chain."
+          ]
         }
       ]
     }

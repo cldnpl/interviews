@@ -148,18 +148,17 @@ struct HomeView: View {
     }
 
     private var mistakesCard: some View {
-        Button {
-            let items = state.mistakeItems.shuffled().prefix(10)
-            session = QuizSession(mode: .mistakes, items: Array(items), title: "I tuoi errori")
+        NavigationLink {
+            MistakesView()
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: "arrow.uturn.backward.circle.fill")
                     .font(.system(size: 34))
                     .foregroundStyle(Color.wrong)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Ripassa i tuoi errori")
+                    Text("I tuoi errori")
                         .font(.headline)
-                    Text("\(state.mistakeItems.count) domande da riprovare")
+                    Text("\(state.mistakeItems.count) da ripassare, con la correzione")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

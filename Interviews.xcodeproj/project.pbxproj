@@ -18,6 +18,7 @@
 		A0FA670A59CBADB7C059D175 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5B957A95670B5D9EC80C023 /* HomeView.swift */; };
 		A5F86E1A1911EA78D9B60C0E /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B66A351DDA483A3D6D498A /* Components.swift */; };
 		AD6F99BA769BDB31619D8D3B /* InterviewsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5073F55EF22A8BA9241C2446 /* InterviewsApp.swift */; };
+		AF6FE9FCC42770FA56857670 /* CorrectionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E0BF72BB37BE5681E8FA9E5 /* CorrectionViews.swift */; };
 		BB128AD7B991BC343EDDC883 /* Rank.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0C798686966FFAEC9321B8 /* Rank.swift */; };
 		CE5B58A144CF0E7BF8078FB8 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62D961CDAD24E9D5911EB6B /* Day.swift */; };
 		D75ED5C44C5296905ACAEF33 /* Reminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB617E6C22C19174024D25DF /* Reminders.swift */; };
@@ -30,6 +31,7 @@
 
 /* Begin PBXFileReference section */
 		05B66A351DDA483A3D6D498A /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		0E0BF72BB37BE5681E8FA9E5 /* CorrectionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorrectionViews.swift; sourceTree = "<group>"; };
 		278394872C2E624F711D1780 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2F934489215AEA0AAEE8D671 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		39B38CB4FD3FE89649B033AC /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -87,6 +89,7 @@
 			isa = PBXGroup;
 			children = (
 				05B66A351DDA483A3D6D498A /* Components.swift */,
+				0E0BF72BB37BE5681E8FA9E5 /* CorrectionViews.swift */,
 				A5B957A95670B5D9EC80C023 /* HomeView.swift */,
 				2F934489215AEA0AAEE8D671 /* OnboardingView.swift */,
 				39B38CB4FD3FE89649B033AC /* ProfileView.swift */,
@@ -228,6 +231,7 @@
 				00BA7E93DFE6DB72F57253D7 /* AppState.swift in Sources */,
 				A5F86E1A1911EA78D9B60C0E /* Components.swift in Sources */,
 				0C0B96F8698E97E06DD731C3 /* Content.swift in Sources */,
+				AF6FE9FCC42770FA56857670 /* CorrectionViews.swift in Sources */,
 				CE5B58A144CF0E7BF8078FB8 /* Day.swift in Sources */,
 				A0FA670A59CBADB7C059D175 /* HomeView.swift in Sources */,
 				AD6F99BA769BDB31619D8D3B /* InterviewsApp.swift in Sources */,

@@ -33,6 +33,8 @@ struct SavedState: Codable {
     var xp = 0
     /// Domande già indovinate almeno una volta: danno XP pieni solo la prima volta.
     var mastered: Set<String> = []
+    /// Per ogni domanda sbagliata, l'ultima risposta data: serve a mostrare la correzione.
+    var wrongChoices: [String: Int] = [:]
 
     init() {}
 
@@ -61,6 +63,7 @@ struct SavedState: Codable {
         startingTier = v(.startingTier, d.startingTier)
         xp = v(.xp, d.xp)
         mastered = v(.mastered, d.mastered)
+        wrongChoices = v(.wrongChoices, d.wrongChoices)
     }
 }
 
@@ -181,7 +184,8 @@ final class AppState {
 
     /// Registra una risposta e restituisce gli XP guadagnati.
     @discardableResult
-    func record(_ item: QuizItem, correct: Bool, awardsXP: Bool = true) -> Int {
+    func record(_ item: QuizItem, choice: Int, awardsXP: Bool = true) -> Int {
+        let correct = choice == item.question.answer
         let key = "\(item.track.rawValue)/\(item.topicID)"
         var stat = saved.topicStats[key] ?? TopicStat()
         stat.answered += 1
@@ -190,10 +194,12 @@ final class AppState {
         saved.totalAnswered += 1
         guard correct else {
             saved.mistakes.insert(item.id)
+            saved.wrongChoices[item.id] = choice
             return 0
         }
         saved.totalCorrect += 1
         saved.mistakes.remove(item.id)
+        saved.wrongChoices[item.id] = nil
         let firstTime = !saved.mastered.contains(item.id)
         saved.mastered.insert(item.id)
         guard awardsXP else { return 0 }
@@ -250,6 +256,8 @@ final class AppState {
     func lessonsRead(in track: Track) -> Int {
         saved.lessonsRead.filter { $0.hasPrefix(track.rawValue + "/") }.count
     }
+
+    func wrongChoice(for item: QuizItem) -> Int? { saved.wrongChoices[item.id] }
 
     var mistakeItems: [QuizItem] {
         ContentStore.shared.allItems(for: tracks).filter { saved.mistakes.contains($0.id) }

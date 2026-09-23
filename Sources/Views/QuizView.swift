@@ -14,6 +14,7 @@ struct QuizView: View {
     @State private var rankBefore = Rank.all[0]
     @State private var xpGained = 0
     @State private var lastGain = 0
+    @State private var mistakes: [QuizMistake] = []
 
     private var item: QuizItem { session.items[index] }
     private var theme: Theme { item.track.theme }
@@ -24,7 +25,7 @@ struct QuizView: View {
 
             if finished {
                 QuizResultView(session: session, correct: correctCount, streakBefore: streakBefore,
-                               xpGained: xpGained, rankBefore: rankBefore) { dismiss() }
+                               xpGained: xpGained, rankBefore: rankBefore, mistakes: mistakes) { dismiss() }
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
             } else if !session.items.isEmpty {
                 quiz
@@ -143,8 +144,13 @@ struct QuizView: View {
                         .transition(.scale.combined(with: .opacity))
                 }
             }
-            RichText(text: item.question.explanation, font: .callout)
-                .foregroundStyle(.primary.opacity(0.85))
+            if right {
+                RichText(text: item.question.explanation, font: .callout)
+                    .foregroundStyle(.primary.opacity(0.85))
+            } else {
+                CorrectionBody(item: item, chosen: selected)
+                    .padding(.top, 4)
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -164,9 +170,9 @@ struct QuizView: View {
         guard selected == nil else { return }
         selected = i
         let right = i == item.question.answer
-        if right { correctCount += 1 }
+        if right { correctCount += 1 } else { mistakes.append(QuizMistake(item: item, chosen: i)) }
         // Rifare il quiz di oggi per allenarsi non deve far salire di grado.
-        lastGain = state.record(item, correct: right, awardsXP: session.mode != .practice)
+        lastGain = state.record(item, choice: i, awardsXP: session.mode != .practice)
         xpGained += lastGain
     }
 
@@ -282,9 +288,11 @@ struct QuizResultView: View {
     let streakBefore: Int
     let xpGained: Int
     let rankBefore: Rank
+    let mistakes: [QuizMistake]
     let onDone: () -> Void
 
     @State private var appeared = false
+    @State private var showCorrections = false
 
     private var total: Int { session.items.count }
     private var ratio: Double { total == 0 ? 0 : Double(correct) / Double(total) }
@@ -329,11 +337,27 @@ struct QuizResultView: View {
             xpSummary
 
             Spacer()
-            Button("Fine", action: onDone)
-                .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
+            VStack(spacing: 10) {
+                if !mistakes.isEmpty {
+                    Button {
+                        showCorrections = true
+                    } label: {
+                        Label(mistakes.count == 1 ? "Rivedi la correzione" : "Rivedi le \(mistakes.count) correzioni",
+                              systemImage: "text.badge.checkmark")
+                            .font(.headline)
+                            .foregroundStyle(theme.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background(theme.soft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    }
+                }
+                Button("Fine", action: onDone)
+                    .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
         }
+        .sheet(isPresented: $showCorrections) { SessionCorrectionsView(mistakes: mistakes) }
         .onAppear {
             withAnimation(.spring(duration: 1.0, bounce: 0.35).delay(0.15)) { appeared = true }
         }

@@ -80,6 +80,13 @@ struct Question: Codable, Hashable, Identifiable {
     let answer: Int
     let explanation: String
     let difficulty: Int
+    /// Per ogni opzione, perché è sbagliata (nil sulla risposta giusta).
+    let whyWrong: [String?]?
+
+    func whyWrong(_ option: Int) -> String? {
+        guard let whyWrong, whyWrong.indices.contains(option) else { return nil }
+        return whyWrong[option]
+    }
 }
 
 struct Topic: Codable, Hashable, Identifiable {

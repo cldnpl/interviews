@@ -51,7 +51,13 @@
           ],
           "answer": 2,
           "explanation": "`final` impedisce la riassegnazione ma accetta valori calcolati a runtime; `const` richiede un valore noto in compilazione ed è profondamente immutabile.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Sembrano simili perché entrambi vietano la riassegnazione, ma `const` richiede un valore noto a compile-time e rende l'oggetto profondamente immutabile; `final` accetta valori di runtime.",
+            "Attenzione: una variabile `const` non si può mai riassegnare, nemmeno una volta. Il suo valore è fissato già in compilazione.",
+            null,
+            "`final` non è limitato ai campi: lo usi anche per variabili locali e top-level. Ovunque significa solo assegnazione singola."
+          ]
         },
         {
           "id": "flutter-dart-basics-2",
@@ -65,7 +71,13 @@
           ],
           "answer": 0,
           "explanation": "`b` riceve il fallback 5 perché `a` è null; poi `??=` assegna 10 ad `a` perché era ancora null. `b` non cambia.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Dimentichi l'effetto di `a ??= 10`: dato che `a` è ancora null, l'operatore gli assegna 10, quindi la stampa inizia con 10.",
+            "`b` è stato calcolato prima di `??=` e vale già 5: un `int` non segue le modifiche successive di `a`, quindi non diventa 10.",
+            "Il codice è valido: `a ?? 5` produce un `int` non nullable, quindi assegnarlo a `int b` è consentito dal null safety."
+          ]
         },
         {
           "id": "flutter-dart-basics-3",
@@ -79,7 +91,13 @@
           ],
           "answer": 3,
           "explanation": "Le liste `const` identiche sono canonicalizzate nella stessa istanza; `c` è una nuova lista creata a runtime, quindi non è identica ad `a`.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Due liste `const` con lo stesso contenuto vengono canonicalizzate nella stessa istanza, quindi `identical(a, b)` è `true`, non `false`.",
+            "La prima riga è giusta, ma `c` è una lista creata a runtime con `final`: è un oggetto nuovo, quindi non è identica alla `const` `a`.",
+            "Hai invertito i risultati: sono le due `const` a condividere l'istanza (true), mentre la lista `final` è distinta (false).",
+            null
+          ]
         },
         {
           "id": "flutter-dart-basics-4",
@@ -93,7 +111,13 @@
           ],
           "answer": 1,
           "explanation": "`late` sposta il controllo a runtime: leggere una variabile late non ancora assegnata lancia `LateInitializationError`. Non esiste un valore di default.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Dart non inizializza gli `int` a 0 come fanno Java o C: una variabile non nullable senza valore semplicemente non è ancora assegnata.",
+            null,
+            "`x` è di tipo `int`, non `int?`: non può contenere null. Leggerla prima dell'assegnazione lancia un errore invece di restituire null.",
+            "Proprio grazie a `late` il compilatore accetta la dichiarazione senza inizializzatore e rimanda il controllo al runtime."
+          ]
         },
         {
           "id": "flutter-dart-basics-5",
@@ -107,7 +131,13 @@
           ],
           "answer": 2,
           "explanation": "`a` è posizionale obbligatorio, `c` è named e `required`, `b` ha un default. Solo `f(1, c: 3)` rispetta tutte le regole.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`b` e `c` sono parametri named: non puoi passarli per posizione, quindi `f(1, 2, 3)` non compila.",
+            "`a` è posizionale, non named: scrivere `a: 1` è un errore di compilazione anche se il nome coincide.",
+            null,
+            "`c` è `required`: ometterlo è un errore di compilazione, anche se passi `b` correttamente."
+          ]
         },
         {
           "id": "flutter-dart-basics-6",
@@ -121,7 +151,13 @@
           ],
           "answer": 0,
           "explanation": "Le extension si risolvono sul tipo **statico**: `s` è dichiarata `Object`, quindi si applica solo l'estensione su Object, anche se a runtime è una String.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Ti aspetti un dispatch dinamico sul tipo di runtime, ma le extension sono risolte staticamente: `s` è dichiarata `Object`, quindi `on String` non si applica.",
+            "L'ambiguità nascerebbe solo se entrambe le estensioni fossero applicabili al tipo statico; con `Object` si applica solo la prima.",
+            "Non c'è ricerca a runtime: la chiamata viene legata all'estensione su `Object` già in compilazione, quindi non può mancare il metodo."
+          ]
         },
         {
           "id": "flutter-dart-basics-7",
@@ -135,7 +171,13 @@
           ],
           "answer": 3,
           "explanation": "Una classe sealed è implicitamente astratta e può essere estesa solo nella stessa library, così il compilatore conosce tutti i sottotipi e verifica l'esaustività degli switch.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Le sottoclassi di una `sealed` si istanziano normalmente; è la classe sealed stessa a essere implicitamente astratta.",
+            "`sealed` riguarda la gerarchia dei tipi, non l'immutabilità: i campi possono restare mutabili.",
+            "È l'opposto: una classe `sealed` può essere estesa o implementata solo nella stessa library, mai da altri package.",
+            null
+          ]
         },
         {
           "id": "flutter-dart-basics-8",
@@ -149,7 +191,13 @@
           ],
           "answer": 1,
           "explanation": "I record hanno uguaglianza strutturale: due record con la stessa shape e campi uguali sono `==`, a differenza delle istanze di classi normali.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Questo varrebbe per due istanze di una classe senza override di `==`; i record invece hanno uguaglianza strutturale.",
+            null,
+            "I record come `(1, 'a')` sono sintassi valida da Dart 3 e si possono confrontare con `==` senza problemi.",
+            "L'uguaglianza dei record non dipende da un hashCode di default: confronta shape e campi, e `hashCode` è coerente con essa."
+          ]
         },
         {
           "id": "flutter-dart-basics-9",
@@ -163,7 +211,13 @@
           ],
           "answer": 2,
           "explanation": "`on` è un vincolo: il mixin può essere usato solo da classi che sono sottotipi di Widget, e al suo interno può chiamare i membri di Widget.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "`on` non crea una relazione di ereditarietà: il mixin non estende Widget, richiede solo che la classe che lo usa lo sia.",
+            "È proprio il contrario: senza `on` il mixin sarebbe applicabile ovunque; con `on Widget` lo limiti ai sottotipi di Widget.",
+            null,
+            "Il vincolo `on` non sovrascrive nulla: permette al mixin di chiamare i membri di Widget, anche via `super`."
+          ]
         },
         {
           "id": "flutter-dart-basics-10",
@@ -177,7 +231,13 @@
           ],
           "answer": 3,
           "explanation": "Il primo case non corrisponde; il secondo lega `x = 3` e la guardia `x > 0` è vera. Lo switch restituisce il primo case che corrisponde.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Il pattern `(0, 0)` richiede che il primo campo sia 0, ma `p.$1` vale 3: il case non corrisponde.",
+            "Anche `(_, 0)` corrisponderebbe, ma lo switch si ferma al primo case valido, e `(var x, 0) when x > 0` viene prima.",
+            "Il wildcard `_` viene valutato solo se nessun case precedente corrisponde, e qui il secondo corrisponde già.",
+            null
+          ]
         }
       ]
     },
@@ -231,7 +291,13 @@
           ],
           "answer": 1,
           "explanation": "Prima il codice sincrono (A, E), poi le microtask in ordine (C, D), infine l'evento del Timer creato da `Future(...)` (B).",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Non tutto gira in ordine di scrittura: `Future(...)` e le microtask sono rinviati, quindi dopo A viene subito il sincrono E.",
+            null,
+            "`Future(...)` schedula un Timer sulla event queue, che viene servita solo dopo aver svuotato la microtask queue: B arriva per ultimo.",
+            "Le microtask non interrompono il codice sincrono: `print('E')` esce prima che l'event loop esegua C e D."
+          ]
         },
         {
           "id": "flutter-dart-async-2",
@@ -245,7 +311,13 @@
           ],
           "answer": 3,
           "explanation": "Il corpo di `f` gira in modo sincrono fino al primo `await`, quindi B esce subito dopo A. Poi `main` prosegue con C e solo dopo D.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Chiamare una funzione `async` non rimanda il suo corpo: gira in modo sincrono fino al primo `await`, quindi B esce prima di C.",
+            "`main` stampa A prima ancora di chiamare `f()`, quindi B non può comparire per primo.",
+            "Il primo `await` sospende `f` e restituisce il controllo a `main`, che stampa C prima che D possa riprendere.",
+            null
+          ]
         },
         {
           "id": "flutter-dart-async-3",
@@ -259,7 +331,13 @@
           ],
           "answer": 0,
           "explanation": "Una funzione `async` avvolge sempre il valore restituito in un Future. Per produrre uno Stream serve `async*`.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Dentro scrivi `return 42`, ma una funzione `async` avvolge sempre il risultato in un Future: il chiamante riceve `Future<int>`.",
+            "Uno Stream si ottiene con `async*` e `yield`; una funzione `async` produce un solo valore futuro.",
+            "`FutureOr<int>` è un tipo di ritorno ammesso, ma non obbligatorio: quello idiomatico e più comune è `Future<int>`."
+          ]
         },
         {
           "id": "flutter-dart-async-4",
@@ -273,7 +351,13 @@
           ],
           "answer": 2,
           "explanation": "Uno stream single-subscription accetta un solo listener: il secondo `listen` lancia `StateError: Stream has already been listened to`. Serve `asBroadcastStream()` o un broadcast controller.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Questo è il comportamento di un broadcast stream; uno single-subscription rifiuta proprio il secondo listener.",
+            "Nessun tipo di Stream replica tutti gli eventi a un secondo listener; qui il secondo `listen` fallisce subito.",
+            null,
+            "Il primo listener resta attivo: è il secondo `listen` a lanciare `StateError`."
+          ]
         },
         {
           "id": "flutter-dart-async-5",
@@ -287,7 +371,13 @@
           ],
           "answer": 1,
           "explanation": "`jsonDecode` è sincrono e CPU-bound: sull'isolate principale blocca i frame. Un isolate separato lo esegue in parallelo.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`jsonDecode` è sincrono e CPU-bound: è proprio per questo che blocca l'isolate principale se lo chiami lì.",
+            null,
+            "Gli isolate non condividono memoria: ognuno ha il proprio heap e il risultato viene passato con un messaggio.",
+            "Potresti fare `await` anche su un Future qualsiasi; lo scopo non è l'await, ma spostare il lavoro pesante fuori dal thread UI."
+          ]
         },
         {
           "id": "flutter-dart-async-6",
@@ -301,7 +391,13 @@
           ],
           "answer": 3,
           "explanation": "Gli isolate non condividono memoria: ognuno ha il proprio heap e si scambiano messaggi tramite porte. Una variabile static ha una copia separata per ogni isolate.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Ogni isolate ha la propria copia delle variabili static: modificarla in uno non ha effetto sull'altro.",
+            "Lock e mutex servono con memoria condivisa, che gli isolate non hanno: comunicano solo a messaggi.",
+            "Ogni isolate ha un heap separato; è proprio questo isolamento che evita race condition sui dati.",
+            null
+          ]
         },
         {
           "id": "flutter-dart-async-7",
@@ -315,7 +411,13 @@
           ],
           "answer": 0,
           "explanation": "Il generatore `async*` emette 1, 2, 3 e `reduce` li somma, restituendo un Future che vale 6.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "3 è solo l'ultimo valore emesso; `reduce` combina tutti gli elementi con `a + b`, quindi 1 + 2 + 3 = 6.",
+            "`reduce` non raccoglie gli eventi in una lista (quello lo fa `toList`), ma li combina in un singolo valore.",
+            "Grazie all'`await`, `sum` è il valore del Future restituito da `reduce`, non lo Stream stesso."
+          ]
         },
         {
           "id": "flutter-dart-async-8",
@@ -329,7 +431,13 @@
           ],
           "answer": 2,
           "explanation": "Una funzione `async` non lancia in modo sincrono: l'eccezione completa il Future con errore. Senza `await` il `try/catch` non la vede e l'errore resta non gestito.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Una funzione `async` non lancia in modo sincrono: l'errore completa il Future, e senza `await` il `try/catch` è già stato superato.",
+            "L'errore non sparisce: il Future fallito senza gestore diventa un errore non gestito segnalato dalla Zone.",
+            null,
+            "Ignorare un Future è codice valido: al massimo una lint come `unawaited_futures` lo segnala, ma compila."
+          ]
         },
         {
           "id": "flutter-dart-async-9",
@@ -343,7 +451,13 @@
           ],
           "answer": 1,
           "explanation": "`Future.wait` avvia tutte le chiamate e completa quando tutte sono finite. Tre `await` in fila le serializzano; `Future.any` restituisce solo la prima.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Tre `await` in fila serializzano le chiamate: la seconda parte solo quando la prima è finita.",
+            null,
+            "`Future.any` completa con il primo Future che termina e ignora il risultato degli altri, quindi non attendi tutte.",
+            "Le chiamate di rete sono I/O asincrono, non lavoro CPU: `compute` le sposterebbe in un isolate senza alcun vantaggio."
+          ]
         },
         {
           "id": "flutter-dart-async-10",
@@ -357,7 +471,13 @@
           ],
           "answer": 0,
           "explanation": "L'event loop esegue tutte le microtask pendenti prima di prendere il prossimo evento dalla event queue. Per questo una catena infinita di microtask congela l'app.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Non è legata ai frame: la microtask queue viene svuotata dall'event loop prima di ogni evento, indipendentemente dai 16 ms.",
+            "L'event loop non distingue tra tipi di evento: prima di Timer, I/O o qualunque altro evento svuota sempre le microtask.",
+            "È il contrario: le microtask hanno priorità e vengono eseguite prima di prendere il prossimo evento, anche se la event queue è piena."
+          ]
         }
       ]
     },
@@ -411,7 +531,13 @@
           ],
           "answer": 2,
           "explanation": "`initState` viene chiamato una sola volta per State: è il posto per risorse con ciclo di vita, da rilasciare in `dispose`. In `build` creeresti un controller a ogni rebuild.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "`build()` può essere chiamato molte volte: creeresti un controller nuovo a ogni rebuild, perdendo l'animazione e causando leak.",
+            "Il widget è una configurazione immutabile e ricreata spesso; inoltre lì non hai un `vsync` dallo State.",
+            null,
+            "`didUpdateWidget` scatta solo quando il parent passa una nuova configurazione, non alla creazione: serve per aggiornare il controller, non crearlo."
+          ]
         },
         {
           "id": "flutter-widgets-2",
@@ -425,7 +551,13 @@
           ],
           "answer": 0,
           "explanation": "`setState` esegue la callback e marca l'Element come da ricostruire al prossimo frame. Lo State resta lo stesso oggetto.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Il rebuild non è immediato né globale: `setState` marca dirty solo quell'Element e la ricostruzione avviene al prossimo frame.",
+            "`setState` non ha nulla a che fare con la persistenza: lo stato vive in memoria nello State.",
+            "L'oggetto State sopravvive ai rebuild: `setState` riesegue `build` sullo stesso State, non ne crea uno nuovo."
+          ]
         },
         {
           "id": "flutter-widgets-3",
@@ -439,7 +571,13 @@
           ],
           "answer": 3,
           "explanation": "In initState la registrazione della dipendenza non è ancora consentita (assert in debug). `didChangeDependencies` viene chiamato subito dopo ed è il posto giusto.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Il Theme esiste già negli antenati; il problema è che in `initState` non puoi ancora registrare una dipendenza da un InheritedWidget.",
+            "In `initState` il `context` esiste ed è valido; è la dipendenza da InheritedWidget a non essere ancora consentita.",
+            "Non è una questione di velocità: in debug scatta un'assert, perché la dipendenza non verrebbe tracciata correttamente.",
+            null
+          ]
         },
         {
           "id": "flutter-widgets-4",
@@ -453,7 +591,13 @@
           ],
           "answer": 1,
           "explanation": "Lo State viene riusato: Flutter aggiorna `widget` e chiama `didUpdateWidget(oldWidget)`, dove puoi confrontare la vecchia e la nuova configurazione.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "`initState` viene chiamato una sola volta per State; quando il parent cambia solo i parametri lo State viene riusato.",
+            null,
+            "`didChangeDependencies` scatta quando cambia un InheritedWidget da cui dipendi, non quando cambiano i parametri del widget.",
+            "`createState` viene chiamato solo quando nasce un nuovo Element: con lo stesso tipo e key lo State esistente viene riusato."
+          ]
         },
         {
           "id": "flutter-widgets-5",
@@ -467,7 +611,13 @@
           ],
           "answer": 2,
           "explanation": "Durante l'await il widget può essere smontato: il context non è più valido. Va controllato `context.mounted` prima di usarlo.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Usare Navigator in `onPressed` è normalissimo; il rischio sta nel farlo dopo un `await` senza verificare `context.mounted`.",
+            "Qui non cambi stato del widget, stai navigando: `setState` non serve e non risolverebbe il problema del context.",
+            null,
+            "`const Text('Salva')` è valido e anzi consigliato, perché il contenuto è costante."
+          ]
         },
         {
           "id": "flutter-widgets-6",
@@ -481,7 +631,13 @@
           ],
           "answer": 3,
           "explanation": "Uno StatelessWidget può comunque ricostruirsi quando cambia un InheritedWidget che legge; non ha però stato mutabile proprio.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Il numero di figli non conta: anche un widget con molti figli può essere stateless se non ha stato mutabile proprio.",
+            "Una chiamata di rete implica caricamento e risultati che cambiano nel tempo: serve stato, non uno StatelessWidget.",
+            "StatelessWidget non è affatto deprecato: è la scelta preferita quando non c'è stato mutabile locale.",
+            null
+          ]
         },
         {
           "id": "flutter-widgets-7",
@@ -495,7 +651,13 @@
           ],
           "answer": 0,
           "explanation": "Se il nuovo widget è identico al vecchio, `updateChild` non aggiorna l'Element e il suo `build` non viene rieseguito.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "`const` non crea layer separati: quello lo fa, per esempio, `RepaintBoundary`. Il vantaggio è saltare l'update dell'Element.",
+            "Anche un widget `const` ha il suo Element nell'albero; semplicemente quell'Element non viene aggiornato.",
+            "`const` riguarda la canonicalizzazione a compile-time dell'istanza Dart, non una compilazione speciale in codice nativo."
+          ]
         },
         {
           "id": "flutter-widgets-8",
@@ -509,7 +671,13 @@
           ],
           "answer": 1,
           "explanation": "`Element` implementa `BuildContext`: il context è il riferimento alla posizione del widget nell'albero degli Element.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Ogni widget montato ha il proprio context: non è globale, rappresenta la sua posizione nell'albero.",
+            null,
+            "Il RenderObject si occupa di layout e paint ed è un oggetto diverso; è l'Element a implementare `BuildContext`.",
+            "Il context non copia lo State: è l'Element, che al massimo possiede un riferimento allo State."
+          ]
         },
         {
           "id": "flutter-widgets-9",
@@ -523,7 +691,13 @@
           ],
           "answer": 3,
           "explanation": "Senza cancel la subscription resta attiva dopo la rimozione: memory leak e `setState() called after dispose()`.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "`build` in State è astratto e non si chiama con `super.build()`; il vero problema è la risorsa mai rilasciata.",
+            "`setState` in `initState` non serve: il primo build avviene comunque subito dopo.",
+            "`late final` va bene perché `sub` viene assegnata in `initState`; il problema è che nessuno la cancella.",
+            null
+          ]
         },
         {
           "id": "flutter-widgets-10",
@@ -537,7 +711,13 @@
           ],
           "answer": 2,
           "explanation": "`didChangeDependencies` segue sempre `initState`; alla rimozione arriva prima `deactivate` e, se l'Element non viene reinserito nello stesso frame, `dispose`.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "`deactivate` arriva sempre prima di `dispose`, e manca `createState` all'inizio.",
+            "`initState` viene chiamato prima del primo `build`, non dopo; e manca `deactivate` prima di `dispose`.",
+            null,
+            "`didUpdateWidget` non fa parte del primo montaggio: scatta solo quando il parent fornisce una nuova configurazione."
+          ]
         }
       ]
     },
@@ -591,7 +771,13 @@
           ],
           "answer": 1,
           "explanation": "I RenderObject calcolano dimensioni, posizione e disegno. I widget sono solo configurazione, gli Element gestiscono il ciclo di vita.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "I widget sono solo descrizioni immutabili della UI: non calcolano dimensioni né disegnano.",
+            null,
+            "Gli Element gestiscono ciclo di vita e collegamento tra widget e RenderObject, ma layout e paint spettano ai RenderObject.",
+            "Il Semantics tree serve all'accessibilità (screen reader), non al layout né al disegno."
+          ]
         },
         {
           "id": "flutter-trees-keys-2",
@@ -605,7 +791,13 @@
           ],
           "answer": 3,
           "explanation": "È la regola di `Widget.canUpdate`. Se tipo o key cambiano, l'Element viene smontato e ricreato, e lo State si perde.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Flutter non usa `==` per decidere il riuso, ma `Widget.canUpdate`, che confronta `runtimeType` e `key`.",
+            "La posizione non basta: se cambia il tipo o la key, l'Element viene smontato e ricreato anche nello stesso posto.",
+            "I figli non entrano in `canUpdate`: vengono riconciliati dopo, uno per uno.",
+            null
+          ]
         },
         {
           "id": "flutter-trees-keys-3",
@@ -619,7 +811,13 @@
           ],
           "answer": 0,
           "explanation": "Senza key gli Element sono abbinati per posizione. Con una key stabile legata all'id, ogni State segue il proprio elemento.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Una GlobalKey identifica un singolo widget, non gli elementi di una lista: non risolve l'abbinamento dei tile tra fratelli.",
+            "Chiamare `setState` più volte non cambia l'abbinamento per posizione degli Element: serve una key stabile.",
+            "`const` evita rebuild inutili ma non dà identità ai tile: senza key gli State restano legati alla posizione."
+          ]
         },
         {
           "id": "flutter-trees-keys-4",
@@ -633,7 +831,13 @@
           ],
           "answer": 2,
           "explanation": "Ogni build crea una GlobalKey diversa, quindi `canUpdate` fallisce: l'Element viene ricreato con un nuovo State. Le GlobalKey vanno create una volta sola.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "`GlobalKey()` crea un oggetto nuovo a ogni chiamata di `build`: la key precedente non viene riusata.",
+            "Non c'è duplicato, perché in ogni istante esiste una sola GlobalKey nell'albero; il problema è che cambia a ogni build.",
+            null,
+            "Con una key diversa `canUpdate` fallisce: l'Element e lo State vengono ricreati, non solo ridisegnati."
+          ]
         },
         {
           "id": "flutter-trees-keys-5",
@@ -647,7 +851,13 @@
           ],
           "answer": 1,
           "explanation": "Entrambe sono LocalKey. ValueKey confronta il valore con `==`; ObjectKey confronta l'identità dell'oggetto, utile quando non esiste un id univoco.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Entrambe sono LocalKey, confrontate tra fratelli; le chiavi globali sono le GlobalKey.",
+            null,
+            "ObjectKey accetta qualsiasi oggetto; la sua particolarità è il confronto per identità, non il tipo del valore.",
+            "La differenza c'è: ValueKey confronta con `==`, ObjectKey con `identical`."
+          ]
         },
         {
           "id": "flutter-trees-keys-6",
@@ -661,7 +871,13 @@
           ],
           "answer": 3,
           "explanation": "Quando l'InheritedWidget viene sostituito, Flutter chiama `updateShouldNotify(old)`: se true, i widget che dipendono da esso vengono ricostruiti.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Non forza rebuild dell'InheritedWidget: viene chiamato quando è già stato sostituito, per decidere se avvisare i dipendenti.",
+            "ChangeNotifier ha il proprio meccanismo con `notifyListeners`; `updateShouldNotify` riguarda i dipendenti dell'InheritedWidget.",
+            "Un InheritedWidget non ha un RenderObject proprio: `updateShouldNotify` decide solo se ricostruire chi dipende da lui.",
+            null
+          ]
         },
         {
           "id": "flutter-trees-keys-7",
@@ -675,7 +891,13 @@
           ],
           "answer": 0,
           "explanation": "Ogni Element eredita dal parent una mappa tipo -> InheritedElement, quindi il lookup non richiede di risalire l'albero.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Nessuna risalita dell'albero né cache LRU: ogni Element eredita dal parent una mappa tipo -> InheritedElement.",
+            "Le GlobalKey non c'entrano: il lookup usa la mappa degli InheritedElement ereditata dal parent.",
+            "L'albero dei widget non è bilanciato, e anche se lo fosse il costo sarebbe O(log n); l'O(1) viene dalla mappa per tipo."
+          ]
         },
         {
           "id": "flutter-trees-keys-8",
@@ -689,7 +911,13 @@
           ],
           "answer": 2,
           "explanation": "I widget sono oggetti immutabili e leggeri: ricrearli è economico. Element e RenderObject vengono riusati proprio perché costosi.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Gli Element sono costosi da ricreare perché portano lo State e il ciclo di vita: Flutter fa di tutto per riusarli.",
+            "I RenderObject mantengono layout e informazioni di paint: ricrearli è costoso, per questo vengono aggiornati in place.",
+            null,
+            "Il Layer tree serve alla composizione in fase di paint; non è quello che ricrei a ogni `build`."
+          ]
         },
         {
           "id": "flutter-trees-keys-9",
@@ -703,7 +931,13 @@
           ],
           "answer": 3,
           "explanation": "Le key sono confrontate tra fratelli dello stesso parent. Una key annidata più in profondità non aiuta l'abbinamento degli elementi della lista.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Le key si confrontano solo tra fratelli: su un figlio annidato non aiutano ad abbinare gli elementi della lista.",
+            "Una key sul ListView identifica la lista intera, non i singoli elementi che devono essere riconciliati.",
+            "La key sul MaterialApp non ha alcun effetto sulla riconciliazione degli elementi di una lista.",
+            null
+          ]
         },
         {
           "id": "flutter-trees-keys-10",
@@ -717,7 +951,13 @@
           ],
           "answer": 1,
           "explanation": "Solo `dependOn...` iscrive il widget ai cambiamenti e causa rebuild. `get...` legge il valore una volta, utile nei callback.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "`getInheritedWidgetOfExactType` non è deprecato: è il modo corretto di leggere senza creare dipendenza.",
+            null,
+            "Entrambi cercano solo tra gli antenati, mai nei discendenti.",
+            "Non sono alias: solo `dependOn...` iscrive il widget e causa rebuild quando il valore cambia."
+          ]
         }
       ]
     },
@@ -771,7 +1011,13 @@
           ],
           "answer": 2,
           "explanation": "Il parent passa i constraints, il figlio sceglie la propria size entro quei limiti e il parent decide dove metterlo.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Il figlio sceglie solo la propria size entro i constraints ricevuti; la posizione la decide sempre il parent.",
+            "Il parent impone constraints, non per forza una dimensione esatta: con constraints loose il figlio può essere più piccolo.",
+            null,
+            "Il layout avviene a runtime a ogni frame necessario, perché dipende dallo schermo e dai contenuti."
+          ]
         },
         {
           "id": "flutter-layout-2",
@@ -785,7 +1031,13 @@
           ],
           "answer": 0,
           "explanation": "La Column dà altezza illimitata ai figli non flessibili e la ListView vuole espandersi su tutto il main axis: serve `Expanded` attorno alla ListView.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Per occupare lo spazio restante serve `Expanded`: senza, la Column passa altezza illimitata e la ListView non sa quanto essere alta.",
+            "Non è un overflow visibile: la ListView riceve altezza unbounded e Flutter lancia un errore di layout.",
+            "La ListView non riesce nemmeno a fare layout con altezza infinita, quindi non viene mostrata affatto: si ottiene un errore."
+          ]
         },
         {
           "id": "flutter-layout-3",
@@ -799,7 +1051,13 @@
           ],
           "answer": 3,
           "explanation": "`Expanded` assegna al figlio lo spazio rimanente sul main axis. Una larghezza infinita dentro una Row causa invece un errore di layout.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Dentro una Row la larghezza è unbounded: `SizedBox.expand` vorrebbe diventare infinito e causa un errore di layout.",
+            "`mainAxisSize` controlla quanto spazio occupa la Row stessa, non come viene distribuito tra i figli.",
+            "Una larghezza infinita in una Row, che passa constraints unbounded, genera un errore invece di riempire lo spazio.",
+            null
+          ]
         },
         {
           "id": "flutter-layout-4",
@@ -813,7 +1071,13 @@
           ],
           "answer": 1,
           "explanation": "`Expanded` estende `Flexible` forzando `fit: FlexFit.tight`; con `Flexible` (loose) il figlio può essere più piccolo dello spazio assegnato.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Entrambi funzionano in qualsiasi Flex: Row, Column e Flex.",
+            null,
+            "Flexible rispetta eccome `flex`: lo usa per ripartire lo spazio come Expanded.",
+            "È il contrario: è Expanded (tight) a costringere il figlio a riempire; Flexible (loose) gli lascia essere più piccolo."
+          ]
         },
         {
           "id": "flutter-layout-5",
@@ -827,7 +1091,13 @@
           ],
           "answer": 2,
           "explanation": "La radice riceve constraints tight pari allo schermo, quindi width e height del Container vengono ignorate. Serve un `Center` o `Align` per allentarli.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "La radice riceve constraints tight pari allo schermo: width e height del Container non possono essere rispettate.",
+            "Per centrarlo servirebbe un `Center`, che allenta i constraints; senza, il Container è forzato a riempire lo schermo.",
+            null,
+            "MaterialApp non è obbligatorio: `runApp` accetta qualsiasi widget, e un Container rosso non richiede Material."
+          ]
         },
         {
           "id": "flutter-layout-6",
@@ -841,7 +1111,13 @@
           ],
           "answer": 3,
           "explanation": "LayoutBuilder dà lo spazio realmente disponibile per quel widget, non la dimensione dello schermo: ideale per componenti riusabili in contesti diversi.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "MediaQuery dà la dimensione dello schermo, non lo spazio realmente disponibile per il widget: non sono intercambiabili.",
+            "La densità si legge da `MediaQuery.devicePixelRatioOf`; LayoutBuilder fornisce constraints, non informazioni sul display.",
+            "Per la safe area usi `SafeArea` o `MediaQuery.paddingOf`; LayoutBuilder non conosce notch né barre di sistema.",
+            null
+          ]
         },
         {
           "id": "flutter-layout-7",
@@ -855,7 +1131,13 @@
           ],
           "answer": 0,
           "explanation": "Dentro un Flexible il Text riceve una larghezza finita e può andare a capo o usare l'ellipsis invece di sforare.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Ridurre il font nasconde il problema solo per quel testo e quello schermo: con un testo più lungo l'overflow torna.",
+            "Uno Stack sovrapporrebbe i figli invece di affiancarli: cambieresti il layout invece di vincolare la larghezza del testo.",
+            "`MainAxisSize.min` fa restringere la Row, ma il Text riceve ancora larghezza unbounded e continua a sforare."
+          ]
         },
         {
           "id": "flutter-layout-8",
@@ -869,7 +1151,13 @@
           ],
           "answer": 1,
           "explanation": "Per conoscere la propria altezza la lista shrink-wrapped deve misurare tutto il contenuto, perdendo i vantaggi della costruzione lazy.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "La lista shrink-wrapped continua a scrollare; il problema è che misura tutti i figli e perde la costruzione lazy.",
+            null,
+            "`shrinkWrap` non è deprecato: è utile per liste brevi, costoso solo con molti elementi.",
+            "`shrinkWrap` riguarda l'estensione lungo lo scroll axis e non causa overflow orizzontale."
+          ]
         },
         {
           "id": "flutter-layout-9",
@@ -883,7 +1171,13 @@
           ],
           "answer": 2,
           "explanation": "Gli sliver condividono un unico viewport e restano lazy. Annidare liste scrollabili in una Column crea scroll multipli o costringe a shrinkWrap.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "ListView e GridView in una Column hanno altezza unbounded: errore, oppure scroll separati e shrinkWrap costoso.",
+            "NestedScrollView serve quando l'header deve coordinarsi con scroll interni separati; qui basta un unico viewport.",
+            null,
+            "Mettere tutto in un SingleChildScrollView costruisce ogni elemento subito, perdendo la costruzione lazy."
+          ]
         },
         {
           "id": "flutter-layout-10",
@@ -897,7 +1191,13 @@
           ],
           "answer": 0,
           "explanation": "`Positioned` ancora il figlio ai bordi dello Stack. Deve essere un figlio diretto dello Stack.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Il padding da solo non sposta il figlio in basso a destra: uno Stack allinea i figli non posizionati in alto a sinistra di default.",
+            "`Transform.translate` sposta solo il disegno e ti obbliga a conoscere le dimensioni: non ancora il figlio ai bordi.",
+            "Align non ha una proprietà `margin`: servirebbe un Padding in più, mentre `Positioned` lo fa direttamente."
+          ]
         }
       ]
     },
@@ -951,7 +1251,13 @@
           ],
           "answer": 1,
           "explanation": "È stato effimero, locale a un widget: `setState` è la soluzione più semplice e corretta.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "BLoC non è mai obbligatorio: per uno stato effimero locale aggiungerebbe complessità senza benefici.",
+            null,
+            "Un Provider globale esporrebbe a tutta l'app uno stato che interessa a un solo widget.",
+            "SharedPreferences serve alla persistenza su disco, non a gestire lo stato della UI in memoria."
+          ]
         },
         {
           "id": "flutter-state-management-2",
@@ -965,7 +1271,13 @@
           ],
           "answer": 3,
           "explanation": "`watch` registra il widget come dipendente; `read` restituisce il valore senza iscriversi ed è adatto ai callback come onPressed.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Il tipo del valore non c'entra: la differenza è se il widget si iscrive ai cambiamenti o no.",
+            "Entrambi sono sincroni e restituiscono subito il valore; cambia solo la registrazione della dipendenza.",
+            "C'è una differenza importante: `watch` ricostruisce il widget ai cambiamenti, `read` no.",
+            null
+          ]
         },
         {
           "id": "flutter-state-management-3",
@@ -979,7 +1291,13 @@
           ],
           "answer": 0,
           "explanation": "`select` confronta il valore selezionato prima e dopo: ricostruisce solo se è cambiato. Serve proprio a ridurre i rebuild.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "`select` confronta il valore selezionato prima e dopo: se `count` è uguale il rebuild viene saltato.",
+            "Nessuna eccezione: `notifyListeners` è normale e `select` si limita a ignorare la notifica.",
+            "Il widget non viene nemmeno ricostruito, quindi non c'è modo che perda il suo stato."
+          ]
         },
         {
           "id": "flutter-state-management-4",
@@ -993,7 +1311,13 @@
           ],
           "answer": 2,
           "explanation": "Entrambi espongono uno Stream di stati. Il Cubit viene pilotato da chiamate a metodi, il Bloc da eventi mappati con `on<Event>`.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Anche il Cubit espone uno Stream di stati: cambia solo il modo in cui lo alimenti.",
+            "Bloc è molto testabile: con `bloc_test` verifichi gli stati emessi in risposta agli eventi.",
+            null,
+            "Bloc è Dart puro e funziona su tutte le piattaforme, non solo sul web."
+          ]
         },
         {
           "id": "flutter-state-management-5",
@@ -1007,7 +1331,13 @@
           ],
           "answer": 1,
           "explanation": "Invoca in modo sincrono i listener registrati; saranno builder come `ListenableBuilder` o Provider a schedulare i rebuild.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Non ricostruisce nulla direttamente: chiama i listener, e solo i widget iscritti schedulano un rebuild.",
+            null,
+            "`notifyListeners` non salva nulla: la persistenza va gestita a parte.",
+            "Per chiudere il notifier si usa `dispose()`; `notifyListeners` lo lascia attivo."
+          ]
         },
         {
           "id": "flutter-state-management-6",
@@ -1021,7 +1351,13 @@
           ],
           "answer": 3,
           "explanation": "I provider Riverpod sono dichiarati globalmente e letti via `ref`, quindi niente `ProviderNotFoundException` a runtime e accesso anche fuori dai widget.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Riverpod usa ancora un InheritedWidget, `ProviderScope`, per esporre il container: il vantaggio è non dipendere dal context per leggere.",
+            "La velocità di compilazione non è un vantaggio distintivo; lo sono indipendenza dal BuildContext e sicurezza a compile time.",
+            "Riverpod supporta anche stato mutabile, per esempio con ChangeNotifierProvider; l'immutabilità è consigliata, non imposta.",
+            null
+          ]
         },
         {
           "id": "flutter-state-management-7",
@@ -1035,7 +1371,13 @@
           ],
           "answer": 0,
           "explanation": "ValueNotifier notifica solo nel setter di `value` quando il nuovo valore è diverso. Serve `value = [...value, x]`.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "ValueNotifier accetta qualsiasi tipo; il punto è che notifica solo nel setter di `value`, che qui non viene chiamato.",
+            "`dispose` libera le risorse ma non c'entra con le notifiche: anche con dispose la UI non si aggiornerebbe.",
+            "Rendere `add` async non cambierebbe nulla: la lista verrebbe comunque mutata senza passare dal setter di `value`."
+          ]
         },
         {
           "id": "flutter-state-management-8",
@@ -1049,7 +1391,13 @@
           ],
           "answer": 2,
           "explanation": "Il builder può essere eseguito più volte e deve essere puro; `BlocListener` viene chiamato una volta per cambio di stato, ideale per i side effect.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Il builder può essere eseguito più volte per lo stesso stato: navigare lì causerebbe push multipli.",
+            "Nel costruttore del Bloc non hai un BuildContext, e la logica di business non deve occuparsi di navigazione.",
+            null,
+            "Un Timer in `initState` è un hack: non reagisce ai cambi di stato e rischia di usare un context non più valido."
+          ]
         },
         {
           "id": "flutter-state-management-9",
@@ -1063,7 +1411,13 @@
           ],
           "answer": 1,
           "explanation": "`ref.watch` nel build mantiene la UI sincronizzata; `ref.read` nei callback evita rebuild inutili; `ref.listen` è per side effect.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Con `ref.read` nel build la UI non si aggiorna quando il provider cambia: legge il valore una volta sola.",
+            null,
+            "`ref.listen` serve ai side effect come navigazione o SnackBar e non restituisce il valore da mostrare.",
+            "`context.watch` appartiene a Provider; in Riverpod leggi tramite `ref`."
+          ]
         },
         {
           "id": "flutter-state-management-10",
@@ -1077,7 +1431,13 @@
           ],
           "answer": 0,
           "explanation": "Nessuna libreria è obbligatoria e Provider non è deprecato: gli intervistatori cercano un criterio ragionato, non una preferenza assoluta.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Provider non è deprecato ed è ancora raccomandato; scegliere sempre la stessa libreria non mostra capacità di giudizio.",
+            "Il boilerplate non è l'unico criterio: GetX è spesso criticato per il forte accoppiamento e la testabilità.",
+            "Non esiste uno standard unico: BLoC è valido per app grandi, ma imporlo sempre ignora scala e contesto."
+          ]
         }
       ]
     },
@@ -1131,7 +1491,13 @@
           ],
           "answer": 2,
           "explanation": "`push` restituisce un Future che completa con il valore passato a `pop`. È il modo idiomatico per ottenere risultati.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Una variabile globale crea accoppiamento e bug difficili da seguire: `push` restituisce già un Future con il risultato.",
+            "`setState` aggiorna solo lo State della schermata figlia e non passa nulla alla schermata precedente.",
+            null,
+            "`Navigator.replace` sostituisce una route e non restituisce alcun risultato."
+          ]
         },
         {
           "id": "flutter-navigation-2",
@@ -1145,7 +1511,13 @@
           ],
           "answer": 0,
           "explanation": "Sostituire la route (o svuotare lo stack) rimuove il login dallo storico; con `push` resterebbe sotto la home.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Con `push` il login resta nello stack sotto la home: premendo indietro ci torneresti.",
+            "`maybePop` chiude la route corrente se possibile, ma non rimuove il login dallo storico.",
+            "`popUntil` toglie route dalla cima, ma non inserisce la home al posto del login."
+          ]
         },
         {
           "id": "flutter-navigation-3",
@@ -1159,7 +1531,13 @@
           ],
           "answer": 3,
           "explanation": "Chiudendo senza passare un valore a `pop` il Future completa con `null`: per questo il tipo del risultato è `bool?`.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Chiudere senza valore non produce `false`: il Future completa con `null`, per questo il tipo è `bool?`.",
+            "`true` arriva solo se la pagina chiama `pop(context, true)`; il back di sistema non passa nessun valore.",
+            "Chiudere con il back non è un errore: il Future completa normalmente, solo con `null`.",
+            null
+          ]
         },
         {
           "id": "flutter-navigation-4",
@@ -1173,7 +1551,13 @@
           ],
           "answer": 1,
           "explanation": "`go` naviga a una location ricostruendo lo stack secondo la gerarchia delle route; `push` impila una nuova pagina e permette di tornare indietro.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "C'è una differenza importante: `go` ricostruisce lo stack dalla location, `push` aggiunge una pagina sopra.",
+            null,
+            "`push` funziona su tutte le piattaforme; sul web cambia al massimo il modo in cui l'URL viene aggiornato.",
+            "È il contrario: `go` non restituisce nulla, mentre `push` restituisce un Future con il risultato del pop."
+          ]
         },
         {
           "id": "flutter-navigation-5",
@@ -1187,7 +1571,13 @@
           ],
           "answer": 2,
           "explanation": "I segmenti `:param` finiscono in `pathParameters`; i query parameter (`?id=42`) sono in `uri.queryParameters`; `extra` è un oggetto arbitrario non presente nell'URL.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "`extra` è un oggetto arbitrario passato in navigazione, non estratto dall'URL: non contiene `42`.",
+            "`queryParameters` legge la parte dopo `?`, come `?id=42`; `:id` è un segmento del path.",
+            null,
+            "`ModalRoute.settings` appartiene al Navigator classico; go_router espone i segmenti in `state.pathParameters`."
+          ]
         },
         {
           "id": "flutter-navigation-6",
@@ -1201,7 +1591,13 @@
           ],
           "answer": 3,
           "explanation": "L'API imperativa non permetteva di ricostruire lo stack dallo stato o da un URL. Router rende lo stack una funzione dello stato dell'app.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Le animazioni Hero funzionavano già con Navigator 1.0; il motivo fu la gestione dichiarativa dello stack.",
+            "MaterialPageRoute si usa anche con la Router API; lo scopo non era sostituire le route.",
+            "Navigator 1.0 supporta `pop` da sempre; mancava la possibilità di ricostruire lo stack da stato o URL.",
+            null
+          ]
         },
         {
           "id": "flutter-navigation-7",
@@ -1215,7 +1611,13 @@
           ],
           "answer": 0,
           "explanation": "`redirect` viene valutato a ogni navigazione e può restituire una location alternativa; con `refreshListenable` reagisce anche ai cambi di login.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Controllare in ogni `build` duplica la logica e fa vedere per un attimo la pagina protetta; `redirect` la centralizza.",
+            "In `main` il controllo avviene una volta sola e non reagisce a logout o deep link successivi.",
+            "`onGenerateRoute` appartiene al Navigator classico; con go_router il punto giusto è il callback `redirect`."
+          ]
         },
         {
           "id": "flutter-navigation-8",
@@ -1229,7 +1631,13 @@
           ],
           "answer": 1,
           "explanation": "Serve un Navigator annidato per tab; `StatefulShellRoute` di go_router lo fa e preserva lo stato di ogni ramo.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Con un solo Navigator e `pushReplacement` perdi lo storico: ogni cambio tab butta via lo stack precedente.",
+            null,
+            "IndexedStack conserva lo stato dei widget, ma senza Navigator annidati non ha uno stack per tab.",
+            "Le named routes usano un unico Navigator: gli argomenti non creano stack separati per i tab."
+          ]
         },
         {
           "id": "flutter-navigation-9",
@@ -1243,7 +1651,13 @@
           ],
           "answer": 2,
           "explanation": "La documentazione le sconsiglia per la maggior parte delle app per questi limiti; gli argomenti esistono ma sono `Object?` non tipizzati.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Le named routes accettano argomenti via `arguments`; il limite è che sono `Object?` non tipizzati.",
+            "Non sono state rimosse: esistono ancora, ma la doc le sconsiglia per la maggior parte delle app.",
+            null,
+            "Funzionano su tutte le piattaforme, iOS compreso; i limiti riguardano deep link e web."
+          ]
         },
         {
           "id": "flutter-navigation-10",
@@ -1257,7 +1671,13 @@
           ],
           "answer": 0,
           "explanation": "iOS verifica il dominio tramite l'entitlement Associated Domains e il file AASA sul server; poi Flutter passa il path al router.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Non serve un MethodChannel custom: Flutter riceve già il link e lo passa al router.",
+            "AndroidManifest configura gli App Links di Android; su iOS servono Associated Domains e il file AASA.",
+            "iOS deve verificare che il dominio appartenga alla tua app: senza entitlement e AASA il link apre Safari."
+          ]
         }
       ]
     },
@@ -1311,7 +1731,13 @@
           ],
           "answer": 1,
           "explanation": "L'hot reload aggiorna il codice nella VM e ricostruisce i widget mantenendo lo State; l'hot restart riavvia l'app Dart. Nessuno dei due ricompila il nativo.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "La differenza c'è: l'hot reload conserva lo State, l'hot restart lo azzera riavviando l'app Dart.",
+            null,
+            "Nessuno dei due ricompila il codice nativo: per quello serve fermare l'app e rifare la build.",
+            "È l'hot restart a rieseguire `main()`; l'hot reload inietta il codice e riesegue solo `build`."
+          ]
         },
         {
           "id": "flutter-performance-platform-2",
@@ -1325,7 +1751,13 @@
           ],
           "answer": 3,
           "explanation": "La debug mode (JIT, assert) non è rappresentativa e il simulatore nemmeno; la profile mode è compilata AOT ma mantiene gli strumenti di DevTools.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "In debug Flutter usa JIT e assert, e il simulatore non riflette l'hardware reale: i numeri sono fuorvianti.",
+            "Le print misurano pochi punti e la release mode toglie DevTools: la profile mode dà numeri reali con strumenti.",
+            "Anche su device, la debug mode con JIT e assert è molto più lenta della release: le misure non sono rappresentative.",
+            null
+          ]
         },
         {
           "id": "flutter-performance-platform-3",
@@ -1339,7 +1771,13 @@
           ],
           "answer": 0,
           "explanation": "Agisce sulla fase di paint, non sul build: un sottoalbero che si ridisegna spesso non costringe a ridisegnare ciò che gli sta attorno, e viceversa.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "RepaintBoundary agisce sul paint, non sul build: i figli vengono ricostruiti comunque se cambia qualcosa.",
+            "Il layout non viene limitato: RepaintBoundary isola solo il ridisegno su un layer separato.",
+            "`const` è una proprietà del costruttore Dart, non un effetto di RepaintBoundary."
+          ]
         },
         {
           "id": "flutter-performance-platform-4",
@@ -1353,7 +1791,13 @@
           ],
           "answer": 2,
           "explanation": "Il builder gira a ogni tick dell'animazione; il `child` viene costruito una volta e riusato, quindi si ricostruisce solo il Transform.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "Il parametro `child` è opzionale: potresti creare tutto nel builder, solo che sarebbe più lento.",
+            "Il child verrebbe ruotato comunque, anche creandolo nel builder: il motivo è evitare di ricostruirlo.",
+            null,
+            "Passarlo come `child` non aggiunge RepaintBoundary: serve solo a non rieseguire il suo `build` a ogni tick."
+          ]
         },
         {
           "id": "flutter-performance-platform-5",
@@ -1367,7 +1811,13 @@
           ],
           "answer": 1,
           "explanation": "Il MethodChannel invia un messaggio asincrono al lato nativo, che risponde con un risultato o un errore (`PlatformException`).",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Dart non può importare framework Apple come UIKit: comunica con il lato nativo tramite platform channel.",
+            null,
+            "Un Isolate esegue codice Dart in parallelo ma non chiama API native da solo: anche lì servono i canali.",
+            "`compute` sposta lavoro Dart in un altro isolate; non dà accesso alle API iOS."
+          ]
         },
         {
           "id": "flutter-performance-platform-6",
@@ -1381,7 +1831,13 @@
           ],
           "answer": 3,
           "explanation": "L'EventChannel è progettato per flussi di eventi dal nativo verso Dart, che li riceve con `receiveBroadcastStream()`.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Il polling con MethodChannel è inefficiente e perde eventi tra una chiamata e l'altra; il flusso continuo è compito dell'EventChannel.",
+            "BasicMessageChannel non è obbligatorio e non è pensato per flussi: EventChannel li espone già come Stream.",
+            "Un `Timer.periodic` in Dart non riceve nulla dal nativo: interroga a intervalli senza un vero canale di eventi.",
+            null
+          ]
         },
         {
           "id": "flutter-performance-platform-7",
@@ -1395,7 +1851,13 @@
           ],
           "answer": 0,
           "explanation": "`pumpAndSettle` continua a pompare frame finché le animazioni finiscono; con un'animazione infinita va in timeout.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "La differenza è concreta: `pump` avanza di un frame, `pumpAndSettle` continua finché non restano frame schedulati.",
+            "`pumpAndSettle` è disponibile anche nei widget test, anzi è lì che si usa di più.",
+            "`pump` non attende la rete: nei test le chiamate vanno mockate, e `pump` avanza solo il tempo dei frame."
+          ]
         },
         {
           "id": "flutter-performance-platform-8",
@@ -1409,7 +1871,13 @@
           ],
           "answer": 2,
           "explanation": "Gli integration test avviano l'app completa su device o emulatore; i widget test girano in un ambiente simulato senza device.",
-          "difficulty": 1
+          "difficulty": 1,
+          "whyWrong": [
+            "Gli unit test verificano funzioni e classi isolate senza UI né device.",
+            "I widget test girano in un ambiente simulato senza device: ottimi per singoli widget, non per flussi end-to-end.",
+            null,
+            "I golden test confrontano screenshot di widget con immagini di riferimento, di solito senza device reale."
+          ]
         },
         {
           "id": "flutter-performance-platform-9",
@@ -1423,7 +1891,13 @@
           ],
           "answer": 1,
           "explanation": "Il builder crea gli elementi in modo lazy mentre entrano nel viewport; una Column o shrinkWrap costruiscono e misurano tutto subito.",
-          "difficulty": 2
+          "difficulty": 2,
+          "whyWrong": [
+            "Una Column in un SingleChildScrollView costruisce tutti i 10.000 elementi subito: peggiora il problema.",
+            null,
+            "`shrinkWrap` costringe a misurare tutto il contenuto e perde la costruzione lazy: più lavoro, non meno.",
+            "RepaintBoundary aiuta con il repaint, ma il collo di bottiglia qui è costruire e fare layout di tutti gli elementi."
+          ]
         },
         {
           "id": "flutter-performance-platform-10",
@@ -1437,7 +1911,13 @@
           ],
           "answer": 3,
           "explanation": "L'hot reload conserva gli State esistenti e chiama solo `build`; il nuovo `initState` si vede per State nuovi o dopo un hot restart.",
-          "difficulty": 3
+          "difficulty": 3,
+          "whyWrong": [
+            "L'hot reload conserva gli State esistenti: `initState` non viene richiamato per loro, solo `build`.",
+            "Modificare `initState` è una modifica normale: l'hot reload la applica senza crash, ma non la riesegue.",
+            "Flutter non passa da solo all'hot restart: sei tu a doverlo avviare per vedere il nuovo `initState`.",
+            null
+          ]
         }
       ]
     }
