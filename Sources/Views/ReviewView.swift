@@ -1,0 +1,147 @@
+import SwiftUI
+
+/// Sezione Ripasso: tutte le lezioni del linguaggio attivo.
+struct ReviewView: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        let track = state.activeTrack
+        let topics = ContentStore.shared.topics(for: track)
+        let read = state.lessonsRead(in: track)
+
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    TrackSwitcher()
+                        .padding(.horizontal, -20)
+
+                    HStack(spacing: 16) {
+                        ZStack {
+                            ProgressRing(progress: topics.isEmpty ? 0 : Double(read) / Double(topics.count),
+                                         color: track.theme.primary, lineWidth: 8)
+                            Text("\(read)/\(topics.count)")
+                                .font(.headline.monospacedDigit())
+                        }
+                        .frame(width: 64, height: 64)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Lezioni di \(track.name)")
+                                .font(.headline)
+                            Text(read == topics.count && !topics.isEmpty
+                                 ? "Le hai lette tutte. Ora mettiti alla prova coi quiz."
+                                 : "Brevi, con codice e la risposta da dare al colloquio.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .card()
+
+                    ForEach(Array(topics.enumerated()), id: \.element.id) { i, topic in
+                        NavigationLink {
+                            LessonView(track: track, topic: topic)
+                        } label: {
+                            LessonRow(number: i + 1, track: track, topic: topic,
+                                      read: state.isLessonRead(track, topic.id))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Ripasso")
+        }
+    }
+}
+
+private struct LessonRow: View {
+    let number: Int
+    let track: Track
+    let topic: Topic
+    let read: Bool
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(read ? AnyShapeStyle(track.theme.linear) : AnyShapeStyle(track.theme.soft))
+                if read {
+                    Image(systemName: "checkmark").font(.headline).foregroundStyle(.white)
+                } else {
+                    Text("\(number)")
+                        .font(.headline.monospacedDigit())
+                        .foregroundStyle(track.theme.primary)
+                }
+            }
+            .frame(width: 46, height: 46)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(topic.title).font(.headline)
+                Text(topic.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+        }
+        .padding(14)
+        .card()
+    }
+}
+
+struct LessonView: View {
+    @Environment(AppState.self) private var state
+    let track: Track
+    let topic: Topic
+
+    @State private var session: QuizSession?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                TopicHero(track: track, topic: topic)
+
+                ForEach(Array(topic.lesson.enumerated()), id: \.offset) { i, section in
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 10) {
+                            Text("\(i + 1)")
+                                .font(.caption.weight(.heavy).monospacedDigit())
+                                .foregroundStyle(.white)
+                                .frame(width: 24, height: 24)
+                                .background(track.theme.linear, in: Circle())
+                            Text(section.heading)
+                                .font(.title3.weight(.bold))
+                        }
+                        RichText(text: section.body)
+                            .lineSpacing(3)
+                        if let code = section.code, !code.isEmpty {
+                            CodeBlock(code: code, track: track)
+                        }
+                    }
+                    .padding(18)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .card()
+                    .onAppear {
+                        if i == topic.lesson.count - 1 { state.markLessonRead(track, topic.id) }
+                    }
+                }
+
+                Button {
+                    session = QuizSession(mode: .topic(track, topic.id),
+                                          items: ContentStore.shared.items(for: track, topic: topic).shuffled(),
+                                          title: topic.title)
+                } label: {
+                    Label("Mettiti alla prova", systemImage: "bolt.fill")
+                }
+                .buttonStyle(PrimaryButtonStyle(gradient: track.theme.linear))
+                .padding(.top, 6)
+            }
+            .padding(20)
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(item: $session) { QuizView(session: $0) }
+    }
+}

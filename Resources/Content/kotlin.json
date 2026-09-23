@@ -1,0 +1,1440 @@
+{
+  "track": "kotlin",
+  "topics": [
+    {
+      "id": "null-safety",
+      "title": "Null safety",
+      "icon": "shield.lefthalf.filled",
+      "summary": "Tipi nullable, operatori ?. ?: !!, platform types, lateinit e lazy.",
+      "lesson": [
+        {
+          "heading": "Tipi nullable e non-null",
+          "body": "In Kotlin la nullabilità fa parte del tipo: `String` non può mai contenere `null`, mentre `String?` sì. Il compilatore impedisce di assegnare `null` a un tipo non-null e di accedere ai membri di un tipo nullable senza un controllo.\n\nCosì la maggior parte delle NullPointerException diventa un **errore di compilazione** invece che un crash a runtime.",
+          "code": "var a: String = \"ciao\"\n// a = null        // errore di compilazione\nvar b: String? = null\n// b.length          // errore: b potrebbe essere null\nprintln(b?.length) // null"
+        },
+        {
+          "heading": "Operatori ?. ?: e !!",
+          "body": "La **safe call** `?.` restituisce `null` se il receiver è null, invece di lanciare eccezioni. L'**Elvis** `?:` fornisce un valore alternativo e accetta anche `return` o `throw` a destra, utile per le guard clause.\n\nIl **not-null assertion** `!!` converte a tipo non-null e lancia `NullPointerException` se il valore è null: va usato solo quando sei certo del contrario, e in colloquio conviene dire che è un code smell.",
+          "code": "fun greet(user: User?) {\n    val name = user?.name ?: return\n    val city = user.address?.city ?: \"sconosciuta\"\n    println(\"$name da $city\")\n}"
+        },
+        {
+          "heading": "Smart cast e let",
+          "body": "Dopo un controllo `if (x != null)` il compilatore esegue uno **smart cast** a tipo non-null, ma solo se il valore non può cambiare nel frattempo: funziona su `val` locali e property `val` senza getter custom nello stesso modulo, non su property `var` di una classe.\n\nIn quei casi si usa `x?.let { ... }` oppure si copia il valore in una variabile locale. Dentro `let` il valore è disponibile come `it`, già non-null.",
+          "code": "class Box(var item: String?)\n\nfun show(b: Box) {\n    b.item?.let { println(it.length) }\n    val local = b.item\n    if (local != null) println(local.length)\n}"
+        },
+        {
+          "heading": "Platform types e interop Java",
+          "body": "I tipi che arrivano da Java senza annotazioni di nullabilità diventano **platform types**, indicati dall'IDE come `String!`. Kotlin non sa se possono essere null e ti lascia trattarli sia come `String` sia come `String?`: se sbagli, ottieni una NPE a runtime.\n\nLa buona pratica è dichiarare esplicitamente il tipo Kotlin al confine con Java e annotare il codice Java con `@Nullable`/`@NonNull` (ad esempio JSpecify o AndroidX), che il compilatore rispetta.",
+          "code": null
+        },
+        {
+          "heading": "lateinit vs lazy",
+          "body": "`lateinit var` rimanda l'inizializzazione di una property non-null e mutabile: non funziona con tipi primitivi né nullable, e accedervi prima dell'assegnazione lancia `UninitializedPropertyAccessException`. Si può verificare con `this::prop.isInitialized`.\n\n`by lazy` si usa su `val`: il valore è calcolato al primo accesso e poi memorizzato. Di default è thread-safe (`LazyThreadSafetyMode.SYNCHRONIZED`). Tipico: `lateinit` per dipendenze iniettate, `lazy` per oggetti costosi da creare.",
+          "code": "class Screen {\n    lateinit var adapter: ListAdapter\n    val formatter by lazy { DateTimeFormatter.ofPattern(\"dd/MM\") }\n\n    fun ready() = this::adapter.isInitialized\n}"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Come gestisce Kotlin i null e quando useresti `!!`?\"**. Risposta concisa: la nullabilità è nel sistema dei tipi, quindi il compilatore obbliga a gestire `T?` con `?.`, `?:`, smart cast o `let`.\n\nAggiungi che `!!` va evitato perché reintroduce la NPE, che i platform types sono il punto debole con Java, e chiudi con la differenza `lateinit` (var, inizializzata dopo) vs `lazy` (val, calcolata al primo accesso).",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-null-safety-1",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val s: String? = null\nprintln(s?.length ?: -1)",
+          "options": [
+            "null",
+            "-1",
+            "0",
+            "NullPointerException"
+          ],
+          "answer": 1,
+          "explanation": "`s?.length` restituisce null perché s è null, quindi l'Elvis fornisce -1.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-null-safety-2",
+          "prompt": "Cosa succede se applichi `!!` a un valore null?",
+          "code": null,
+          "options": [
+            "Restituisce null",
+            "Restituisce il valore di default del tipo",
+            "Lancia IllegalStateException",
+            "Lancia NullPointerException"
+          ],
+          "answer": 3,
+          "explanation": "`!!` asserisce che il valore non è null e lancia `NullPointerException` in caso contrario.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-null-safety-3",
+          "prompt": "Quale dichiarazione `lateinit` è valida?",
+          "code": null,
+          "options": [
+            "lateinit val name: String",
+            "lateinit var count: Int",
+            "lateinit var name: String",
+            "lateinit var name: String?"
+          ],
+          "answer": 2,
+          "explanation": "`lateinit` richiede una `var` di tipo non-null e non primitivo: niente `val`, niente `Int`, niente tipi nullable.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-null-safety-4",
+          "prompt": "Qual è la modalità di thread-safety di default di `by lazy`?",
+          "code": null,
+          "options": [
+            "LazyThreadSafetyMode.SYNCHRONIZED",
+            "LazyThreadSafetyMode.PUBLICATION",
+            "LazyThreadSafetyMode.NONE",
+            "Nessuna: lazy non è thread-safe"
+          ],
+          "answer": 0,
+          "explanation": "Di default `lazy` usa SYNCHRONIZED: un solo thread calcola il valore. `NONE` si usa solo quando l'accesso è single-thread, per evitare il lock.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-null-safety-5",
+          "prompt": "Cosa succede compilando questo codice?",
+          "code": "class Box(var item: String?)\n\nfun f(b: Box) {\n    if (b.item != null) {\n        println(b.item.length)\n    }\n}",
+          "options": [
+            "Stampa la lunghezza di item",
+            "Errore: smart cast impossibile su una var property",
+            "Compila con un warning",
+            "NullPointerException a runtime"
+          ],
+          "answer": 1,
+          "explanation": "`item` è una `var` di classe: potrebbe cambiare tra il controllo e l'uso, quindi lo smart cast non è consentito. Serve `?.let` o una copia locale.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-null-safety-6",
+          "prompt": "Un metodo Java `String getName()` senza annotazioni. Che tipo vede Kotlin per `obj.name`?",
+          "code": null,
+          "options": [
+            "String",
+            "String?",
+            "String! (platform type)",
+            "Any?"
+          ],
+          "answer": 2,
+          "explanation": "Senza annotazioni Kotlin non conosce la nullabilità e usa un platform type `String!`, trattabile come nullable o non-null a tuo rischio.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-null-safety-7",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val name: String? = \"Kotlin\"\nname?.let { println(it.uppercase()) }",
+          "options": [
+            "KOTLIN",
+            "Kotlin",
+            "null",
+            "Non stampa nulla"
+          ],
+          "answer": 0,
+          "explanation": "name non è null, quindi il blocco `let` viene eseguito con `it` = \"Kotlin\" e stampa la versione maiuscola.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-null-safety-8",
+          "prompt": "Come verifichi se una property `lateinit` è stata inizializzata?",
+          "code": null,
+          "options": [
+            "prop != null",
+            "prop.isInitialized()",
+            "Solo con try/catch",
+            "this::prop.isInitialized"
+          ],
+          "answer": 3,
+          "explanation": "Si usa il property reference: `this::prop.isInitialized`. Il confronto con null non compila perché il tipo è non-null.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-null-safety-9",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "fun len(s: String?): Int {\n    val v = s ?: return 0\n    return v.length\n}\n\nprintln(len(null) + len(\"ab\"))",
+          "options": [
+            "Non compila",
+            "null",
+            "0",
+            "2"
+          ],
+          "answer": 3,
+          "explanation": "Con null l'Elvis esegue `return 0`; con \"ab\" restituisce 2. La somma è 2. `return` a destra di `?:` è un pattern idiomatico.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-null-safety-10",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val x: String? = null\nprintln(x + \"!\")",
+          "options": [
+            "!",
+            "null!",
+            "NullPointerException",
+            "Non compila"
+          ],
+          "answer": 1,
+          "explanation": "Esiste l'estensione `String?.plus(Any?)`: un receiver null diventa la stringa \"null\". La trappola è pensare che non compili o che lanci NPE.",
+          "difficulty": 3
+        }
+      ]
+    },
+    {
+      "id": "classes-objects",
+      "title": "Classi e oggetti",
+      "icon": "cube",
+      "summary": "Data, sealed, enum, object e companion, ereditarietà, interfacce e value class.",
+      "lesson": [
+        {
+          "heading": "Ereditarietà: final di default",
+          "body": "In Kotlin classi e metodi sono **final di default**: per estenderli servono `open` sulla classe e sul membro, e `override` nella sottoclasse. Un `override` resta a sua volta aperto, a meno di marcarlo `final override`.\n\nLa visibilità di default è `public`; esistono anche `internal` (stesso modulo), `protected` e `private`. Le classi `abstract` sono implicitamente aperte.",
+          "code": "open class Animal {\n    open fun sound() = \"...\"\n}\n\nclass Dog : Animal() {\n    override fun sound() = \"Bau\"\n}"
+        },
+        {
+          "heading": "Data class",
+          "body": "Una `data class` genera `equals`, `hashCode`, `toString`, `copy` e le funzioni `componentN` per la destrutturazione, ma **solo per le property del costruttore primario**. Le property dichiarate nel body sono ignorate da `equals`.\n\n`copy()` è una copia **shallow**: gli oggetti referenziati (ad esempio una `MutableList`) sono condivisi. Una data class non può essere `open`, `abstract`, `sealed` o `inner`, ma può estendere classi e implementare interfacce.",
+          "code": "data class User(val id: Int, val name: String)\n\nval u = User(1, \"Ann\")\nval v = u.copy(name = \"Bea\")\nval (id, name) = v\nprintln(v) // User(id=1, name=Bea)"
+        },
+        {
+          "heading": "Sealed vs enum",
+          "body": "Un `enum` ha un insieme fisso di **istanze**, tutte con la stessa struttura. Una `sealed class` o `sealed interface` ha un insieme fisso di **sottotipi**, ciascuno con i propri dati e potenzialmente più istanze.\n\nEntrambi permettono un `when` esaustivo senza `else`: aggiungere un caso rompe la compilazione nei punti da aggiornare. I sottotipi di una sealed devono stare nello stesso modulo e package. Sono ideali per stati UI e risultati (`Loading`, `Success(data)`, `Error(msg)`).",
+          "code": "sealed interface UiState {\n    data object Loading : UiState\n    data class Success(val items: List<String>) : UiState\n    data class Error(val message: String) : UiState\n}\n\nfun render(s: UiState) = when (s) {\n    UiState.Loading -> \"...\"\n    is UiState.Success -> \"${s.items.size} elementi\"\n    is UiState.Error -> s.message\n}"
+        },
+        {
+          "heading": "object e companion object",
+          "body": "`object` dichiara un **singleton**, inizializzato in modo lazy e thread-safe al primo accesso. `data object` aggiunge un `toString` leggibile ed è comodo nelle gerarchie sealed.\n\nIl `companion object` contiene membri accessibili tramite il nome della classe, al posto degli static di Java, ed è spesso usato per factory e costanti. Per esporli come veri static a Java si usa `@JvmStatic` o `const val`.",
+          "code": "class Api private constructor(val url: String) {\n    companion object {\n        const val TIMEOUT = 30\n        fun create() = Api(\"https://example.com\")\n    }\n}\n\nval api = Api.create()"
+        },
+        {
+          "heading": "Interfacce e value class",
+          "body": "Le interfacce possono avere metodi con implementazione di default e property astratte o con getter, ma **non stato** (niente backing field). Una classe può implementarne molte, estendendo una sola classe.\n\nUna `@JvmInline value class` avvolge un solo valore dando type safety (es. `UserId` vs `String`) senza allocazioni a runtime nella maggior parte dei casi. Viene però **boxed** quando usata come tipo generico, come interfaccia o, se il tipo sottostante è primitivo, come nullable.",
+          "code": "@JvmInline\nvalue class UserId(val raw: String)\n\nfun load(id: UserId) { /* ... */ }\n\nload(UserId(\"42\"))\n// load(\"42\") // errore di tipo"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Differenza tra data class, sealed class ed enum?\"**. Risposta concisa: la data class è un contenitore di dati con equals/hashCode/copy generati sul costruttore primario; enum è un insieme chiuso di istanze; sealed è un insieme chiuso di tipi, ognuno con i suoi dati.\n\nMenziona il `when` esaustivo, che `object` è un singleton thread-safe e che le classi sono final di default, scelta che favorisce la composizione rispetto all'ereditarietà.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-classes-objects-1",
+          "prompt": "Di default, una classe Kotlin è:",
+          "code": null,
+          "options": [
+            "open e public",
+            "final e internal",
+            "final e public",
+            "open e internal"
+          ],
+          "answer": 2,
+          "explanation": "Le classi sono final (serve `open` per estenderle) e la visibilità di default è public.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-classes-objects-2",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "data class User(val name: String) {\n    var age: Int = 0\n}\n\nval a = User(\"Ann\").apply { age = 30 }\nval b = User(\"Ann\").apply { age = 40 }\nprintln(a == b)",
+          "options": [
+            "true",
+            "false",
+            "Non compila",
+            "Dipende da hashCode"
+          ],
+          "answer": 0,
+          "explanation": "`equals` generato considera solo le property del costruttore primario: `age` è nel body e viene ignorata.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-classes-objects-3",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "data class Team(val members: MutableList<String>)\n\nval t1 = Team(mutableListOf(\"A\"))\nval t2 = t1.copy()\nt2.members.add(\"B\")\nprintln(t1.members.size)",
+          "options": [
+            "1",
+            "0",
+            "2",
+            "Eccezione"
+          ],
+          "answer": 2,
+          "explanation": "`copy()` è shallow: t1 e t2 condividono la stessa MutableList, quindi l'aggiunta si vede anche da t1.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-classes-objects-4",
+          "prompt": "Come si dichiara un singleton in Kotlin?",
+          "code": null,
+          "options": [
+            "static class Foo",
+            "singleton class Foo",
+            "companion class Foo",
+            "object Foo"
+          ],
+          "answer": 3,
+          "explanation": "La dichiarazione `object` crea un singleton inizializzato in modo lazy e thread-safe.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-classes-objects-5",
+          "prompt": "Qual è il vantaggio principale di una sealed hierarchy in un `when`?",
+          "code": null,
+          "options": [
+            "Le sottoclassi sono tutte singleton",
+            "Il when come espressione è esaustivo senza else",
+            "Può essere estesa da qualunque modulo",
+            "È più performante di un enum"
+          ],
+          "answer": 1,
+          "explanation": "Il compilatore conosce tutti i sottotipi, quindi il `when` è esaustivo e un nuovo caso genera errori dove va gestito.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-classes-objects-6",
+          "prompt": "Con `@JvmInline value class Meters(val v: Int)`, in quale caso Meters viene boxed?",
+          "code": null,
+          "options": [
+            "fun f(m: Meters)",
+            "val list: List<Meters>",
+            "val m: Meters = Meters(1)",
+            "fun g(): Meters"
+          ],
+          "answer": 1,
+          "explanation": "Usata come argomento generico la value class deve essere boxed; nei parametri e ritorni diretti viene rappresentata come Int.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-classes-objects-7",
+          "prompt": "A cosa serve un `companion object`?",
+          "code": null,
+          "options": [
+            "Crea una seconda istanza della classe",
+            "Rende la classe astratta",
+            "Definisce un'estensione della classe",
+            "Contiene membri accessibili tramite il nome della classe"
+          ],
+          "answer": 3,
+          "explanation": "È l'equivalente idiomatico dei membri static: factory, costanti e helper accessibili come `Classe.membro`.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-classes-objects-8",
+          "prompt": "Quale affermazione sulle data class è vera?",
+          "code": null,
+          "options": [
+            "Può essere dichiarata open",
+            "Deve avere almeno due property",
+            "Può estendere una classe open e implementare interfacce",
+            "equals include le property del body"
+          ],
+          "answer": 2,
+          "explanation": "Una data class non può essere open/abstract/sealed/inner, ma può estendere classi e implementare interfacce. Basta una property nel costruttore.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-classes-objects-9",
+          "prompt": "Quando preferire una sealed class a un enum?",
+          "code": null,
+          "options": [
+            "Quando servono solo costanti",
+            "Quando serve `ordinal`",
+            "Quando serve `entries`",
+            "Quando i casi hanno dati diversi o più istanze"
+          ],
+          "answer": 3,
+          "explanation": "L'enum ha istanze fisse con la stessa struttura; la sealed permette sottotipi con dati propri, come Success(data) ed Error(msg).",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-classes-objects-10",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "interface Named {\n    val name: String\n    val greeting: String get() = \"Hi $name\"\n}\n\nclass P : Named { override val name = \"Bo\" }\nprintln(P().greeting)",
+          "options": [
+            "Hi Bo",
+            "Hi null",
+            "Non compila: niente property nelle interfacce",
+            "Hi "
+          ],
+          "answer": 0,
+          "explanation": "Le interfacce possono avere property con getter di default (senza backing field). `greeting` usa il `name` di P.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "id": "functions-lambdas",
+      "title": "Funzioni e lambda",
+      "icon": "function",
+      "summary": "Higher-order function, inline e reified, extension function e scope function.",
+      "lesson": [
+        {
+          "heading": "Funzioni come valori",
+          "body": "In Kotlin le funzioni sono first-class: hanno tipi come `(Int) -> String` e si passano come lambda o function reference (`::format`). Se una lambda ha un solo parametro può usare il nome implicito `it`.\n\nSe l'ultimo parametro è una funzione, la lambda può stare fuori dalle parentesi (**trailing lambda**), sintassi alla base dei DSL e di Compose.",
+          "code": "fun apply(x: Int, op: (Int) -> Int): Int = op(x)\n\nval doubled = apply(4) { it * 2 }\nval squared = apply(4, ::square)\n\nfun square(n: Int) = n * n"
+        },
+        {
+          "heading": "Higher-order function e inline",
+          "body": "Una **higher-order function** accetta o restituisce funzioni. Senza ottimizzazioni ogni lambda diventa un oggetto allocato; con `inline` il compilatore copia il corpo della funzione e delle lambda nel punto di chiamata, eliminando l'allocazione.\n\nNelle lambda inline è permesso il **non-local return** (un `return` esce dalla funzione esterna). `noinline` esclude una lambda dall'inlining, `crossinline` vieta il non-local return quando la lambda è invocata in un altro contesto, ad esempio dentro un `Runnable`.",
+          "code": "inline fun measure(block: () -> Unit): Long {\n    val start = System.nanoTime()\n    block()\n    return System.nanoTime() - start\n}"
+        },
+        {
+          "heading": "reified",
+          "body": "Per la **type erasure** della JVM, dentro una funzione generica `T` non esiste a runtime. Con `inline fun <reified T>` il tipo concreto viene sostituito al call site, quindi puoi usare `T::class`, `is T` e `as T`.\n\nÈ il motivo per cui `reified` funziona solo su funzioni `inline`. Esempi comuni: `filterIsInstance<T>()`, parsing JSON e `startActivity<T>()`.",
+          "code": "inline fun <reified T> List<*>.firstOfType(): T? =\n    firstOrNull { it is T } as T?\n\nval s = listOf(1, \"a\", 2.0).firstOfType<String>() // \"a\""
+        },
+        {
+          "heading": "Extension function",
+          "body": "Le extension aggiungono funzioni a un tipo senza ereditarietà: `fun String.isEmail(): Boolean`. Sono compilate come funzioni statiche con il receiver come primo parametro, quindi **non accedono ai membri private** e sono risolte **staticamente**, in base al tipo dichiarato e non a quello runtime.\n\nSe esiste un membro con la stessa firma, **vince sempre il membro**. Si possono definire anche su tipi nullable (`fun String?.orDash()`).",
+          "code": "fun String.initials(): String =\n    split(\" \").mapNotNull { it.firstOrNull() }.joinToString(\"\")\n\nprintln(\"Mario Rossi\".initials()) // MR"
+        },
+        {
+          "heading": "Scope function",
+          "body": "Le cinque scope function si distinguono per come espongono l'oggetto e cosa restituiscono. `let` usa `it` e restituisce il risultato della lambda (tipico con `?.`). `run` usa `this` e restituisce il risultato; `with(obj)` è lo stesso ma non è un'extension.\n\n`apply` usa `this` e **restituisce l'oggetto** (configurazione); `also` usa `it` e restituisce l'oggetto (side effect come log). Abusarne, specie annidandole, peggiora la leggibilità.",
+          "code": "val intent = Intent(ctx, Detail::class.java).apply {\n    putExtra(\"id\", 42)\n}.also { Log.d(\"NAV\", \"open $it\") }\n\nval len = name?.let { it.trim().length } ?: 0"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Differenza tra let, run, with, apply e also?\"**. Risposta concisa: due assi, receiver `this` vs argomento `it`, e valore restituito, cioè risultato della lambda o l'oggetto stesso. `apply` per configurare, `also` per side effect, `let` per null check e trasformazioni.\n\nSu `inline` spiega che evita le allocazioni delle lambda e abilita `reified` e i non-local return; sulle extension ricorda la risoluzione statica.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-functions-lambdas-1",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val r = \"kotlin\".let { it.length }\nval s = \"kotlin\".also { it.length }\nprintln(\"$r $s\")",
+          "options": [
+            "6 6",
+            "kotlin kotlin",
+            "6 kotlin",
+            "kotlin 6"
+          ],
+          "answer": 2,
+          "explanation": "`let` restituisce il risultato della lambda (6), `also` restituisce sempre il receiver (\"kotlin\").",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-functions-lambdas-2",
+          "prompt": "Quale scope function usa `this` come receiver e restituisce l'oggetto stesso?",
+          "code": null,
+          "options": [
+            "let",
+            "run",
+            "also",
+            "apply"
+          ],
+          "answer": 3,
+          "explanation": "`apply` espone `this` e restituisce il receiver: ideale per configurare un oggetto. `also` restituisce l'oggetto ma usa `it`.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-functions-lambdas-3",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "open class A\nclass B : A()\n\nfun A.name() = \"A\"\nfun B.name() = \"B\"\n\nval x: A = B()\nprintln(x.name())",
+          "options": [
+            "B",
+            "A",
+            "AB",
+            "Non compila"
+          ],
+          "answer": 1,
+          "explanation": "Le extension sono risolte staticamente sul tipo dichiarato (A), non su quello runtime: niente dispatch virtuale.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-functions-lambdas-4",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "class C {\n    fun hi() = \"member\"\n}\nfun C.hi() = \"extension\"\n\nprintln(C().hi())",
+          "options": [
+            "extension",
+            "Errore di ambiguità",
+            "member",
+            "memberextension"
+          ],
+          "answer": 2,
+          "explanation": "A parità di firma il membro ha sempre la precedenza sull'extension (che viene segnalata come shadowed).",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-functions-lambdas-5",
+          "prompt": "Perché `reified` richiede una funzione `inline`?",
+          "code": null,
+          "options": [
+            "Il tipo concreto è sostituito al call site grazie all'inlining",
+            "reified usa la reflection a runtime",
+            "Le funzioni non-inline non supportano i generics",
+            "Per evitare il boxing dei primitivi"
+          ],
+          "answer": 0,
+          "explanation": "Per la type erasure T non esiste a runtime; solo copiando il corpo al call site il compilatore può inserire il tipo reale.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-functions-lambdas-6",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "fun find(list: List<Int>): String {\n    list.forEach {\n        if (it == 2) return \"found\"\n    }\n    return \"none\"\n}\n\nprintln(find(listOf(1, 2, 3)))",
+          "options": [
+            "none",
+            "Non compila",
+            "foundnone",
+            "found"
+          ],
+          "answer": 3,
+          "explanation": "`forEach` è inline, quindi `return` è un non-local return che esce da `find` restituendo \"found\".",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-functions-lambdas-7",
+          "prompt": "A cosa serve `crossinline` su un parametro lambda?",
+          "code": null,
+          "options": [
+            "Impedisce che la lambda venga inlined",
+            "Vieta i non-local return nella lambda",
+            "Rende la lambda thread-safe",
+            "Permette di salvarla in un campo"
+          ],
+          "answer": 1,
+          "explanation": "Serve quando la lambda è invocata in un altro contesto (es. dentro un Runnable): resta inlined ma senza non-local return. Escludere dall'inlining è `noinline`.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-functions-lambdas-8",
+          "prompt": "In una lambda con un solo parametro, cosa rappresenta `it`?",
+          "code": null,
+          "options": [
+            "Il nome implicito dell'unico parametro",
+            "Il receiver della funzione esterna",
+            "Il valore di ritorno della lambda",
+            "L'iteratore della collezione"
+          ],
+          "answer": 0,
+          "explanation": "Se la lambda ha un solo parametro e non lo nomini, è disponibile come `it`.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-functions-lambdas-9",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "listOf(1, 2, 3).forEach {\n    if (it == 2) return@forEach\n    print(it)\n}",
+          "options": [
+            "1",
+            "13",
+            "123",
+            "12"
+          ],
+          "answer": 1,
+          "explanation": "`return@forEach` esce solo dall'iterazione corrente, come un `continue`: viene saltato solo il 2.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-functions-lambdas-10",
+          "prompt": "Qual è il principale vantaggio di `inline` per una higher-order function?",
+          "code": null,
+          "options": [
+            "Riduce sempre la dimensione del bytecode",
+            "Permette la ricorsione",
+            "Evita l'allocazione di oggetti per le lambda",
+            "Rende la funzione open"
+          ],
+          "answer": 2,
+          "explanation": "Il corpo e le lambda vengono copiati al call site, quindi niente oggetti funzione. Il bytecode tende però a crescere, non a ridursi.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "id": "collections",
+      "title": "Collection",
+      "icon": "list.bullet.rectangle",
+      "summary": "Read-only vs mutable, Sequence vs Iterable e gli operatori funzionali più usati.",
+      "lesson": [
+        {
+          "heading": "Read-only non significa immutabile",
+          "body": "Kotlin separa le interfacce `List`, `Set`, `Map` (solo lettura) da `MutableList`, `MutableSet`, `MutableMap`. Ma `List` è solo una **vista read-only**: l'oggetto sottostante può essere un `ArrayList` modificabile da chi ha un riferimento mutabile, o con un cast.\n\nPer vera immutabilità si usa `kotlinx.collections.immutable` (`persistentListOf`, `ImmutableList`), utile anche perché Compose considera questi tipi stabili.",
+          "code": "val source = mutableListOf(1, 2)\nval view: List<Int> = source\nsource.add(3)\nprintln(view) // [1, 2, 3]"
+        },
+        {
+          "heading": "Operatori di trasformazione",
+          "body": "`map` trasforma ogni elemento, `filter` seleziona, `flatMap` appiattisce, `mapNotNull` trasforma scartando i null. `fold(initial) { acc, x -> }` riduce partendo da un valore iniziale, mentre `reduce` usa il primo elemento e lancia eccezione su collezione vuota.\n\n`groupBy` produce `Map<K, List<V>>`, `associateBy` e `associate` producono una `Map` con un solo valore per chiave (in caso di duplicati vince l'ultimo). `partition` divide in una `Pair` di liste.",
+          "code": "val words = listOf(\"apple\", \"avocado\", \"banana\")\nval byLetter = words.groupBy { it.first() }\n// {a=[apple, avocado], b=[banana]}\nval lengths = words.associateWith { it.length }\nval total = words.fold(0) { acc, w -> acc + w.length }"
+        },
+        {
+          "heading": "Sequence vs Iterable",
+          "body": "Le operazioni su `Iterable` sono **eager**: ogni passaggio crea una nuova lista intermedia. Una `Sequence` è **lazy**: gli elementi attraversano l'intera catena uno alla volta, e nulla viene eseguito finché non c'è un'operazione terminale (`toList`, `first`, `sum`).\n\nLe sequence convengono con catene lunghe su molti elementi o con short-circuit (`first`, `take`); su liste piccole l'overhead le rende spesso più lente. Sono anche l'unico modo per lavorare con sequenze infinite (`generateSequence`).",
+          "code": "val firstBig = (1..1_000_000).asSequence()\n    .map { it * 3 }\n    .filter { it % 7 == 0 }\n    .first()"
+        },
+        {
+          "heading": "Scelte pratiche e performance",
+          "body": "Per ricerche frequenti usa `Set` o `Map` (lookup O(1)) invece di `contains` su una `List` (O(n)). Preferisci le varianti sicure: `firstOrNull`, `getOrNull`, `getOrElse`, al posto di `first` o dell'accesso diretto che lanciano eccezioni.\n\n`buildList { }` crea una lista read-only riempiendola in modo imperativo; `sumOf`, `maxByOrNull` e `count { }` evitano catene inutili di `map` + aggregazione.",
+          "code": "val ids = users.map { it.id }.toSet()\nval active = orders.filter { it.userId in ids }\nval top = buildList {\n    add(\"header\")\n    addAll(active.map { it.title })\n}"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Differenza tra List e MutableList, e tra Sequence e Iterable?\"**. Risposta concisa: `List` è un'interfaccia read-only, non una garanzia di immutabilità; `MutableList` aggiunge i metodi di modifica. Iterable è eager con liste intermedie, Sequence è lazy ed elabora elemento per elemento.\n\nChiudi indicando quando conviene Sequence (catene lunghe, dataset grandi, short-circuit) e citando `groupBy` vs `associateBy`, spesso chiesti nei live coding.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-collections-1",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "println(listOf(1, 2, 3).map { it * 2 }.filter { it > 2 })",
+          "options": [
+            "[2, 4, 6]",
+            "[4, 6]",
+            "[6]",
+            "[3]"
+          ],
+          "answer": 1,
+          "explanation": "map produce [2, 4, 6], filter tiene gli elementi maggiori di 2: [4, 6].",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-collections-2",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "sequenceOf(1, 2, 3)\n    .map { print(\"m$it \"); it }\n    .filter { print(\"f$it \"); it > 1 }\n    .first()",
+          "options": [
+            "m1 m2 m3 f1 f2 f3",
+            "Niente: la sequence è lazy",
+            "m1 f1 m2 f2",
+            "m1 f1 m2 f2 m3 f3"
+          ],
+          "answer": 2,
+          "explanation": "La sequence elabora un elemento alla volta lungo tutta la catena e `first()` si ferma al primo match (2), quindi il 3 non viene mai toccato.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-collections-3",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val r = listOf(1, 2, 3).fold(10) { acc, x -> acc + x }\nprintln(r)",
+          "options": [
+            "6",
+            "10",
+            "Non compila",
+            "16"
+          ],
+          "answer": 3,
+          "explanation": "`fold` parte dal valore iniziale 10 e somma 1, 2, 3: il risultato è 16.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-collections-4",
+          "prompt": "Cosa garantisce il tipo `List<T>` in Kotlin?",
+          "code": null,
+          "options": [
+            "È una vista read-only, non garantisce immutabilità",
+            "È sempre profondamente immutabile",
+            "È un array a dimensione fissa",
+            "È thread-safe per definizione"
+          ],
+          "answer": 0,
+          "explanation": "`List` non espone metodi di modifica, ma l'implementazione sottostante può essere mutabile e cambiare.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-collections-5",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val m = listOf(\"apple\", \"avocado\", \"banana\")\n    .groupBy { it.first() }\nprintln(m['a']?.size)",
+          "options": [
+            "1",
+            "2",
+            "3",
+            "null"
+          ],
+          "answer": 1,
+          "explanation": "`groupBy` crea `Map<Char, List<String>>`; alla chiave 'a' ci sono apple e avocado.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-collections-6",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val list: List<Int> = mutableListOf(1, 2)\n(list as MutableList<Int>).add(3)\nprintln(list)",
+          "options": [
+            "[1, 2]",
+            "ClassCastException",
+            "UnsupportedOperationException",
+            "[1, 2, 3]"
+          ],
+          "answer": 3,
+          "explanation": "L'oggetto reale è un ArrayList: il cast riesce e la modifica avviene. Prova che read-only non vuol dire immutabile.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-collections-7",
+          "prompt": "Cosa restituisce `listOf(\"a\", \"ab\", \"b\").associateBy { it.first() }`?",
+          "code": null,
+          "options": [
+            "{a=[a, ab], b=[b]}",
+            "IllegalArgumentException",
+            "{a=ab, b=b}",
+            "{a=a, b=b}"
+          ],
+          "answer": 2,
+          "explanation": "`associateBy` tiene un solo valore per chiave e, con chiavi duplicate, vince l'ultimo elemento. Le liste le produce `groupBy`.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-collections-8",
+          "prompt": "Quando conviene usare una Sequence invece di una List?",
+          "code": null,
+          "options": [
+            "Liste piccole con una sola operazione",
+            "Quando serve accesso per indice",
+            "Catene di più operazioni su molti elementi o con first/take",
+            "Sempre: è più veloce in ogni caso"
+          ],
+          "answer": 2,
+          "explanation": "La lazy evaluation evita le liste intermedie e sfrutta lo short-circuit; su collezioni piccole l'overhead può renderla più lenta.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-collections-9",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val (even, odd) = (1..5).partition { it % 2 == 0 }\nprintln(odd)",
+          "options": [
+            "[1, 3, 5]",
+            "[2, 4]",
+            "3",
+            "[[2, 4], [1, 3, 5]]"
+          ],
+          "answer": 0,
+          "explanation": "`partition` restituisce una Pair: il primo elemento contiene chi soddisfa il predicato, il secondo gli altri (i dispari).",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-collections-10",
+          "prompt": "Cosa succede eseguendo questo codice?",
+          "code": "println(emptyList<Int>().reduce { a, b -> a + b })",
+          "options": [
+            "Stampa 0",
+            "Stampa null",
+            "Lancia NoSuchElementException",
+            "Lancia UnsupportedOperationException"
+          ],
+          "answer": 3,
+          "explanation": "`reduce` usa il primo elemento come accumulatore e su collezione vuota lancia UnsupportedOperationException. Usa `fold` o `reduceOrNull`.",
+          "difficulty": 3
+        }
+      ]
+    },
+    {
+      "id": "coroutines",
+      "title": "Coroutine",
+      "icon": "arrow.triangle.branch",
+      "summary": "suspend, launch/async, Dispatchers, structured concurrency, cancellazione ed errori.",
+      "lesson": [
+        {
+          "heading": "Funzioni suspend",
+          "body": "Una funzione `suspend` può sospendersi senza bloccare il thread: il compilatore la trasforma in una **state machine** con un parametro `Continuation` nascosto. Mentre è sospesa, il thread è libero di eseguire altro lavoro.\n\nSi può chiamare solo da una coroutine o da un'altra funzione suspend. `suspend` non significa \"in background\": il thread su cui gira dipende dal dispatcher.",
+          "code": "suspend fun loadUser(id: String): User =\n    withContext(Dispatchers.IO) {\n        api.getUser(id)\n    }"
+        },
+        {
+          "heading": "launch vs async",
+          "body": "`launch` avvia una coroutine \"fire and forget\" e restituisce un `Job`, utile per cancellare o attendere con `join()`. `async` restituisce un `Deferred<T>` da cui ottenere il risultato con `await()`, ed è pensato per il lavoro **parallelo**.\n\nUn'eccezione in `launch` si propaga subito al parent. In `async` viene rilanciata da `await()`, ma dentro uno scope strutturato il fallimento cancella comunque il parent immediatamente.",
+          "code": "suspend fun dashboard() = coroutineScope {\n    val user = async { repo.user() }\n    val feed = async { repo.feed() }\n    Dashboard(user.await(), feed.await())\n}"
+        },
+        {
+          "heading": "Dispatchers",
+          "body": "`Dispatchers.Main` esegue sul main thread di Android (UI). `Dispatchers.IO` è per I/O bloccante (rete, disco, database) e ha un pool elastico (di default fino a 64 thread). `Dispatchers.Default` è per lavoro CPU-bound, con tanti thread quanti i core.\n\n`withContext` cambia dispatcher per un blocco e restituisce il risultato. Buona pratica: rendere le funzioni suspend **main-safe**, spostando il lavoro bloccante al loro interno invece di lasciarlo al chiamante.",
+          "code": null
+        },
+        {
+          "heading": "Structured concurrency e scope",
+          "body": "Ogni coroutine vive in un `CoroutineScope`: il parent attende i figli, la cancellazione del parent si propaga ai figli e il fallimento di un figlio cancella il parent e i fratelli. Così niente coroutine \"orfane\" o leak.\n\n`coroutineScope` applica questa regola; `supervisorScope` e `SupervisorJob` fanno sì che un figlio fallito non cancelli gli altri. Su Android si usano `viewModelScope` (`SupervisorJob` + `Dispatchers.Main.immediate`, cancellato in `onCleared`) e `lifecycleScope`. `GlobalScope` va evitato.",
+          "code": "class FeedViewModel(private val repo: Repo) : ViewModel() {\n    fun refresh() {\n        viewModelScope.launch {\n            _state.value = repo.load()\n        }\n    }\n}"
+        },
+        {
+          "heading": "Cancellazione ed eccezioni",
+          "body": "La cancellazione è **cooperativa**: le funzioni di kotlinx (`delay`, `withContext`, `yield`) controllano lo stato e lanciano `CancellationException`. Un loop CPU-bound deve controllare `isActive` o chiamare `ensureActive()`. Non bisogna mai ingoiare `CancellationException` con un `catch (e: Exception)` generico: va rilanciata.\n\nPer gli errori: `try/catch` attorno al codice suspend o all'`await()`. Un `CoroutineExceptionHandler` agisce solo sulle coroutine **root** (o sui figli diretti di un supervisor), non sui figli normali. Per cleanup che deve sospendere si usa `withContext(NonCancellable)`.",
+          "code": "launch {\n    try {\n        repo.sync()\n    } catch (e: CancellationException) {\n        throw e\n    } catch (e: IOException) {\n        showError(e)\n    }\n}"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Cos'è la structured concurrency e come gestisci errori e cancellazione?\"**. Risposta concisa: ogni coroutine ha un parent scope, quindi lifecycle, cancellazione ed errori si propagano lungo l'albero; su Android `viewModelScope` lega il lavoro al ViewModel.\n\nAggiungi `launch` vs `async`, `withContext` per la main-safety, cancellazione cooperativa, non ingoiare `CancellationException` e `SupervisorJob` quando i figli devono essere indipendenti.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-coroutines-1",
+          "prompt": "Cosa restituiscono rispettivamente `launch` e `async`?",
+          "code": null,
+          "options": [
+            "launch → Deferred<T>, async → Job",
+            "launch → Job, async → Deferred<T>",
+            "Entrambi un Job",
+            "Entrambi un Deferred<T>"
+          ],
+          "answer": 1,
+          "explanation": "`launch` restituisce un Job; `async` un Deferred<T> (che estende Job) da cui leggere il risultato con await().",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-coroutines-2",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "runBlocking {\n    launch {\n        delay(100)\n        print(\"A\")\n    }\n    print(\"B\")\n    delay(200)\n    print(\"C\")\n}",
+          "options": [
+            "ABC",
+            "BCA",
+            "ACB",
+            "BAC"
+          ],
+          "answer": 3,
+          "explanation": "`launch` non blocca: stampa subito B; dopo 100 ms la coroutine figlia stampa A; dopo 200 ms il parent stampa C.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-coroutines-3",
+          "prompt": "Quale dispatcher è indicato per una query su database o una chiamata di rete bloccante?",
+          "code": null,
+          "options": [
+            "Dispatchers.Main",
+            "Dispatchers.Default",
+            "Dispatchers.IO",
+            "Dispatchers.Unconfined"
+          ],
+          "answer": 2,
+          "explanation": "IO ha un pool elastico pensato per operazioni bloccanti; Default è dimensionato sui core per il lavoro CPU-bound.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-coroutines-4",
+          "prompt": "Dove ha effetto un `CoroutineExceptionHandler`?",
+          "code": null,
+          "options": [
+            "Nelle coroutine root (es. launch diretto nello scope)",
+            "In qualunque coroutine figlia",
+            "Solo nelle coroutine create con async",
+            "Solo dentro runBlocking"
+          ],
+          "answer": 0,
+          "explanation": "I figli delegano le eccezioni al parent: l'handler viene usato solo dalle coroutine root o dai figli diretti di un supervisor.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-coroutines-5",
+          "prompt": "Perché un loop CPU-bound può continuare dopo `job.cancel()`?",
+          "code": null,
+          "options": [
+            "cancel() funziona solo su Dispatchers.Main",
+            "La cancellazione è cooperativa: serve isActive o ensureActive()",
+            "Bisogna chiamare prima job.join()",
+            "I loop non sono mai cancellabili"
+          ],
+          "answer": 1,
+          "explanation": "cancel() imposta solo lo stato: il codice deve controllarlo (isActive, ensureActive, yield) o raggiungere un punto di sospensione.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-coroutines-6",
+          "prompt": "Qual è il problema di questo codice?",
+          "code": "launch {\n    try {\n        delay(1000)\n    } catch (e: Exception) {\n        log(e)\n    }\n    doMoreWork()\n}",
+          "options": [
+            "Nessuno",
+            "delay non lancia mai eccezioni",
+            "Ingoia la CancellationException e continua il lavoro",
+            "log blocca il main thread"
+          ],
+          "answer": 2,
+          "explanation": "`catch (e: Exception)` cattura anche CancellationException: dopo la cancellazione `doMoreWork()` viene comunque eseguito. Va rilanciata.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-coroutines-7",
+          "prompt": "Con quale Job e dispatcher è configurato `viewModelScope`?",
+          "code": null,
+          "options": [
+            "Job + Dispatchers.IO",
+            "Job + Dispatchers.Default",
+            "Nessun Job, usa GlobalScope",
+            "SupervisorJob + Dispatchers.Main.immediate"
+          ],
+          "answer": 3,
+          "explanation": "Il SupervisorJob evita che il fallimento di una coroutine cancelli le altre; lo scope viene cancellato in onCleared().",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-coroutines-8",
+          "prompt": "Qual è la differenza chiave tra `coroutineScope` e `supervisorScope`?",
+          "code": null,
+          "options": [
+            "supervisorScope non attende i figli",
+            "In supervisorScope il fallimento di un figlio non cancella gli altri",
+            "coroutineScope crea un nuovo thread",
+            "Nessuna, sono alias"
+          ],
+          "answer": 1,
+          "explanation": "Entrambi attendono i figli; in coroutineScope un figlio fallito cancella scope e fratelli, in supervisorScope no.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-coroutines-9",
+          "prompt": "Da dove si può chiamare una funzione `suspend`?",
+          "code": null,
+          "options": [
+            "Da qualunque funzione",
+            "Solo dal main thread",
+            "Da una coroutine o da un'altra funzione suspend",
+            "Solo da Dispatchers.IO"
+          ],
+          "answer": 2,
+          "explanation": "Una funzione suspend richiede una Continuation, disponibile solo in una coroutine o in un'altra funzione suspend.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-coroutines-10",
+          "prompt": "Un `async` in un `coroutineScope` fallisce. Cosa succede?",
+          "code": null,
+          "options": [
+            "Il fallimento cancella subito lo scope e await() rilancia l'errore",
+            "L'eccezione emerge solo chiamando await()",
+            "L'eccezione viene ignorata",
+            "Serve un CoroutineExceptionHandler per vederla"
+          ],
+          "answer": 0,
+          "explanation": "La trappola è pensare che async \"trattenga\" l'errore fino ad await(): in uno scope strutturato il fallimento del figlio cancella subito il parent.",
+          "difficulty": 3
+        }
+      ]
+    },
+    {
+      "id": "flow",
+      "title": "Flow",
+      "icon": "water.waves",
+      "summary": "Flow cold e hot, StateFlow, SharedFlow, operatori e raccolta lifecycle-aware.",
+      "lesson": [
+        {
+          "heading": "Flow cold",
+          "body": "Un `Flow` è uno stream asincrono di valori, basato sulle coroutine. È **cold**: il blocco `flow { }` non fa nulla finché qualcuno non chiama `collect`, e ogni collector riesegue il producer da capo.\n\n`collect` è una funzione suspend, quindi la raccolta rispetta la structured concurrency: se lo scope viene cancellato, la raccolta si ferma.",
+          "code": "fun ticker(): Flow<Int> = flow {\n    var i = 0\n    while (true) {\n        emit(i++)\n        delay(1000)\n    }\n}"
+        },
+        {
+          "heading": "Operatori",
+          "body": "Gli operatori intermedi (`map`, `filter`, `onEach`, `distinctUntilChanged`, `debounce`) restituiscono nuovi Flow senza eseguire nulla. `combine` unisce l'ultimo valore di più flow, `zip` li accoppia uno a uno, `flatMapLatest` cancella il flow interno precedente a ogni nuovo valore (perfetto per la ricerca).\n\n`flowOn` cambia il contesto degli operatori **a monte** (upstream), mentre il collector resta nel suo contesto. `catch` intercetta le eccezioni upstream.",
+          "code": "val results = query\n    .debounce(300)\n    .distinctUntilChanged()\n    .flatMapLatest { q -> repo.search(q) }\n    .catch { emit(emptyList()) }\n    .flowOn(Dispatchers.Default)"
+        },
+        {
+          "heading": "StateFlow",
+          "body": "`StateFlow` è un flow **hot** che contiene sempre un valore corrente (`value`) e richiede un valore iniziale. I nuovi collector ricevono subito l'ultimo stato.\n\nÈ **conflated** e ignora gli assegnamenti uguali (confronto con `equals`), quindi è ideale per lo stato UI. Nel ViewModel si espone un `StateFlow` read-only e si aggiorna il `MutableStateFlow` privato con `update { }`, che è atomico.",
+          "code": "private val _state = MutableStateFlow(UiState())\nval state: StateFlow<UiState> = _state.asStateFlow()\n\nfun onQuery(q: String) {\n    _state.update { it.copy(query = q) }\n}"
+        },
+        {
+          "heading": "SharedFlow e stateIn",
+          "body": "`SharedFlow` è hot, non ha un valore iniziale ed è configurabile con `replay` ed `extraBufferCapacity`: si usa per broadcast di eventi a più collector. Un `StateFlow` è di fatto uno SharedFlow con replay 1 e distinctUntilChanged.\n\nPer trasformare un flow cold in hot si usano `stateIn` o `shareIn`. Il pattern consigliato è `stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial)`: l'upstream si ferma 5 secondi dopo l'ultimo collector, così sopravvive alla rotazione ma non spreca risorse in background.",
+          "code": "val uiState: StateFlow<List<Item>> = repo.items()\n    .map { it.sortedBy(Item::name) }\n    .stateIn(\n        viewModelScope,\n        SharingStarted.WhileSubscribed(5_000),\n        emptyList()\n    )"
+        },
+        {
+          "heading": "Raccolta su Android e LiveData",
+          "body": "In Compose si usa `collectAsStateWithLifecycle()`, che smette di raccogliere quando il lifecycle scende sotto `STARTED`. Nelle View si usa `repeatOnLifecycle(Lifecycle.State.STARTED)` dentro `lifecycleScope.launch`; `launchWhenStarted` è deprecato.\n\n`LiveData` è lifecycle-aware di suo, non richiede un valore iniziale e riemette anche valori uguali, ma ha pochi operatori ed è legato ad Android. StateFlow è Kotlin puro, testabile senza framework e ricco di operatori: oggi è la scelta di default.",
+          "code": "lifecycleScope.launch {\n    repeatOnLifecycle(Lifecycle.State.STARTED) {\n        viewModel.state.collect { render(it) }\n    }\n}"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Differenza tra Flow, StateFlow e SharedFlow?\"**. Risposta concisa: Flow è cold ed esegue il producer per ogni collector; StateFlow è hot, ha sempre un valore ed è pensato per lo stato; SharedFlow è hot, senza valore iniziale, con replay configurabile, adatto agli eventi.\n\nCita `stateIn` con `WhileSubscribed(5_000)`, la raccolta lifecycle-aware e perché StateFlow ha sostituito LiveData nelle nuove codebase.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-flow-1",
+          "prompt": "Quando viene stampato \"start\"?",
+          "code": "val f = flow {\n    println(\"start\")\n    emit(1)\n}",
+          "options": [
+            "Alla creazione di f",
+            "A ogni collect",
+            "Solo al primo collect",
+            "Mai"
+          ],
+          "answer": 1,
+          "explanation": "Il Flow è cold: il blocco viene eseguito da capo per ogni collector, non alla creazione.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-flow-2",
+          "prompt": "Cosa succede assegnando a un `MutableStateFlow` un valore uguale (equals) a quello corrente?",
+          "code": null,
+          "options": [
+            "Il valore viene riemesso",
+            "Viene lanciata un'eccezione",
+            "Nessuna emissione: i valori uguali vengono ignorati",
+            "Il valore viene accodato nel buffer"
+          ],
+          "answer": 2,
+          "explanation": "StateFlow applica distinctUntilChanged basato su equals: i collector non ricevono nulla. LiveData invece riemetterebbe.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-flow-3",
+          "prompt": "Quale richiede obbligatoriamente un valore iniziale?",
+          "code": null,
+          "options": [
+            "SharedFlow",
+            "Entrambi",
+            "Nessuno dei due",
+            "StateFlow"
+          ],
+          "answer": 3,
+          "explanation": "StateFlow ha sempre un `value`, quindi va inizializzato; MutableSharedFlow() non ha valore iniziale.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-flow-4",
+          "prompt": "Su quale parte della catena agisce `flowOn(Dispatchers.IO)`?",
+          "code": null,
+          "options": [
+            "Sugli operatori a monte (upstream)",
+            "Solo sugli operatori a valle",
+            "Sul contesto del collector",
+            "Su tutta la catena"
+          ],
+          "answer": 0,
+          "explanation": "flowOn cambia il contesto solo dell'upstream; il collect resta nel contesto della coroutine chiamante.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-flow-5",
+          "prompt": "Perché si usa `SharingStarted.WhileSubscribed(5_000)` con `stateIn`?",
+          "code": null,
+          "options": [
+            "Tiene vivo l'upstream 5 s dopo l'ultimo collector (rotazione)",
+            "Ritarda la prima emissione di 5 secondi",
+            "È il timeout per il primo valore",
+            "Fa il replay degli ultimi 5000 valori"
+          ],
+          "answer": 0,
+          "explanation": "Una rotazione dura meno di 5 s, quindi l'upstream non riparte; se l'app resta in background più a lungo, si ferma e risparmia risorse.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-flow-6",
+          "prompt": "Cosa aggiunge `collectAsStateWithLifecycle()` rispetto a `collectAsState()`?",
+          "code": null,
+          "options": [
+            "È più veloce",
+            "Interrompe la raccolta sotto lo stato STARTED",
+            "Funziona solo con LiveData",
+            "Converte il Flow in LiveData"
+          ],
+          "answer": 1,
+          "explanation": "Rispetta il lifecycle: con l'app in background smette di raccogliere, evitando lavoro inutile.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-flow-7",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val r = flowOf(1, 2, 3)\n    .map { it * 10 }\n    .filter { it > 10 }\n    .toList()\nprintln(r)",
+          "options": [
+            "[10, 20, 30]",
+            "[2, 3]",
+            "[30]",
+            "[20, 30]"
+          ],
+          "answer": 3,
+          "explanation": "map produce 10, 20, 30; filter tiene quelli maggiori di 10. `toList()` è un operatore terminale suspend.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-flow-8",
+          "prompt": "Per una ricerca che deve annullare la richiesta precedente a ogni nuovo input, quale operatore usi?",
+          "code": null,
+          "options": [
+            "flatMapConcat",
+            "flatMapMerge",
+            "flatMapLatest",
+            "zip"
+          ],
+          "answer": 2,
+          "explanation": "flatMapLatest cancella il flow interno precedente appena arriva un nuovo valore; concat e merge li completano tutti.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-flow-9",
+          "prompt": "Cosa riceve subito un nuovo collector?",
+          "code": "val shared = MutableSharedFlow<Int>(replay = 1)\nshared.emit(1)\nshared.emit(2)\n// nuovo collector",
+          "options": [
+            "Niente",
+            "1 e 2",
+            "Solo 1",
+            "Solo 2"
+          ],
+          "answer": 3,
+          "explanation": "Con replay = 1 la cache conserva solo l'ultimo valore emesso, che viene riprodotto ai nuovi collector.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-flow-10",
+          "prompt": "Quale differenza tra LiveData e StateFlow è corretta?",
+          "code": null,
+          "options": [
+            "LiveData è cold, StateFlow è hot",
+            "StateFlow è lifecycle-aware di suo",
+            "StateFlow richiede un valore iniziale, LiveData no",
+            "LiveData ignora i valori uguali"
+          ],
+          "answer": 2,
+          "explanation": "StateFlow va inizializzato e ignora i duplicati; LiveData è lifecycle-aware ma riemette i valori uguali. La consapevolezza del lifecycle per StateFlow va aggiunta in raccolta.",
+          "difficulty": 3
+        }
+      ]
+    },
+    {
+      "id": "android-lifecycle",
+      "title": "Lifecycle Android",
+      "icon": "arrow.triangle.2.circlepath",
+      "summary": "Lifecycle di Activity e Fragment, configuration change, ViewModel e process death.",
+      "lesson": [
+        {
+          "heading": "Lifecycle dell'Activity",
+          "body": "La sequenza è `onCreate` → `onStart` (visibile) → `onResume` (in primo piano, interattiva), poi a ritroso `onPause` → `onStop` → `onDestroy`. Quando A avvia B a schermo intero: `A.onPause`, poi `B.onCreate/onStart/onResume`, infine `A.onStop`.\n\n`onPause` deve essere veloce perché blocca la comparsa della nuova Activity. Il lavoro pesante di salvataggio va in `onStop` o, meglio, fuori dai callback con WorkManager.",
+          "code": null
+        },
+        {
+          "heading": "Fragment e view lifecycle",
+          "body": "Un Fragment ha due lifecycle: quello del Fragment e quello della sua **view**, che viene distrutta e ricreata (`onDestroyView`/`onCreateView`) ad esempio quando va nel back stack, mentre il Fragment sopravvive.\n\nPer questo le osservazioni legate alla UI usano `viewLifecycleOwner` invece di `this`, e il riferimento al binding va azzerato in `onDestroyView` per evitare memory leak.",
+          "code": "override fun onViewCreated(view: View, state: Bundle?) {\n    viewLifecycleOwner.lifecycleScope.launch {\n        viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {\n            vm.state.collect { render(it) }\n        }\n    }\n}\n\noverride fun onDestroyView() {\n    super.onDestroyView()\n    _binding = null\n}"
+        },
+        {
+          "heading": "Configuration change",
+          "body": "Rotazione, cambio lingua, dark mode o ridimensionamento in multi-window provocano di default la **distruzione e ricreazione** dell'Activity. Lo stato della UI va quindi tenuto fuori dall'Activity.\n\nDichiarare `android:configChanges` per gestirle a mano è sconsigliato salvo casi specifici (ad esempio player video): nasconde i bug e non protegge dal process death.",
+          "code": null
+        },
+        {
+          "heading": "ViewModel e SavedStateHandle",
+          "body": "Il `ViewModel` sopravvive ai configuration change perché è conservato nel `ViewModelStore`, e viene distrutto (`onCleared`) solo quando lo scope termina davvero. **Non sopravvive al process death.**\n\n`SavedStateHandle` salva piccoli dati in un Bundle che il sistema ripristina anche dopo il process death: id, query di ricerca, tab selezionata. Non va usato per dati grandi, perché il Bundle ha limiti di dimensione (TransactionTooLargeException).",
+          "code": "class SearchViewModel(\n    private val handle: SavedStateHandle\n) : ViewModel() {\n    val query: StateFlow<String> = handle.getStateFlow(\"q\", \"\")\n\n    fun onQuery(q: String) { handle[\"q\"] = q }\n}"
+        },
+        {
+          "heading": "Process death e Intent",
+          "body": "Quando l'app è in background il sistema può terminare il processo per liberare memoria. Al ritorno Android ricrea l'Activity con il Bundle salvato: tutto ciò che stava solo in memoria (ViewModel, singleton) è perso. Si testa mandando l'app in background ed eseguendo `adb shell am kill <package>`.\n\nGli **Intent espliciti** indicano il componente (`Intent(this, Detail::class.java)`), quelli **impliciti** un'azione (`ACTION_VIEW`, `ACTION_SEND`) risolta dal sistema. Da Android 12 un `PendingIntent` deve dichiarare `FLAG_IMMUTABLE` o `FLAG_MUTABLE`.",
+          "code": "val share = Intent(Intent.ACTION_SEND).apply {\n    type = \"text/plain\"\n    putExtra(Intent.EXTRA_TEXT, url)\n}\nstartActivity(Intent.createChooser(share, null))"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Cosa succede ruotando lo schermo, e come preservi lo stato?\"**. Risposta concisa: l'Activity viene distrutta e ricreata; il ViewModel sopravvive e mantiene lo stato in memoria, mentre per il process death servono `SavedStateHandle` o `rememberSaveable` per i dati piccoli e il database per quelli persistenti.\n\nMostra di conoscere la differenza tra configuration change e process death, e il view lifecycle dei Fragment.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-android-lifecycle-1",
+          "prompt": "In che ordine vengono chiamati i callback all'avvio di un'Activity?",
+          "code": null,
+          "options": [
+            "onCreate, onResume, onStart",
+            "onStart, onCreate, onResume",
+            "onCreate, onStart, onResume",
+            "onResume, onStart, onCreate"
+          ],
+          "answer": 2,
+          "explanation": "onCreate inizializza, onStart rende visibile, onResume porta in primo piano e interattiva.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-android-lifecycle-2",
+          "prompt": "Cosa succede di default all'Activity quando ruoti lo schermo?",
+          "code": null,
+          "options": [
+            "Nulla, viene solo ricalcolato il layout",
+            "Viene distrutta e ricreata",
+            "Il processo viene terminato",
+            "Viene chiamato solo onPause"
+          ],
+          "answer": 1,
+          "explanation": "Un configuration change ricrea l'Activity, a meno che non sia gestito tramite configChanges.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-android-lifecycle-3",
+          "prompt": "A cosa sopravvive un ViewModel?",
+          "code": null,
+          "options": [
+            "Sia alla rotazione sia al process death",
+            "Solo al process death",
+            "Alla rotazione ma non al process death",
+            "A nulla"
+          ],
+          "answer": 2,
+          "explanation": "Il ViewModel resta in memoria nel ViewModelStore durante i configuration change, ma la memoria si perde con il processo.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-android-lifecycle-4",
+          "prompt": "Perché in un Fragment si osserva lo stato con `viewLifecycleOwner` e non con `this`?",
+          "code": null,
+          "options": [
+            "La view può essere distrutta mentre il Fragment resta vivo",
+            "Perché `this` non è un LifecycleOwner",
+            "Per ottenere aggiornamenti più veloci",
+            "È obbligatorio solo con Compose"
+          ],
+          "answer": 0,
+          "explanation": "Nel back stack la view viene distrutta ma il Fragment no: osservare con `this` causerebbe osservatori duplicati e aggiornamenti a view morte.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-android-lifecycle-5",
+          "prompt": "Cosa è corretto salvare in `SavedStateHandle`?",
+          "code": null,
+          "options": [
+            "Bitmap e liste molto grandi",
+            "Piccoli stati UI come id e query",
+            "Riferimenti a Context",
+            "Connessioni di rete aperte"
+          ],
+          "answer": 1,
+          "explanation": "Finisce in un Bundle con limiti di dimensione e deve essere serializzabile: solo dati piccoli per ricostruire lo stato.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-android-lifecycle-6",
+          "prompt": "L'Activity A avvia B a schermo intero. Quando viene chiamato `A.onStop`?",
+          "code": null,
+          "options": [
+            "Prima di B.onCreate",
+            "Subito dopo A.onPause",
+            "Dopo B.onResume",
+            "Mai, A resta in onPause"
+          ],
+          "answer": 2,
+          "explanation": "La sequenza è A.onPause, B.onCreate, B.onStart, B.onResume e solo allora A.onStop, quando A non è più visibile.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-android-lifecycle-7",
+          "prompt": "Come si simula in modo affidabile il process death?",
+          "code": null,
+          "options": [
+            "Ruotando lo schermo",
+            "Premendo back",
+            "Chiamando finish()",
+            "App in background, poi `adb shell am kill <package>`"
+          ],
+          "answer": 3,
+          "explanation": "`am kill` termina il processo come farebbe il sistema, solo se l'app è in background. Rotazione, back e finish() non lo simulano.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-android-lifecycle-8",
+          "prompt": "Quale di questi è un Intent implicito?",
+          "code": null,
+          "options": [
+            "Intent(this, DetailActivity::class.java)",
+            "Intent(Intent.ACTION_VIEW, Uri.parse(url))",
+            "Intent().setClass(this, X::class.java)",
+            "Intent().setComponent(component)"
+          ],
+          "answer": 1,
+          "explanation": "Un Intent implicito dichiara un'azione e dei dati, e il sistema sceglie il componente; gli altri indicano la classe esplicitamente.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-android-lifecycle-9",
+          "prompt": "Cosa è obbligatorio creando un `PendingIntent` con targetSdk 31+?",
+          "code": null,
+          "options": [
+            "Specificare FLAG_IMMUTABLE o FLAG_MUTABLE",
+            "Usare FLAG_UPDATE_CURRENT",
+            "Richiedere un permesso runtime",
+            "Nulla, i PendingIntent sono deprecati"
+          ],
+          "answer": 0,
+          "explanation": "Da Android 12 la mutabilità va dichiarata esplicitamente, altrimenti la creazione lancia IllegalArgumentException. FLAG_IMMUTABLE è la scelta di default.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-android-lifecycle-10",
+          "prompt": "In quale callback si azzera il binding di un Fragment per evitare leak?",
+          "code": null,
+          "options": [
+            "onDestroy",
+            "onDetach",
+            "onStop",
+            "onDestroyView"
+          ],
+          "answer": 3,
+          "explanation": "La view muore in onDestroyView mentre il Fragment può sopravvivere: tenere il binding tratterrebbe l'intera gerarchia di view.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "id": "compose-architecture",
+      "title": "Compose e architettura",
+      "icon": "square.stack.3d.up",
+      "summary": "Recomposition, stato, side effect, MVVM/MVI, Hilt e Clean Architecture.",
+      "lesson": [
+        {
+          "heading": "Compose e recomposition",
+          "body": "Jetpack Compose è dichiarativo: la UI è una funzione dello stato. Le funzioni `@Composable` descrivono la UI e, quando uno `State` letto cambia, Compose riesegue (**recomposition**) solo gli scope che lo leggono.\n\nUn composable può essere **saltato** se i parametri non sono cambiati. Con lo **Strong Skipping** (default dal compiler di Kotlin 2.0.20) i parametri stabili si confrontano con `equals`, quelli instabili per identità (`===`), e le lambda sono ricordate automaticamente. Le composable devono essere prive di side effect e veloci.",
+          "code": null
+        },
+        {
+          "heading": "remember, rememberSaveable e stato",
+          "body": "`mutableStateOf` crea uno stato osservabile; senza `remember` verrebbe ricreato a ogni recomposition. `remember` conserva il valore tra le recomposition ma lo perde con un configuration change; `rememberSaveable` lo salva nel Bundle, sopravvivendo a rotazione e process death.\n\n`derivedStateOf` evita recomposition quando uno stato cambia spesso ma il valore derivato raramente (ad esempio mostrare un pulsante quando l'indice di scroll supera 0).",
+          "code": "@Composable\nfun Counter() {\n    var count by rememberSaveable { mutableIntStateOf(0) }\n    Button(onClick = { count++ }) {\n        Text(\"Count: $count\")\n    }\n}"
+        },
+        {
+          "heading": "State hoisting e flusso unidirezionale",
+          "body": "Lo **state hoisting** sposta lo stato verso il chiamante: il composable diventa stateless e riceve `value` più una callback `onValueChange`. È più riusabile, testabile e con una singola fonte di verità.\n\nA livello di schermata il ViewModel espone uno `StateFlow<UiState>` e riceve eventi dalla UI: lo stato scende, gli eventi salgono (**UDF**, unidirectional data flow).",
+          "code": "@Composable\nfun SearchBar(query: String, onQueryChange: (String) -> Unit) {\n    TextField(value = query, onValueChange = onQueryChange)\n}\n\n@Composable\nfun SearchScreen(vm: SearchViewModel = hiltViewModel()) {\n    val state by vm.state.collectAsStateWithLifecycle()\n    SearchBar(state.query, vm::onQueryChange)\n}"
+        },
+        {
+          "heading": "Side effect",
+          "body": "`LaunchedEffect(key)` avvia una coroutine quando entra nella composition, la cancella quando esce e la riavvia se la key cambia. `DisposableEffect` serve per registrare e rimuovere listener in `onDispose`. `rememberCoroutineScope` fornisce uno scope per lanciare coroutine da callback come `onClick`.\n\n`SideEffect` pubblica stato Compose verso codice non-Compose a ogni recomposition riuscita, e `rememberUpdatedState` permette a un effetto di lunga durata di leggere l'ultimo valore senza riavviarsi.",
+          "code": "@Composable\nfun Tracker(owner: LifecycleOwner, onStart: () -> Unit) {\n    val current by rememberUpdatedState(onStart)\n    DisposableEffect(owner) {\n        val obs = LifecycleEventObserver { _, e ->\n            if (e == Lifecycle.Event.ON_START) current()\n        }\n        owner.lifecycle.addObserver(obs)\n        onDispose { owner.lifecycle.removeObserver(obs) }\n    }\n}"
+        },
+        {
+          "heading": "MVVM, MVI, Hilt e Clean Architecture",
+          "body": "In **MVVM** il ViewModel espone stato osservabile e metodi; in **MVI** c'è un unico stato immutabile e gli intent passano da un reducer che produce il nuovo stato, rendendo il flusso più prevedibile.\n\n**Clean Architecture** separa UI, domain (use case, modelli, interfacce dei repository) e data (implementazioni, rete, database); la regola è che le dipendenze puntano verso il domain. **Hilt** fornisce le dipendenze: `@HiltAndroidApp` sull'Application, `@AndroidEntryPoint` sulle Activity, `@HiltViewModel` con `@Inject constructor`, `@Module` con `@Provides`/`@Binds`.",
+          "code": "@HiltViewModel\nclass SearchViewModel @Inject constructor(\n    private val search: SearchUseCase\n) : ViewModel()\n\n@Module\n@InstallIn(SingletonComponent::class)\nabstract class DataModule {\n    @Binds\n    abstract fun repo(impl: RepoImpl): Repo\n}"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Come strutturi una schermata Compose?\"**. Risposta concisa: composable stateless con state hoisting, un ViewModel `@HiltViewModel` che espone uno `StateFlow<UiState>` raccolto con `collectAsStateWithLifecycle`, eventi che salgono come callback, use case e repository dietro interfacce.\n\nAggiungi `remember` vs `rememberSaveable`, l'effetto giusto per ogni side effect e cosa rende un composable skippable.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-compose-architecture-1",
+          "prompt": "Dopo una rotazione, un valore in `remember { mutableStateOf(0) }`:",
+          "code": null,
+          "options": [
+            "Viene conservato",
+            "Torna al valore iniziale",
+            "Lancia un'eccezione",
+            "Viene salvato nel ViewModel"
+          ],
+          "answer": 1,
+          "explanation": "`remember` sopravvive solo alla recomposition; per il configuration change serve `rememberSaveable` o un ViewModel.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-compose-architecture-2",
+          "prompt": "Cosa succede cliccando il pulsante?",
+          "code": "@Composable\nfun Counter() {\n    var count = 0\n    Button(onClick = { count++ }) {\n        Text(\"Count: $count\")\n    }\n}",
+          "options": [
+            "Il testo si aggiorna a ogni clic",
+            "Non compila",
+            "Crash a runtime",
+            "Il testo resta sempre \"Count: 0\""
+          ],
+          "answer": 3,
+          "explanation": "Una variabile normale non è uno State osservabile: il cambiamento non innesca recomposition, e comunque verrebbe resettata a 0.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-compose-architecture-3",
+          "prompt": "Quando viene eseguito il blocco di `LaunchedEffect(Unit)`?",
+          "code": null,
+          "options": [
+            "Una volta all'ingresso nella composition, cancellato all'uscita",
+            "A ogni recomposition",
+            "Solo dopo un process death",
+            "Su un thread di background dedicato"
+          ],
+          "answer": 0,
+          "explanation": "Con una key costante l'effetto parte una sola volta e la sua coroutine viene cancellata quando il composable lascia la composition.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-compose-architecture-4",
+          "prompt": "Cosa significa \"state hoisting\"?",
+          "code": null,
+          "options": [
+            "Salvare lo stato su disco",
+            "Usare variabili globali",
+            "Spostare lo stato nel chiamante, passando valore e callback",
+            "Mettere tutto lo stato in remember"
+          ],
+          "answer": 2,
+          "explanation": "Il composable diventa stateless e il chiamante possiede lo stato: una sola fonte di verità, più riuso e test.",
+          "difficulty": 1
+        },
+        {
+          "id": "kotlin-compose-architecture-5",
+          "prompt": "Quale effetto usi per registrare un listener e rimuoverlo quando il composable esce?",
+          "code": null,
+          "options": [
+            "LaunchedEffect",
+            "DisposableEffect",
+            "SideEffect",
+            "derivedStateOf"
+          ],
+          "answer": 1,
+          "explanation": "DisposableEffect offre `onDispose`, chiamato all'uscita dalla composition o al cambio di key.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-compose-architecture-6",
+          "prompt": "Quando è utile `derivedStateOf`?",
+          "code": null,
+          "options": [
+            "Per lanciare una coroutine",
+            "Per salvare stato nel Bundle",
+            "Per iniettare dipendenze",
+            "Se uno stato cambia spesso ma il derivato di rado"
+          ],
+          "answer": 3,
+          "explanation": "Esempio classico: `listState.firstVisibleItemIndex > 0`; la recomposition avviene solo quando il booleano cambia, non a ogni pixel di scroll.",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-compose-architecture-7",
+          "prompt": "Come si rende un ViewModel iniettabile con Hilt?",
+          "code": null,
+          "options": [
+            "@HiltViewModel e @Inject constructor",
+            "@AndroidEntryPoint sul ViewModel",
+            "Solo con un @Module dedicato",
+            "@Singleton sulla classe"
+          ],
+          "answer": 0,
+          "explanation": "`@HiltViewModel` più `@Inject constructor`; `@AndroidEntryPoint` va su Activity e Fragment, non sul ViewModel.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-compose-architecture-8",
+          "prompt": "Quale caratteristica distingue MVI da MVVM?",
+          "code": null,
+          "options": [
+            "MVI non usa ViewModel",
+            "MVI richiede RxJava",
+            "Stato unico immutabile, intent ridotti in un nuovo stato",
+            "MVI elimina il data layer"
+          ],
+          "answer": 2,
+          "explanation": "MVI modella la schermata con un singolo stato e un reducer; in MVVM lo stato può essere distribuito su più proprietà osservabili.",
+          "difficulty": 2
+        },
+        {
+          "id": "kotlin-compose-architecture-9",
+          "prompt": "In Clean Architecture, qual è la direzione corretta delle dipendenze?",
+          "code": null,
+          "options": [
+            "Il domain dipende dal data layer",
+            "Il data layer dipende dalla UI",
+            "Tutti i layer dipendono da Hilt",
+            "UI e data dipendono dal domain, il domain da nessuno"
+          ],
+          "answer": 3,
+          "explanation": "Il domain è puro Kotlin e definisce le interfacce; il data layer le implementa (dependency inversion).",
+          "difficulty": 3
+        },
+        {
+          "id": "kotlin-compose-architecture-10",
+          "prompt": "Con lo Strong Skipping attivo, come viene trattato un parametro instabile?",
+          "code": null,
+          "options": [
+            "Rende sempre il composable non skippable",
+            "Confrontato per identità (===), lo skip è possibile",
+            "Confrontato con equals()",
+            "Causa un errore di compilazione"
+          ],
+          "answer": 1,
+          "explanation": "Con Strong Skipping (default da Kotlin 2.0.20) i parametri instabili si confrontano per istanza, quelli stabili con equals.",
+          "difficulty": 3
+        }
+      ]
+    }
+  ]
+}
