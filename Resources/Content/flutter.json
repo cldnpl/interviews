@@ -1920,6 +1920,1214 @@
           ]
         }
       ]
+    },
+    {
+      "id": "isolates",
+      "title": "Isolate e concorrenza",
+      "icon": "cpu",
+      "summary": "Modello a isolate, SendPort e ReceivePort, compute, lavoro in background e limiti della memoria non condivisa",
+      "lesson": [
+        {
+          "heading": "Il modello a isolate",
+          "body": "Dart non ha thread che condividono memoria: ha **isolate**. Ogni isolate ha il proprio heap, il proprio event loop e il proprio garbage collector, e non può toccare la memoria di un altro. L'unico modo di parlarsi è **scambiarsi messaggi**.\n\nDa qui viene la conseguenza che in colloquio conviene dire per prima: siccome nessuno condivide memoria, in Dart **non esistono lock, mutex o data race**. In cambio non puoi nemmeno mutare un oggetto \"da un altro thread\": devi mandarlo.\n\nL'app Flutter parte su un isolate solo, il **main isolate**, che è quello che costruisce i widget. `async`/`await` non ne esce: è concorrenza sullo stesso event loop, non parallelismo. Un ciclo che occupa la CPU per 300 ms blocca i frame anche se la funzione è `async`.",
+          "code": null
+        },
+        {
+          "heading": "SendPort e ReceivePort",
+          "body": "`Isolate.spawn` avvia un nuovo isolate a partire da una funzione di ingresso, che deve essere **top-level o statica** (non una closure che cattura variabili: il nuovo isolate non ha quello stato), e le passa **un solo messaggio iniziale**.\n\nI canali sono una coppia: la **ReceivePort** è il lato che ascolta, il suo `sendPort` è il lato che scrive. Chi apre la porta tiene la ReceivePort e regala il SendPort. Per avere una risposta il padre manda il proprio SendPort dentro il messaggio iniziale: è l'*handshake* che si vede in quasi tutto il codice con gli isolate.\n\nFinché una ReceivePort resta aperta l'isolate rimane vivo: chiudila con `close()`, altrimenti resta lì a consumare memoria.",
+          "code": "Future<int> countInIsolate(String text) async {\n  final answer = ReceivePort();\n  await Isolate.spawn(_worker, [answer.sendPort, text]);\n  final result = await answer.first as int;\n  answer.close();\n  return result;\n}\n\n// top-level: il figlio non eredita lo stato del padre\nvoid _worker(List<Object> message) {\n  final send = message[0] as SendPort;\n  final text = message[1] as String;\n  send.send(text.split(' ').length);\n}"
+        },
+        {
+          "heading": "compute e Isolate.run",
+          "body": "Per un lavoro singolo e pesante non serve tutto l'handshake: `compute(fn, arg)` (da `package:flutter/foundation.dart`) avvia un isolate usa e getta, esegue la funzione e restituisce il risultato. Da Dart 2.19 c'è l'equivalente puro `Isolate.run`, che accetta anche una closure.\n\nSono la scelta giusta per lavoro **CPU-bound**: parsing di un JSON grosso, decodifica o ridimensionamento di immagini, crittografia, ordinamenti su liste enormi. Non servono per l'**I/O**: una chiamata HTTP o una query su file sono già asincrone e non bloccano l'isolate, spostarle su un altro isolate aggiunge solo costo.\n\nPerché anche `compute` costa: avviare l'isolate e **copiare** argomento e risultato richiede qualche millisecondo. Sotto i ~10 ms di lavoro spesso conviene restare sul main isolate; se il lavoro è continuo, tieni un isolate worker vivo invece di crearne uno per ogni richiesta.",
+          "code": "// lento: il parse gira sull'isolate della UI\nfinal items = (jsonDecode(raw) as List).map(Item.fromJson).toList();\n\n// il parse gira altrove, i frame continuano\nfinal items = await compute(parseItems, raw);\n\nList<Item> parseItems(String raw) =>\n    (jsonDecode(raw) as List).map(Item.fromJson).toList();"
+        },
+        {
+          "heading": "Lavoro in background",
+          "body": "\"Background\" in Flutter vuol dire due cose diverse, e confonderle è un classico errore da colloquio.\n\nUn isolate secondario lavora **fuori dal thread della UI ma dentro il processo dell'app**: quando il sistema sospende l'app, gli isolate si fermano con lei. Per lavoro che deve continuare ad app chiusa servono le API native: `BGTaskScheduler`/background modes su iOS, `WorkManager` o un foreground service su Android, tipicamente tramite `workmanager` o il background handler di FCM.\n\nUn isolate secondario inoltre **non ha i binding di Flutter**: i platform channel sono legati al root isolate. Se un plugin ti serve lì, passa un `RootIsolateToken` e registra il messenger con `BackgroundIsolateBinaryMessenger.ensureInitialized`.",
+          "code": "final token = RootIsolateToken.instance!;\nawait Isolate.run(() async {\n  BackgroundIsolateBinaryMessenger.ensureInitialized(token);\n  final dir = await getTemporaryDirectory(); // ora il plugin risponde\n  return dir.path;\n});"
+        },
+        {
+          "heading": "Cosa non passa da un isolate all'altro",
+          "body": "`send` fa una **copia profonda** del messaggio. Fanno eccezione gli oggetti immutabili (`String`, numeri, `bool`, `null`, le costanti) che vengono passati per riferimento, e le funzioni top-level o statiche, inviabili come riferimento.\n\nNon si possono inviare: closure che catturano stato mutabile, oggetti che tengono una risorsa nativa (socket, handle di database, `Pointer` di FFI), e ovviamente niente di legato alla UI — `BuildContext`, widget, `State`. Se ci provi ottieni un errore a runtime.\n\nPer i dati grossi la copia è il costo principale: `TransferableTypedData` **trasferisce** un blocco di byte senza copiarlo (chi lo manda lo perde), e `Isolate.exit(port, risultato)` restituisce il risultato chiudendo l'isolate, anche qui senza copia.",
+          "code": "// il figlio termina e consegna la lista senza copiarla\nvoid _worker(SendPort out) {\n  final result = heavyParse();\n  Isolate.exit(out, result);\n}"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Dart è a thread singolo, come fai lavoro pesante senza bloccare la UI?\"** Risposta: distinguo. Se è I/O non faccio niente di speciale, è già asincrono e l'event loop resta libero. Se è CPU-bound lo sposto su un altro isolate con `compute` o `Isolate.run`, perché `async` da solo non sposta nulla: gira sempre sullo stesso thread.\n\nPoi aggiungi i limiti, che è la parte che distingue una risposta senior: memoria non condivisa quindi solo messaggi e nessun lock, messaggi copiati quindi occhio ai payload grossi (`TransferableTypedData`, `Isolate.exit`), niente plugin senza `RootIsolateToken`, e nessuna garanzia di esecuzione ad app sospesa — quella la dà solo il sistema operativo.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "flutter-isolates-1",
+          "prompt": "Perché in Dart non servono lock o mutex fra isolate?",
+          "code": null,
+          "options": [
+            "Perché il runtime mette un lock implicito su ogni oggetto",
+            "Perché gli isolate girano a turno, mai insieme",
+            "Perché ogni isolate ha la propria memoria e comunica solo con messaggi",
+            "Perché solo il main isolate può scrivere in memoria"
+          ],
+          "answer": 2,
+          "explanation": "Un isolate non può accedere all'heap di un altro: senza memoria condivisa non esistono data race, quindi non serve sincronizzare. Il prezzo è che ogni scambio passa per un messaggio.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Non c'è nessun lock implicito: il problema proprio non si pone, perché la memoria non è condivisa.",
+            "Gli isolate girano davvero in parallelo su core diversi; è il singolo isolate a essere a thread unico.",
+            null,
+            "Ogni isolate scrive liberamente nel proprio heap; semplicemente non vede quello degli altri."
+          ]
+        },
+        {
+          "id": "flutter-isolates-2",
+          "prompt": "Cosa fa `compute(fn, arg)`?",
+          "code": null,
+          "options": [
+            "Esegue `fn` in un isolate separato e restituisce il risultato",
+            "Mette `fn` in coda sull'event loop del main isolate",
+            "Esegue `fn` su un thread nativo della piattaforma",
+            "Memorizza il risultato di `fn` per le chiamate successive"
+          ],
+          "answer": 0,
+          "explanation": "`compute` avvia un isolate usa e getta, gli manda l'argomento, esegue la funzione e riporta indietro il risultato come `Future`. Da Dart 2.19 `Isolate.run` fa lo stesso senza dipendere da Flutter.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Questo è quello che fa `Future` o `scheduleMicrotask`: resta sullo stesso isolate e blocca comunque la UI se il lavoro è pesante.",
+            "Il lavoro gira in un isolate Dart, non in codice nativo: per quello servirebbero i platform channel.",
+            "`compute` non fa caching: ogni chiamata avvia un nuovo isolate ed esegue di nuovo la funzione."
+          ]
+        },
+        {
+          "id": "flutter-isolates-3",
+          "prompt": "Questa funzione è già `async`: basta a togliere il jank durante il parsing?",
+          "code": "Future<List<Item>> load(String raw) async {\n  final list = jsonDecode(raw) as List; // payload da 8 MB\n  return list.map(Item.fromJson).toList();\n}",
+          "options": [
+            "Sì, `async` sposta il corpo su un altro thread",
+            "Sì, perché `jsonDecode` è già asincrono",
+            "No, serve `await` prima di `jsonDecode`",
+            "No: il parsing gira comunque sull'isolate della UI"
+          ],
+          "answer": 3,
+          "explanation": "`async` cambia solo come la funzione restituisce il valore, non dove gira il codice: `jsonDecode` e il `map` occupano l'event loop del main isolate e i frame saltano. Va spostato con `compute` o `Isolate.run`.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`async` non crea thread né isolate: il corpo gira sullo stesso event loop finché non incontra un `await`.",
+            "`jsonDecode` è sincrono e occupa la CPU per tutta la durata del parsing.",
+            "Non si può attendere una funzione sincrona, e comunque un `await` non sposterebbe il lavoro altrove.",
+            null
+          ]
+        },
+        {
+          "id": "flutter-isolates-4",
+          "prompt": "Che vincolo ha la funzione di ingresso passata a `Isolate.spawn`?",
+          "code": null,
+          "options": [
+            "Deve essere `async`",
+            "Deve essere top-level o statica",
+            "Deve restituire `void`",
+            "Deve stare nello stesso file del chiamante"
+          ],
+          "answer": 1,
+          "explanation": "Il nuovo isolate non eredita lo stato del padre, quindi può ricevere solo un riferimento a una funzione top-level o statica: una closure che cattura variabili non è inviabile.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Può essere sincrona o asincrona: non è quello il vincolo.",
+            null,
+            "Il tipo di ritorno non conta; il risultato viaggia comunque via `SendPort` o `Isolate.exit`.",
+            "Il file è irrilevante: conta che la funzione non catturi stato, cioè che sia top-level o statica."
+          ]
+        },
+        {
+          "id": "flutter-isolates-5",
+          "prompt": "Come fa l'isolate figlio a rispondere al padre?",
+          "code": null,
+          "options": [
+            "Restituendo un valore dalla funzione di ingresso",
+            "Con una variabile globale condivisa",
+            "Il padre gli manda il proprio `SendPort` nel messaggio iniziale",
+            "Con `Isolate.current.send`"
+          ],
+          "answer": 2,
+          "explanation": "La `ReceivePort` resta a chi ascolta e il suo `sendPort` viene regalato all'altro lato: il padre apre la porta e passa il `SendPort` nel messaggio iniziale, così il figlio sa dove scrivere.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Il valore di ritorno della funzione di ingresso viene ignorato: non c'è nessuno che lo raccolga.",
+            "Le variabili globali non sono condivise: ogni isolate ha la propria copia del suo heap.",
+            null,
+            "`Isolate.current` non espone nessun canale verso il padre: il canale va passato esplicitamente."
+          ]
+        },
+        {
+          "id": "flutter-isolates-6",
+          "prompt": "Conviene spostare una chiamata HTTP in un isolate per non bloccare la UI?",
+          "code": null,
+          "options": [
+            "Sì, la rete blocca sempre il thread",
+            "No: l'I/O è già asincrono, l'isolate aggiunge solo costo",
+            "Sì, ma solo su Android",
+            "Sì, altrimenti il `Future` non si completa"
+          ],
+          "answer": 1,
+          "explanation": "Durante un'attesa di rete l'event loop è libero e i frame continuano: l'isolate non serve. Ha senso solo per il lavoro CPU-bound che segue, come il parsing di una risposta molto grande.",
+          "difficulty": 2,
+          "whyWrong": [
+            "L'I/O in Dart non è bloccante: la richiesta parte e il controllo torna subito all'event loop.",
+            null,
+            "Il comportamento è lo stesso sulle due piattaforme: l'I/O asincrono non blocca né su iOS né su Android.",
+            "Il `Future` si completa normalmente sul main isolate quando la risposta arriva."
+          ]
+        },
+        {
+          "id": "flutter-isolates-7",
+          "prompt": "Quale di questi oggetti **non** puoi inviare a un altro isolate?",
+          "code": null,
+          "options": [
+            "Una `List<String>`",
+            "Un `SendPort`",
+            "Una closure che cattura una variabile locale",
+            "Una funzione top-level"
+          ],
+          "answer": 2,
+          "explanation": "I messaggi vengono copiati in profondità (gli immutabili passano per riferimento) e le funzioni top-level o statiche viaggiano come riferimento, ma una closure porta con sé stato che l'altro isolate non ha: non è inviabile.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Una lista di stringhe viene copiata senza problemi: le `String` sono immutabili e passano per riferimento.",
+            "Il `SendPort` è pensato proprio per essere inviato: è così che si costruiscono i canali di ritorno.",
+            null,
+            "Le funzioni top-level e statiche sono inviabili: è il motivo per cui `Isolate.spawn` le richiede."
+          ]
+        },
+        {
+          "id": "flutter-isolates-8",
+          "prompt": "Chiami un plugin (es. `path_provider`) dentro un isolate secondario e ottieni un errore sui binding. Perché?",
+          "code": null,
+          "options": [
+            "I plugin non funzionano in release mode",
+            "Gli isolate secondari non possono fare I/O",
+            "Serve chiamare `WidgetsFlutterBinding.ensureInitialized` nel figlio",
+            "I platform channel sono legati al root isolate"
+          ],
+          "answer": 3,
+          "explanation": "Il `BinaryMessenger` che porta i messaggi al nativo vive sul root isolate. Per usarlo altrove passi un `RootIsolateToken` e chiami `BackgroundIsolateBinaryMessenger.ensureInitialized(token)` dentro l'isolate.",
+          "difficulty": 3,
+          "whyWrong": [
+            "In release i plugin funzionano normalmente: il problema è l'isolate, non la modalità di build.",
+            "L'I/O puro (file, socket) si può fare ovunque; è il canale verso il nativo a non essere disponibile.",
+            "Quel binding vale per il root isolate e non registra il messenger nel figlio: serve `BackgroundIsolateBinaryMessenger` con il token.",
+            null
+          ]
+        },
+        {
+          "id": "flutter-isolates-9",
+          "prompt": "Devi restituire dall'isolate un risultato molto grande evitando il costo della copia. Cosa usi?",
+          "code": null,
+          "options": [
+            "`Isolate.exit(port, risultato)`",
+            "`port.send(risultato)` dentro un `try`",
+            "Una variabile `static` letta dal padre",
+            "`Isolate.kill` dopo aver salvato il risultato"
+          ],
+          "answer": 0,
+          "explanation": "`Isolate.exit` termina l'isolate consegnando il risultato senza copiarlo: l'heap del figlio muore comunque, quindi la VM può trasferire la memoria. Per i soli byte c'è `TransferableTypedData`.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "`send` copia il messaggio in profondità: è esattamente il costo che vuoi evitare.",
+            "Le variabili statiche non sono condivise fra isolate: il padre leggerebbe la propria copia.",
+            "`Isolate.kill` chiude l'isolate ma non consegna nulla: il risultato andrebbe perso."
+          ]
+        },
+        {
+          "id": "flutter-isolates-10",
+          "prompt": "Un isolate continua a lavorare quando l'utente mette l'app in background e la lascia lì?",
+          "code": null,
+          "options": [
+            "Sì, gli isolate sono processi separati dal sistema",
+            "Sì su Android, no su iOS",
+            "No: sospesa l'app, si ferma anche l'isolate",
+            "Sì, finché la `ReceivePort` resta aperta"
+          ],
+          "answer": 2,
+          "explanation": "Gli isolate vivono nel processo dell'app: quando il sistema la sospende si fermano con lei. Per lavoro garantito ad app chiusa servono le API native (BGTaskScheduler, WorkManager, foreground service).",
+          "difficulty": 3,
+          "whyWrong": [
+            "Sono thread dentro lo stesso processo, non processi separati: seguono il ciclo di vita dell'app.",
+            "Anche Android sospende il processo e può ucciderlo: servono WorkManager o un foreground service.",
+            null,
+            "La porta aperta tiene vivo l'isolate finché l'app gira, ma non impedisce al sistema di sospenderla."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "architecture-scale",
+      "title": "Architettura su larga scala",
+      "icon": "square.stack.3d.up",
+      "summary": "Feature-first, layer domain/data/presentation, inversione delle dipendenze, repository, package e design system",
+      "lesson": [
+        {
+          "heading": "Feature-first, non layer-first",
+          "body": "L'organizzazione per tipo (`models/`, `widgets/`, `services/`) regge finché l'app è piccola: a venti schermi ogni cambiamento tocca cinque cartelle e due team si pestano i piedi sugli stessi file.\n\nNell'organizzazione **feature-first** ogni funzionalità è una cartella che contiene i propri layer, e `core/` (o `shared/`) tiene solo ciò che serve davvero a tutti: rete, storage, design system, errori.\n\nIl test è brutale e utile: **una feature deve essere cancellabile**. Se elimini `features/checkout/` e l'app compila a parte le rotte, i confini sono giusti. Se si rompono dieci file sparsi, la feature non era una feature.",
+          "code": "lib/\n  core/            # rete, storage, tema, errori\n  features/\n    catalog/\n      domain/      # entità, repository astratti, use case\n      data/        # DTO, API, implementazioni\n      presentation/# widget e state holder\n    checkout/\n      domain/ data/ presentation/\n  app.dart         # router e composition root",
+          "language": "struttura"
+        },
+        {
+          "heading": "I tre layer",
+          "body": "**Presentation**: widget e chi tiene lo stato (Bloc, Notifier, ViewModel). Traduce eventi utente in chiamate e stato in pixel. Niente `http`, niente SQL, niente regole di business.\n\n**Domain**: il cuore. Entità, regole, use case, interfacce dei repository. È **Dart puro**: non importa `package:flutter`, non sa cosa sia un JSON. Se un giorno l'app diventa CLI o server, questo strato si porta via intero.\n\n**Data / infrastructure**: DTO, client HTTP, database, cache, mapper. Implementa le interfacce del domain e traduce il mondo esterno in entità.\n\nLa regola sulle dipendenze è una sola: **puntano verso l'interno**. Presentation e data conoscono il domain; il domain non conosce nessuno.",
+          "code": "// domain/ — Dart puro\nclass Order {\n  final String id;\n  final Money total;\n  bool get isRefundable => total.amount > 0 && !isShipped;\n}\n\nabstract interface class OrderRepository {\n  Future<Order> byId(String id);\n}"
+        },
+        {
+          "heading": "Inversione delle dipendenze e repository",
+          "body": "L'**interfaccia** del repository sta nel domain, l'**implementazione** nel data. Così la freccia si inverte: non è il domain a dipendere da Dio o da sqflite, è l'infrastruttura a doversi adattare al contratto del domain. È l'unico modo per testare la logica senza rete e per cambiare sorgente senza riscrivere le feature.\n\nUn repository non è \"una classe per tabella\": è la **frontiera**. Lì dentro i DTO diventano entità, gli errori diventano `Failure` tipizzate, la cache decide se chiamare la rete. Fuori da lì nessuno sa che esiste un campo `created_at` in snake case.\n\nIl collegamento fra interfaccia e implementazione avviene in un punto solo, la **composition root** (get_it, Riverpod, un costruttore): il resto del codice riceve le dipendenze, non le costruisce.",
+          "code": "// data/\nclass HttpOrderRepository implements OrderRepository {\n  HttpOrderRepository(this._api);\n  final ApiClient _api;\n\n  @override\n  Future<Order> byId(String id) async {\n    final dto = await _api.getOrder(id); // OrderDto, snake_case\n    return dto.toDomain();               // mapper al confine\n  }\n}\n\n// test: nessuna rete\nclass FakeOrderRepository implements OrderRepository { /* ... */ }"
+        },
+        {
+          "heading": "Modularizzazione in package",
+          "body": "Una cartella è una convenzione: nulla impedisce a `checkout` di importare un file privato di `catalog`. Un **package** è un confine vero, controllato dal compilatore: se non è in `pubspec.yaml`, non lo importi.\n\nUn monorepo con più package (gestito con Melos o con i workspace di Dart) dà anche test e analisi incrementali, e permette a un team di rilasciare il proprio pezzo. Il costo c'è: versioni, tooling, refactor più rumorosi.\n\nRegola pratica: **estrai un package quando il confine è già stabile**, non prima. Partire da venti package su un dominio ancora incerto significa passare i mesi successivi a spostare classi da un package all'altro.",
+          "code": "packages/\n  core_ui/        # design system\n  core_network/   # client, interceptor, retry\n  feature_catalog/\n  feature_checkout/\napps/\n  mobile/         # composizione: dipende dalle feature",
+          "language": "struttura"
+        },
+        {
+          "heading": "Design system e componenti condivisi",
+          "body": "A scala, la coerenza visiva non si ottiene con la disciplina ma con il codice: **token** (colori, spaziature, raggi, tipografia) esposti dal tema, e componenti che li usano. `Colors.blue` e `EdgeInsets.all(17)` sparsi nei file sono il sintomo che il design system non esiste.\n\nIn Flutter i token si aggiungono al tema con una `ThemeExtension`, così restano tipizzati, interpolabili nelle animazioni e disponibili ovunque via `Theme.of(context)`.\n\nI componenti condivisi devono essere **senza logica di dominio**: un `AppButton` non sa cosa sia un ordine. Una galleria (Widgetbook, Storybook) e i golden test li tengono onesti nel tempo.",
+          "code": "@immutable\nclass AppColors extends ThemeExtension<AppColors> {\n  const AppColors({required this.brand, required this.danger});\n  final Color brand;\n  final Color danger;\n\n  @override\n  AppColors copyWith({Color? brand, Color? danger}) => /* ... */;\n  @override\n  AppColors lerp(AppColors? other, double t) => /* ... */;\n}\n\nfinal brand = Theme.of(context).extension<AppColors>()!.brand;"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Come organizzeresti un'app su cui lavorano cinque team?\"** Risposta: feature-first, ogni feature con i suoi tre layer e un confine esplicito; `core` solo per ciò che è davvero trasversale; dipendenze che puntano verso il domain; package quando il confine è stabile, così il compilatore fa rispettare le regole che nessuno rileggerà nelle PR.\n\nAggiungi sempre il *perché*: non si fanno i layer per eleganza, si fanno per poter testare la logica senza rete, cambiare backend senza toccare la UI e far lavorare due team in parallelo senza conflitti. E ammetti il compromesso: su un'app da tre schermi questa struttura è sovradimensionata, e dirlo è un punto a favore, non contro.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "flutter-architecture-scale-1",
+          "prompt": "Dove vive una regola come \"un ordine è rimborsabile solo se non è stato spedito\"?",
+          "code": null,
+          "options": [
+            "Nel widget che mostra il bottone",
+            "Nel layer domain",
+            "Nel client HTTP",
+            "Nel repository dell'infrastruttura"
+          ],
+          "answer": 1,
+          "explanation": "È una regola di business: sta nel domain (entità o use case), dove si testa senza rete e senza UI. La presentation la interroga soltanto per decidere cosa disegnare.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Nel widget la regola non è testabile senza costruire la UI e si duplica appena serve altrove.",
+            null,
+            "Il client HTTP trasporta dati: non deve sapere nulla delle regole del dominio.",
+            "Il repository implementa l'accesso ai dati; la regola resterebbe legata alla sorgente invece che al dominio."
+          ]
+        },
+        {
+          "id": "flutter-architecture-scale-2",
+          "prompt": "Qual è il vantaggio principale dell'organizzazione feature-first rispetto a quella per tipo?",
+          "code": null,
+          "options": [
+            "Riduce il numero di file del progetto",
+            "Rende l'app più veloce all'avvio",
+            "Un cambiamento resta dentro una cartella e la feature è cancellabile",
+            "Evita di dover scrivere i test"
+          ],
+          "answer": 2,
+          "explanation": "Con le cartelle per tipo ogni modifica tocca `models/`, `services/`, `widgets/`; con feature-first il lavoro è locale, i conflitti fra team calano e togliere una feature è un'operazione pulita.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Il numero di file è sostanzialmente lo stesso: cambia solo come sono raggruppati.",
+            "L'organizzazione delle cartelle non influisce sulle performance a runtime.",
+            null,
+            "I test servono uguale; semmai diventano più facili perché i confini sono chiari."
+          ]
+        },
+        {
+          "id": "flutter-architecture-scale-3",
+          "prompt": "Quale import in un file del layer **domain** è il segnale che qualcosa è fuori posto?",
+          "code": null,
+          "options": [
+            "`package:flutter/material.dart`",
+            "`dart:async`",
+            "`dart:math`",
+            "Un altro file del domain"
+          ],
+          "answer": 0,
+          "explanation": "Il domain è Dart puro: se importa Flutter significa che ci è finita dentro la UI (o un `BuildContext`, o un `Color`), e con essa la dipendenza dal framework che volevi evitare.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`dart:async` fa parte della libreria standard: `Future` e `Stream` nel domain vanno benissimo.",
+            "`dart:math` è Dart puro e non lega il domain a nessun framework.",
+            "Gli import interni al domain sono normali: è il suo stesso strato."
+          ]
+        },
+        {
+          "id": "flutter-architecture-scale-4",
+          "prompt": "Perché l'**interfaccia** del repository si mette nel domain e non nel data?",
+          "code": null,
+          "options": [
+            "Per convenzione dei linguaggi tipizzati",
+            "Perché così il domain non dipende dall'infrastruttura",
+            "Perché il data layer non può esporre classi astratte",
+            "Per ridurre il numero di file"
+          ],
+          "answer": 1,
+          "explanation": "È l'inversione delle dipendenze: il contratto lo detta chi lo usa. Così il domain resta indipendente da Dio, sqflite o Firebase, e nei test lo sostituisci con un fake.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Non è una convenzione di stile: cambia proprio la direzione delle dipendenze fra i layer.",
+            null,
+            "Il data layer può benissimo dichiarare classi astratte; il punto è chi possiede il contratto.",
+            "I file aumentano, non diminuiscono: il guadagno è di disaccoppiamento."
+          ]
+        },
+        {
+          "id": "flutter-architecture-scale-5",
+          "prompt": "Perché separare i DTO dalle entità di dominio?",
+          "code": null,
+          "options": [
+            "Perché i DTO non si possono serializzare",
+            "Per evitare di scrivere mapper",
+            "Perché un cambio di formato dell'API si ferma al confine",
+            "Perché le entità non possono avere campi `final`"
+          ],
+          "answer": 2,
+          "explanation": "Il DTO ha la forma che vuole il backend (snake_case, campi opzionali, date come stringhe); l'entità ha la forma che serve al dominio. Il mapper nel repository assorbe i cambi di API senza propagarli a UI e logica.",
+          "difficulty": 2,
+          "whyWrong": [
+            "È l'opposto: i DTO esistono proprio per la serializzazione, le entità spesso non la implementano.",
+            "I mapper li scrivi comunque: sono il prezzo della separazione, non il motivo.",
+            null,
+            "Le entità sono tipicamente immutabili con campi `final`: nessun vincolo lo impedisce."
+          ]
+        },
+        {
+          "id": "flutter-architecture-scale-6",
+          "prompt": "Cosa ti dà un package interno che una semplice cartella non dà?",
+          "code": null,
+          "options": [
+            "Un confine che il compilatore fa rispettare",
+            "Codice più veloce a runtime",
+            "Hot reload più rapido",
+            "La possibilità di usare altre versioni di Dart"
+          ],
+          "answer": 0,
+          "explanation": "Dentro un package puoi importare solo ciò che è dichiarato in `pubspec.yaml` e, dall'esterno, solo quello che il package esporta: il confine smette di dipendere dalla disciplina di chi scrive le PR.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Il codice compilato è lo stesso: la modularizzazione è un vincolo di build, non un'ottimizzazione.",
+            "L'hot reload non migliora; con molti package il tooling è semmai un po' più pesante.",
+            "Tutti i package di un'app condividono lo stesso SDK Dart risolto dal pubspec."
+          ]
+        },
+        {
+          "id": "flutter-architecture-scale-7",
+          "prompt": "Cosa c'è di sbagliato in questo widget?",
+          "code": "class OrderPage extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    return FutureBuilder(\n      future: Dio().get('https://api.app.io/orders/42'),\n      builder: (context, snap) => Text(snap.data?.data['total'] ?? ''),\n    );\n  }\n}",
+          "options": [
+            "`FutureBuilder` va usato solo con `StatefulWidget`",
+            "Manca il tipo generico su `FutureBuilder`",
+            "La presentation conosce HTTP e il formato dell'API",
+            "`Dio` va sempre usato con `await`"
+          ],
+          "answer": 2,
+          "explanation": "Il widget costruisce da solo il client, sa l'URL e legge la mappa JSON grezza: non è testabile senza rete e ogni cambio di API tocca la UI. Deve dipendere da un repository che restituisce un'entità.",
+          "difficulty": 3,
+          "whyWrong": [
+            "`FutureBuilder` funziona anche in uno `StatelessWidget`; il problema qui è un altro.",
+            "Il generico migliora la leggibilità ma non è il difetto architetturale.",
+            null,
+            "`FutureBuilder` vuole proprio un `Future` non atteso: la chiamata senza `await` è corretta."
+          ]
+        },
+        {
+          "id": "flutter-architecture-scale-8",
+          "prompt": "In un'architettura a layer, in che direzione puntano le dipendenze?",
+          "code": null,
+          "options": [
+            "Il domain dipende dal data, che dipende dalla presentation",
+            "Ogni layer dipende da quello sotto, in cascata",
+            "Presentation e data dipendono dal domain",
+            "Tutti i layer dipendono da `core`"
+          ],
+          "answer": 2,
+          "explanation": "Il domain è il centro e non conosce nessuno: presentation e data dipendono da lui. È questo che permette di sostituire UI o sorgente dati senza toccare le regole.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Sarebbe l'inversione al contrario: il domain resterebbe legato all'infrastruttura e alla UI.",
+            "La cascata rigida fa dipendere il domain dal data: è proprio quello che l'inversione evita.",
+            null,
+            "`core` offre servizi trasversali, ma non è il centro dell'architettura né lo diventa per tutti i layer."
+          ]
+        },
+        {
+          "id": "flutter-architecture-scale-9",
+          "prompt": "Quando ha senso estrarre una feature in un package separato?",
+          "code": null,
+          "options": [
+            "Subito, prima di scrivere il codice",
+            "Quando il confine è stabile e l'estrazione porta un vantaggio concreto",
+            "Solo quando il progetto supera le 100.000 righe",
+            "Mai: in Flutter i package interni non si usano"
+          ],
+          "answer": 1,
+          "explanation": "Un package congela un confine: estrarlo presto, su un dominio ancora incerto, significa spostare classi da un package all'altro per mesi. Si estrae quando serve davvero — riuso, team separato, build incrementali.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Prima di scrivere il codice non sai ancora dove passa il confine giusto.",
+            null,
+            "Non esiste una soglia di righe: conta la stabilità del confine e il vantaggio organizzativo.",
+            "I package interni in monorepo sono una pratica comune, con Melos o i workspace di Dart."
+          ]
+        },
+        {
+          "id": "flutter-architecture-scale-10",
+          "prompt": "Come esponi i token del design system (colori di brand, spaziature) a tutta l'app?",
+          "code": null,
+          "options": [
+            "Con costanti globali in un file `constants.dart`",
+            "Con un `InheritedWidget` scritto a mano per ogni token",
+            "Con una `ThemeExtension` registrata nel `ThemeData`",
+            "Passandoli come parametri ai widget"
+          ],
+          "answer": 2,
+          "explanation": "Una `ThemeExtension` porta i token tipizzati dentro il tema: li leggi con `Theme.of(context).extension<AppColors>()`, cambiano con il tema chiaro/scuro e vengono interpolati nelle transizioni.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Le costanti globali ignorano il tema: con il dark mode ti servirebbe un `if` in ogni punto d'uso.",
+            "Riscriveresti a mano ciò che `ThemeExtension` già fa, inclusi `lerp` e integrazione con `ThemeData`.",
+            null,
+            "Passare i token a mano li propaga per tutto l'albero e li duplica in ogni costruttore."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native-integration",
+      "title": "Integrazione nativa",
+      "icon": "puzzlepiece.extension.fill",
+      "summary": "MethodChannel ed EventChannel, Swift e Kotlin, Pigeon, plugin federati, PlatformView e dart:ffi",
+      "lesson": [
+        {
+          "heading": "Come parlano Dart e nativo",
+          "body": "Sotto ogni canale c'è il **BinaryMessenger**: Dart e piattaforma si scambiano buffer di byte su un canale identificato da un nome (usa un prefisso tuo, `com.app/battery`, per non collidere con i plugin). A serializzare ci pensa un **codec**, lo `StandardMessageCodec`, che sa trattare numeri, stringhe, liste, mappe e byte — non i tuoi oggetti.\n\nCi sono tre tipi di canale: **MethodChannel** per chiamate richiesta/risposta, **EventChannel** per uno `Stream` di eventi che arrivano dal nativo, **BasicMessageChannel** per messaggi liberi nei due sensi.\n\nDue proprietà da ricordare: la comunicazione è **sempre asincrona** (anche se il nativo risponde subito, in Dart hai un `Future`), e gli handler nativi girano sul **main thread della piattaforma**, quindi il lavoro pesante va spostato in background di là, altrimenti blocchi la UI dal lato nativo.",
+          "code": null
+        },
+        {
+          "heading": "Da Dart a Swift e Kotlin",
+          "body": "Dal lato Dart chiami `invokeMethod` e gestisci `PlatformException` (errore restituito dal nativo) e `MissingPluginException` (nessun handler registrato, tipico quando il metodo esiste su una sola piattaforma).\n\nDal lato nativo registri un handler sul `binaryMessenger` dell'engine e rispondi con `result(...)`. Chiudi sempre con il caso di default: `FlutterMethodNotImplemented` su iOS, `result.notImplemented()` su Android.",
+          "code": "// Dart\nconst channel = MethodChannel('com.app/device');\nfinal level = await channel.invokeMethod<int>('batteryLevel');\n\n// Swift — AppDelegate\nlet channel = FlutterMethodChannel(name: \"com.app/device\",\n                                   binaryMessenger: controller.binaryMessenger)\nchannel.setMethodCallHandler { call, result in\n  switch call.method {\n  case \"batteryLevel\": result(Int(UIDevice.current.batteryLevel * 100))\n  default: result(FlutterMethodNotImplemented)\n  }\n}\n\n// Kotlin — MainActivity\nMethodChannel(flutterEngine.dartExecutor.binaryMessenger, \"com.app/device\")\n  .setMethodCallHandler { call, result ->\n    when (call.method) {\n      \"batteryLevel\" -> result.success(batteryLevel())\n      else -> result.notImplemented()\n    }\n  }",
+          "language": "dart · swift · kotlin"
+        },
+        {
+          "heading": "Dal nativo a Dart",
+          "body": "Per un flusso continuo di eventi nativi — sensori, connettività, posizione — si usa un **EventChannel**: il nativo implementa uno `StreamHandler` con `onListen`/`onCancel` e scrive sull'`EventSink`; in Dart ottieni un `Stream` da ascoltare (e da cancellare nel `dispose`, altrimenti il listener nativo resta attivo).\n\nSe invece è il nativo a dover *chiedere* qualcosa a Dart, puoi invertire i ruoli: `invokeMethod` dal nativo sullo stesso canale e `setMethodCallHandler` dal lato Dart.",
+          "code": "// Dart\nconst events = EventChannel('com.app/connectivity');\nfinal sub = events.receiveBroadcastStream()\n    .listen((status) => debugPrint('stato: $status'));\n\n// Kotlin\nEventChannel(messenger, \"com.app/connectivity\").setStreamHandler(\n  object : EventChannel.StreamHandler {\n    override fun onListen(args: Any?, sink: EventChannel.EventSink) {\n      register { status -> sink.success(status) }\n    }\n    override fun onCancel(args: Any?) { unregister() }\n  }\n)",
+          "language": "dart · kotlin"
+        },
+        {
+          "heading": "Pigeon e struttura di un plugin",
+          "body": "Scrivere i canali a mano significa stringhe e cast: sbagli il nome di un metodo e lo scopri a runtime. **Pigeon** parte da un file Dart di definizione e **genera** il codice dei due lati — Dart, Swift, Kotlin — con tipi e messaggi tipizzati. È l'approccio consigliato per un'integrazione non banale.\n\nUn plugin pubblicabile è **federato**: un package *app-facing* con l'API pubblica, un `platform_interface` che definisce il contratto (di solito con `PlatformInterface` e un token per evitare l'`implements` selvaggio), e un package per ogni piattaforma, dichiarato nel `pubspec` sotto `flutter: plugin: platforms:`. Così qualcuno può aggiungere il supporto a una piattaforma senza toccare il tuo package.",
+          "code": "// pigeons/device.dart — solo definizione\n@HostApi()\nabstract class DeviceApi {\n  int batteryLevel();\n  @async String deviceName();\n}\n\n@FlutterApi() // il nativo chiama Dart\nabstract class DeviceEvents {\n  void onCharging(bool charging);\n}",
+          "language": "dart (pigeon)"
+        },
+        {
+          "heading": "PlatformView e FFI",
+          "body": "**PlatformView** (`UiKitView`, `AndroidView`) incastona una view nativa nell'albero Flutter: mappe, WebView, anteprima della fotocamera. È la via più costosa, perché il contenuto nativo va composto con la scena Flutter: su Android la *hybrid composition* comporta sincronizzazione fra thread e un calo misurabile, quindi si usa solo quando serve davvero. Per il solo pixel data spesso conviene una **Texture** alimentata dal nativo.\n\n**dart:ffi** è l'altra strada: chiama direttamente funzioni C/C++ senza codec e senza asincronia, quindi è la più veloce — ideale per SQLite, crittografia, codec, inferenza. In cambio ti tocca la gestione manuale della memoria (`malloc`/`calloc` e `free`, o un `Arena`) e una chiamata *lunga* blocca l'isolate, perché è sincrona: se pesa, mettila in un isolate. `ffigen` genera i binding dagli header C.",
+          "code": "final dylib = DynamicLibrary.open('libcrypto.so');\nfinal hash = dylib.lookupFunction<\n    Pointer<Uint8> Function(Pointer<Uint8>, Int32),\n    Pointer<Uint8> Function(Pointer<Uint8>, int)>('sha256');\n\nusing((arena) {\n  final input = arena<Uint8>(data.length); // liberato all'uscita\n  // ...\n});"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Devi usare un SDK nativo che non ha un plugin: come procedi?\"** Risposta: espongo la superficie minima che mi serve con un canale, generandolo con Pigeon per avere tipi e non stringhe; tengo gli handler nativi leggeri spostando il lavoro in background di là; incapsulo tutto dietro un'interfaccia nel domain così la UI non sa che esiste un canale, e se il pezzo è riusabile lo impacchetto come plugin federato.\n\nSappi motivare la scelta fra le tre vie: **channel/Pigeon** per le API di sistema (asincrono, serializzato, semplice), **FFI** per librerie C quando conta la latenza (sincrono, zero serializzazione, memoria a carico tuo), **PlatformView** solo quando devi mostrare una view nativa, sapendo che è la più costosa.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "flutter-native-integration-1",
+          "prompt": "Le chiamate su un `MethodChannel` sono sincrone o asincrone?",
+          "code": null,
+          "options": [
+            "Sincrone: il risultato torna subito",
+            "Sempre asincrone",
+            "Sincrone su iOS, asincrone su Android",
+            "Dipende dal codec usato"
+          ],
+          "answer": 1,
+          "explanation": "I messaggi attraversano il BinaryMessenger e tornano sull'event loop: in Dart ottieni sempre un `Future`, anche quando il nativo risponde immediatamente.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Non esiste una variante sincrona del MethodChannel: per chiamate sincrone serve `dart:ffi`.",
+            null,
+            "Il comportamento è identico sulle due piattaforme.",
+            "Il codec decide come i dati vengono serializzati, non se la chiamata è asincrona."
+          ]
+        },
+        {
+          "id": "flutter-native-integration-2",
+          "prompt": "Devi mostrare una mappa nativa (MapKit / Google Maps SDK) dentro una schermata Flutter. Cosa usi?",
+          "code": null,
+          "options": [
+            "Una PlatformView (`UiKitView` / `AndroidView`)",
+            "Un `MethodChannel` che restituisce i pixel",
+            "`dart:ffi`",
+            "Un `CustomPainter`"
+          ],
+          "answer": 0,
+          "explanation": "La PlatformView incastona una view nativa vera nell'albero dei widget. È la via corretta, ricordando che è anche la più costosa in termini di composizione.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Un MethodChannel scambia messaggi serializzati: non è pensato per trasportare un'interfaccia interattiva.",
+            "FFI chiama funzioni C: non sa nulla di view native né del loro ciclo di vita.",
+            "Un `CustomPainter` disegna con il canvas di Flutter: non può ospitare una view della piattaforma."
+          ]
+        },
+        {
+          "id": "flutter-native-integration-3",
+          "prompt": "A cosa serve Pigeon?",
+          "code": null,
+          "options": [
+            "A velocizzare i canali con un codec binario custom",
+            "A generare codice tipizzato per i due lati del canale",
+            "A eseguire codice Swift dentro Dart",
+            "A convertire automaticamente un plugin Android in uno iOS"
+          ],
+          "answer": 1,
+          "explanation": "Da un file Dart di definizione Pigeon genera l'interfaccia Dart e quella Swift/Kotlin: spariscono nomi dei metodi come stringhe e cast a mano, e gli errori si vedono a compile time.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Il guadagno è di sicurezza dei tipi, non di velocità: il trasporto resta quello standard.",
+            null,
+            "Il codice Swift continua a girare nativo: Pigeon genera solo il ponte fra i due lati.",
+            "Le implementazioni native restano da scrivere: Pigeon genera le firme, non la logica."
+          ]
+        },
+        {
+          "id": "flutter-native-integration-4",
+          "prompt": "Cosa succede se il lato nativo risponde con un errore e in Dart non catturi nulla?",
+          "code": "final level = await channel.invokeMethod<int>('batteryLevel');",
+          "options": [
+            "`level` diventa `null`",
+            "La chiamata viene ritentata automaticamente",
+            "Viene lanciata una `PlatformException` non gestita",
+            "L'app si chiude in modo silenzioso"
+          ],
+          "answer": 2,
+          "explanation": "Un `result(FlutterError(...))` o `result.error(...)` arriva in Dart come `PlatformException`; se il metodo non è registrato su quella piattaforma è invece una `MissingPluginException`. Entrambe vanno gestite.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`null` arriva solo se il nativo risponde con successo senza valore: un errore lancia un'eccezione.",
+            "Non c'è nessun retry automatico: la politica di ritentare la decidi tu.",
+            null,
+            "L'errore non è silenzioso: risale come eccezione asincrona e finisce nel gestore degli errori."
+          ]
+        },
+        {
+          "id": "flutter-native-integration-5",
+          "prompt": "Su quale thread gira l'handler nativo di un `MethodChannel`?",
+          "code": null,
+          "options": [
+            "Sul main thread della piattaforma",
+            "Su un thread di background scelto da Flutter",
+            "Sul raster thread",
+            "Sullo stesso isolate Dart che ha chiamato"
+          ],
+          "answer": 0,
+          "explanation": "Gli handler vengono invocati sul main thread nativo: se dentro ci metti lavoro pesante blocchi la UI dal lato piattaforma, quindi va spostato su una coda o un thread di background e la `result` chiamata al ritorno.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Flutter non sposta l'handler su un thread di background: lo fai tu se serve.",
+            "Il raster thread rasterizza i frame e non esegue gli handler dei canali.",
+            "Il codice nativo non gira in un isolate Dart: sono due mondi diversi collegati dal messenger."
+          ]
+        },
+        {
+          "id": "flutter-native-integration-6",
+          "prompt": "Il nativo deve mandare a Dart gli aggiornamenti continui dell'accelerometro. Quale canale?",
+          "code": null,
+          "options": [
+            "`MethodChannel` chiamato in polling ogni 16 ms",
+            "`EventChannel`",
+            "`BasicMessageChannel` con codec JSON",
+            "Una PlatformView invisibile"
+          ],
+          "answer": 1,
+          "explanation": "L'`EventChannel` è fatto per i flussi: il nativo implementa uno `StreamHandler` e scrive sull'`EventSink`, in Dart ascolti uno `Stream` (e cancelli la sottoscrizione nel `dispose`).",
+          "difficulty": 2,
+          "whyWrong": [
+            "Il polling spreca chiamate e perde eventi: il push nativo è più preciso e più efficiente.",
+            null,
+            "Funzionerebbe, ma dovresti gestire a mano sottoscrizione e disiscrizione che l'EventChannel già modella.",
+            "Le PlatformView servono a mostrare view native, non a trasportare dati."
+          ]
+        },
+        {
+          "id": "flutter-native-integration-7",
+          "prompt": "Principale vantaggio di `dart:ffi` rispetto a un platform channel?",
+          "code": null,
+          "options": [
+            "Funziona anche sul web",
+            "Gestisce la memoria automaticamente",
+            "Chiamate sincrone senza serializzazione",
+            "Non richiede codice nativo"
+          ],
+          "answer": 2,
+          "explanation": "FFI chiama direttamente la funzione C: niente codec, niente salto sull'event loop. In cambio la chiamata è sincrona e blocca l'isolate, e la memoria la gestisci tu.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Sul web non c'è FFI: lì servono le interop JavaScript.",
+            "È il contrario: con FFI allochi e liberi a mano (`calloc`/`free` o un `Arena`).",
+            null,
+            "Serve comunque una libreria nativa C/C++ da caricare: FFI è il modo di chiamarla."
+          ]
+        },
+        {
+          "id": "flutter-native-integration-8",
+          "prompt": "In un plugin federato, a cosa serve il package `platform_interface`?",
+          "code": null,
+          "options": [
+            "A contenere le implementazioni iOS e Android",
+            "A definire il contratto che ogni implementazione di piattaforma deve rispettare",
+            "A distribuire il plugin su pub.dev",
+            "A registrare il plugin nell'engine"
+          ],
+          "answer": 1,
+          "explanation": "Il platform_interface dichiara l'API che ogni piattaforma implementa (di solito estendendo `PlatformInterface` con un token di verifica), così un terzo può aggiungere una piattaforma senza modificare il package principale.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Le implementazioni stanno in package separati per piattaforma, non nell'interfaccia.",
+            null,
+            "La pubblicazione è indipendente dalla struttura federata.",
+            "La registrazione avviene tramite il `pubspec` e il codice generato dell'engine."
+          ]
+        },
+        {
+          "id": "flutter-native-integration-9",
+          "prompt": "Perché una lista lunga di PlatformView può far peggiorare le performance?",
+          "code": null,
+          "options": [
+            "Perché Flutter le ricostruisce a ogni frame da zero",
+            "Perché usano sempre il software rendering",
+            "Perché ogni view nativa apre un isolate",
+            "Perché comporre view native con la scena Flutter costa sincronizzazione e layer aggiuntivi"
+          ],
+          "answer": 3,
+          "explanation": "Le view native non vivono nel layer tree di Flutter: vanno composte con esso (su Android con la hybrid composition), con costi di sincronizzazione fra thread e texture intermedie. Per contenuti solo visivi spesso conviene una `Texture`.",
+          "difficulty": 3,
+          "whyWrong": [
+            "La view nativa viene riusata: il problema è la composizione, non una ricostruzione continua.",
+            "Il rendering resta accelerato; il costo sta nel mettere insieme i due mondi.",
+            "Gli isolate non c'entrano: le PlatformView sono oggetti nativi, non codice Dart.",
+            null
+          ]
+        },
+        {
+          "id": "flutter-native-integration-10",
+          "prompt": "Con `dart:ffi` allochi un buffer con `calloc<Uint8>(n)`. Chi lo libera?",
+          "code": null,
+          "options": [
+            "Il garbage collector di Dart, quando il `Pointer` non è più raggiungibile",
+            "Tu, con `calloc.free` o usando un `Arena`",
+            "La libreria C, alla fine della funzione",
+            "Nessuno: la memoria nativa viene rilasciata alla chiusura dell'isolate"
+          ],
+          "answer": 1,
+          "explanation": "La memoria nativa è fuori dall'heap Dart e il GC non la vede: va liberata a mano con `calloc.free(ptr)`, oppure con `using((arena) { ... })` che libera tutto all'uscita dal blocco.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Il GC raccoglie l'oggetto `Pointer`, non il blocco di memoria nativa a cui punta: quello resta allocato.",
+            null,
+            "La libreria C libera solo ciò che ha allocato lei: quel buffer l'hai allocato tu.",
+            "La memoria resta occupata per tutta la vita del processo: è un leak a tutti gli effetti."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deployment",
+      "title": "Deployment avanzato",
+      "icon": "shippingbox.fill",
+      "summary": "Firma iOS e Android, flavor, variabili d'ambiente, CI/CD con Fastlane, store, offuscamento e simboli",
+      "lesson": [
+        {
+          "heading": "Firma iOS",
+          "body": "Su iOS una build installabile richiede tre pezzi che devono combaciare: un **certificato** (development o distribution, cioè la tua identità), un **provisioning profile** (che lega certificato, App ID e — in development — i device autorizzati) e il **bundle identifier** con le capability abilitate, che devono corrispondere a quelle dichiarate su App Store Connect.\n\nIl *signing automatico* di Xcode va benissimo da soli; in team diventa un problema, perché ognuno genera certificati diversi. La soluzione classica è **fastlane match**, che tiene certificati e profili cifrati in un repository condiviso e li installa uguali su ogni macchina e sulla CI.\n\nLa distribuzione passa da App Store Connect: build caricata, **TestFlight** per i tester, poi review e rilascio (anche graduale, in *phased release*).",
+          "code": null
+        },
+        {
+          "heading": "Firma Android",
+          "body": "Su Android firmi con una **keystore** (`.jks`). La configurazione va in `android/app/build.gradle` leggendo un `key.properties` che **non finisce nel repository**: se perdi la chiave e non usi Play App Signing non puoi più aggiornare l'app.\n\nCon **Play App Signing** la chiave di firma dell'app la custodisce Google: tu firmi con una **upload key**, che se compromessa si può sostituire. È il motivo principale per cui oggi il Play Store richiede un **App Bundle (.aab)** e non un APK: è Google a generare e firmare gli APK ottimizzati per ogni device.\n\nLa build di debug usa una chiave di debug generata in automatico: identica su ogni macchina, inutile per la distribuzione.",
+          "code": "// android/app/build.gradle\nval props = Properties().apply {\n  load(rootProject.file(\"key.properties\").inputStream()) // fuori dal VCS\n}\n\nsigningConfigs {\n  create(\"release\") {\n    storeFile = file(props[\"storeFile\"] as String)\n    storePassword = props[\"storePassword\"] as String\n    keyAlias = props[\"keyAlias\"] as String\n    keyPassword = props[\"keyPassword\"] as String\n  }\n}",
+          "language": "gradle"
+        },
+        {
+          "heading": "Flavor e configurazioni di build",
+          "body": "Un **flavor** è una variante della stessa app: dev, staging, produzione. Cambiano l'identificativo (con un suffisso, così le tre si installano insieme sullo stesso telefono), il nome, l'icona e l'endpoint.\n\nDi sotto sono meccanismi nativi: su Android i `productFlavors` di Gradle, su iOS gli **scheme** con i relativi file `.xcconfig` e configurazioni di build. Flutter li mette insieme con `--flavor`, spesso abbinato a un entry point dedicato.\n\nNon confondere il flavor con la **build mode**: `debug`, `profile` e `release` decidono compilazione (JIT o AOT), assert e strumenti; il flavor decide *quale ambiente* stai costruendo. Sono ortogonali: esiste una release del flavor staging.",
+          "code": "flutter run --flavor dev -t lib/main_dev.dart\nflutter build appbundle --flavor prod -t lib/main_prod.dart --release",
+          "language": "shell"
+        },
+        {
+          "heading": "Variabili d'ambiente e segreti",
+          "body": "Il modo nativo di Flutter è `--dart-define` (o `--dart-define-from-file=config/prod.json`), letto in Dart con `String.fromEnvironment`. Il valore viene risolto **a compile time**: per questo la lettura va dichiarata `const`, altrimenti in AOT ti ritrovi la stringa vuota di default.\n\nUn file `.env` incluso negli asset è comodo ma è solo un file dentro il pacchetto: chiunque può estrarlo. Per lo stesso motivo **un segreto vero non sta nell'app**, né in un define né offuscato: il binario è ispezionabile. Chiavi API private, firme e token stanno sul backend, che espone un endpoint; nell'app restano solo gli identificativi pubblici (client id, chiavi Firebase, che tali sono).",
+          "code": "// letto a compile time: deve essere const\nconst apiUrl = String.fromEnvironment('API_URL',\n    defaultValue: 'https://staging.api.app.io');\nconst isProd = bool.fromEnvironment('PROD');"
+        },
+        {
+          "heading": "CI/CD, offuscamento e simboli",
+          "body": "Una pipeline seria fa, in ordine: `flutter analyze` → `flutter test` → build firmata → upload. **Fastlane** copre la parte noiosa (`match` per i certificati, `gym` per la build iOS, `pilot` per TestFlight, `supply` per il Play Store) e funziona identica in locale e su GitHub Actions o Codemagic. Il numero di build va incrementato in automatico, non a mano.\n\nL'**offuscamento** si attiva con `--obfuscate --split-debug-info=build/symbols`: i nomi di classi e funzioni spariscono dal binario e i simboli restano in una cartella a parte. Conseguenza diretta: da quel momento gli stack trace dei crash sono illeggibili, quindi **quei simboli vanno conservati e caricati** sul servizio di crash reporting (dSYM su iOS, file dei simboli e mapping su Android) per ogni build rilasciata. Perdi i simboli, perdi i crash di quella versione.",
+          "code": "flutter build ipa --release \\\n  --obfuscate --split-debug-info=build/symbols/ios\n\nflutter build appbundle --release \\\n  --obfuscate --split-debug-info=build/symbols/android",
+          "language": "shell"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Come porti l'app dalla tua macchina agli store?\"** Racconta la catena: flavor e `--dart-define` per l'ambiente, firma gestita da match e da una keystore fuori dal repository, pipeline che analizza, testa, costruisce e carica su TestFlight e sulla traccia interna del Play Store, build number automatico, rollout graduale.\n\nI due dettagli che fanno la differenza: dire che il **segreto non va nell'app** qualunque sia l'offuscamento, e che l'offuscamento **richiede di archiviare i simboli** altrimenti i crash report diventano inutili. Menziona anche il rollout a percentuale e il *kill switch* remoto come rete di sicurezza, perché una release si controlla anche dopo il rilascio.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "flutter-deployment-1",
+          "prompt": "Cosa serve per firmare una build iOS distribuibile?",
+          "code": null,
+          "options": [
+            "Solo l'Apple ID dello sviluppatore",
+            "Un certificato di distribuzione e un provisioning profile coerente con il bundle id",
+            "Una keystore generata da Xcode",
+            "Soltanto l'abilitazione di TestFlight"
+          ],
+          "answer": 1,
+          "explanation": "Certificato (identità), provisioning profile (che lega certificato, App ID e capability) e bundle identifier devono combaciare: se uno dei tre non corrisponde, la build non viene firmata o non si installa.",
+          "difficulty": 1,
+          "whyWrong": [
+            "L'Apple ID serve ad accedere, ma la firma richiede certificato e profilo veri e propri.",
+            null,
+            "La keystore è il meccanismo Android; su iOS si usano certificati e provisioning profile.",
+            "TestFlight distribuisce una build già firmata: non sostituisce la firma."
+          ]
+        },
+        {
+          "id": "flutter-deployment-2",
+          "prompt": "Quale formato richiede oggi il Play Store per pubblicare un'app?",
+          "code": null,
+          "options": [
+            "APK universale",
+            "APK diviso per ABI",
+            "App Bundle (.aab)",
+            "Indifferentemente APK o AAB"
+          ],
+          "answer": 2,
+          "explanation": "Il Play Store richiede l'App Bundle: Google genera e firma da sé gli APK ottimizzati per ciascun device, riducendo il peso del download. L'APK resta valido per la distribuzione fuori dallo store.",
+          "difficulty": 1,
+          "whyWrong": [
+            "L'APK universale contiene tutte le architetture e non è più accettato per le nuove pubblicazioni.",
+            "La divisione per ABI la fa Google a partire dall'AAB: non la carichi tu.",
+            null,
+            "Per lo store la scelta non è libera: serve l'AAB."
+          ]
+        },
+        {
+          "id": "flutter-deployment-3",
+          "prompt": "Dove tieni `key.properties` e la keystore di release?",
+          "code": null,
+          "options": [
+            "Nel repository, così la CI li trova",
+            "Fuori dal repository, iniettati come secret sulla CI",
+            "Dentro `assets/`, per poterli leggere da Dart",
+            "In `android/app/src/main/res/`"
+          ],
+          "answer": 1,
+          "explanation": "Chiunque abbia keystore e password può firmare un'app come se fosse la tua: restano fuori dal VCS e sulla CI arrivano come secret o file cifrato (con match per iOS, un secure file per Android).",
+          "difficulty": 2,
+          "whyWrong": [
+            "Committare le credenziali di firma le espone a chiunque abbia accesso al repo, anche in futuro nella storia di git.",
+            null,
+            "Gli asset finiscono dentro il pacchetto dell'app: sarebbe l'esposizione peggiore.",
+            "Le risorse Android sono incluse nell'APK: stesso problema."
+          ]
+        },
+        {
+          "id": "flutter-deployment-4",
+          "prompt": "A cosa serve un flavor?",
+          "code": null,
+          "options": [
+            "A scegliere fra compilazione JIT e AOT",
+            "A creare varianti dell'app (dev, staging, prod) con id, nome ed endpoint diversi",
+            "A ridurre la dimensione del binario",
+            "A gestire le traduzioni"
+          ],
+          "answer": 1,
+          "explanation": "Il flavor è la variante d'ambiente: bundle id con suffisso (così le versioni convivono sul telefono), nome e icona diversi, configurazioni diverse. Sotto sono i productFlavors di Gradle e gli scheme di Xcode.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Quella è la build mode (`debug`/`profile`/`release`), ortogonale al flavor.",
+            null,
+            "La dimensione dipende da build mode, split e tree shaking, non dal flavor.",
+            "Le traduzioni sono gestite dalla localizzazione, indipendente dal flavor."
+          ]
+        },
+        {
+          "id": "flutter-deployment-5",
+          "prompt": "Come passi l'URL dell'API in modo che cambi fra staging e produzione?",
+          "code": null,
+          "options": [
+            "Con `--dart-define` letto da `String.fromEnvironment`",
+            "Con un `if` su `kDebugMode`",
+            "Con un file `.env` incluso negli asset",
+            "Cambiandolo a mano prima di ogni build"
+          ],
+          "answer": 0,
+          "explanation": "`--dart-define` (o `--dart-define-from-file`) inietta il valore a compile time e lo rende riproducibile dalla CI, senza modificare il codice fra un ambiente e l'altro.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`kDebugMode` distingue la build mode, non l'ambiente: una release di staging risulterebbe produzione.",
+            "Funziona, ma il file resta leggibile dentro il pacchetto e va ricordato in ogni build: i define sono più adatti.",
+            "Una modifica manuale prima della build è la fonte classica di release puntate sull'ambiente sbagliato."
+          ]
+        },
+        {
+          "id": "flutter-deployment-6",
+          "prompt": "Con Play App Signing, che differenza c'è fra upload key e chiave di firma dell'app?",
+          "code": null,
+          "options": [
+            "Sono la stessa chiave con due nomi",
+            "L'upload key firma il debug, l'altra la release",
+            "Firmi con l'upload key, Google rifirma con la chiave dell'app che custodisce lui",
+            "L'upload key serve solo per la prima pubblicazione"
+          ],
+          "answer": 2,
+          "explanation": "Tu firmi l'AAB con la upload key; Google verifica, rimuove quella firma e firma gli APK con la chiave dell'app. Se la upload key viene compromessa si sostituisce, mentre perdere la chiave dell'app sarebbe irreversibile.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Sono due chiavi distinte, ed è proprio questa separazione a dare la possibilità di recupero.",
+            "La build di debug usa una chiave di debug generata automaticamente, non la upload key.",
+            null,
+            "La upload key si usa a ogni caricamento, non solo la prima volta."
+          ]
+        },
+        {
+          "id": "flutter-deployment-7",
+          "prompt": "In release questa variabile risulta sempre vuota. Perché?",
+          "code": "final apiUrl = String.fromEnvironment('API_URL');\n// build: flutter build apk --dart-define=API_URL=https://api.app.io",
+          "options": [
+            "Perché `--dart-define` funziona solo in debug",
+            "Perché manca `defaultValue`",
+            "Perché il nome deve essere in minuscolo",
+            "Perché la lettura non è `const`: il valore si risolve a compile time"
+          ],
+          "answer": 3,
+          "explanation": "`String.fromEnvironment` è un costruttore const: solo in contesto costante il compilatore sostituisce il valore passato con `--dart-define`. Dichiarata così, in AOT restituisce il default.",
+          "difficulty": 3,
+          "whyWrong": [
+            "`--dart-define` funziona in tutte le build mode: il problema è come viene letto il valore.",
+            "Il `defaultValue` cambia solo cosa ottieni quando il define manca davvero.",
+            "Il nome è una chiave arbitraria: maiuscole e minuscole non c'entrano.",
+            null
+          ]
+        },
+        {
+          "id": "flutter-deployment-8",
+          "prompt": "Rilasci con `--obfuscate --split-debug-info`. Che conseguenza ha sui crash report?",
+          "code": null,
+          "options": [
+            "Nessuna: gli stack trace restano leggibili",
+            "Gli stack trace sono illeggibili se non carichi i simboli sul servizio di crash",
+            "I crash non vengono più registrati",
+            "Solo i crash nativi risultano offuscati"
+          ],
+          "answer": 1,
+          "explanation": "L'offuscamento toglie i nomi dal binario e li salva nella cartella dei simboli: senza caricare quei file (dSYM, mapping, symbols) per quella esatta build, gli stack trace restano inutilizzabili.",
+          "difficulty": 3,
+          "whyWrong": [
+            "È proprio quello che cambia: i nomi di classi e metodi spariscono dagli stack trace.",
+            null,
+            "I crash continuano a essere raccolti: è la loro leggibilità a peggiorare.",
+            "L'offuscamento riguarda il codice Dart; i crash nativi si simbolicano con i propri file."
+          ]
+        },
+        {
+          "id": "flutter-deployment-9",
+          "prompt": "La chiave privata di un servizio a pagamento può stare nell'app se il binario è offuscato?",
+          "code": null,
+          "options": [
+            "Sì, l'offuscamento la rende irrecuperabile",
+            "Sì, se è passata con `--dart-define`",
+            "No: il binario è ispezionabile, il segreto va sul backend",
+            "Sì, se la salvi nel keychain al primo avvio"
+          ],
+          "answer": 2,
+          "explanation": "Offuscamento e define rendono la stringa meno evidente, non irraggiungibile: chi ha il pacchetto può estrarla o intercettarla a runtime. Le chiamate firmate si fanno dal backend, che espone un endpoint all'app.",
+          "difficulty": 3,
+          "whyWrong": [
+            "L'offuscamento rinomina i simboli, ma le costanti restano nel binario e si trovano.",
+            "`--dart-define` inserisce comunque il valore nel binario: è offuscamento per modo di dire.",
+            null,
+            "Il keychain protegge ciò che è già sul device, ma la chiave dovresti comunque spedirla o includerla: il problema resta."
+          ]
+        },
+        {
+          "id": "flutter-deployment-10",
+          "prompt": "Cosa risolve `fastlane match` in un team?",
+          "code": null,
+          "options": [
+            "Tiene certificati e profili iOS cifrati in un repo condiviso e li installa uguali ovunque",
+            "Costruisce l'AAB e lo carica sul Play Store",
+            "Incrementa il numero di build",
+            "Esegue i test di integrazione prima della build"
+          ],
+          "answer": 0,
+          "explanation": "Senza match ogni sviluppatore e la CI generano certificati diversi e i profili si invalidano a vicenda. Match centralizza il materiale di firma in un repository cifrato, sincronizzando tutte le macchine.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Quello è compito di `gym`/`supply`: match si occupa solo della firma iOS.",
+            "L'incremento del build number è un'altra azione della pipeline.",
+            "I test li lanci come step separato: match non li esegue."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "production",
+      "title": "App in produzione",
+      "icon": "waveform.path.ecg",
+      "summary": "Crash analytics, log, feature flag e A/B test, deep link, push, offline e tempo di avvio",
+      "lesson": [
+        {
+          "heading": "Crash analytics e log",
+          "body": "Per vedere davvero tutti gli errori servono **due agganci**, non uno: `FlutterError.onError` raccoglie quelli del framework (eccezioni in `build`, layout, gesture), `PlatformDispatcher.instance.onError` raccoglie quelli asincroni non gestiti che arrivano fino alla zona radice. Vanno registrati prima di `runApp`.\n\nSui log, `print` in produzione è rumore che finisce nella console di sistema: usa un logger con livelli (o `dart:developer`), manda i log importanti al servizio di crash come **breadcrumb** e associa un identificativo utente **pseudonimo**, così un crash diventa una storia leggibile.\n\nRegola non negoziabile: niente dati personali nei log e nei crash: email, token, numeri di carta, contenuti privati. Un log finisce in un servizio terzo e ci resta.",
+          "code": "void main() {\n  WidgetsFlutterBinding.ensureInitialized();\n\n  FlutterError.onError = (details) {\n    FlutterError.presentError(details);\n    Crashlytics.instance.recordFlutterError(details);\n  };\n  PlatformDispatcher.instance.onError = (error, stack) {\n    Crashlytics.instance.recordError(error, stack, fatal: true);\n    return true; // gestito\n  };\n\n  runApp(const App());\n}"
+        },
+        {
+          "heading": "Cosa monitorare",
+          "body": "Le metriche che contano in produzione sono poche: **crash-free users** e crash-free sessions (la prima è la sola che il business capisca), ANR su Android, **tempo di avvio** a freddo, frame lenti e congelati, tasso di errore delle chiamate di rete, e le metriche del funnel che ti dicono se la feature viene davvero usata.\n\nUn errore di rete su una linea instabile è **atteso**: se lo mandi come crash sporchi la dashboard e smetti di guardarla. Distingui ciò che è un bug da ciò che è il mondo reale, e metti gli alert solo sulle regressioni che richiedono un intervento.\n\nOgni release va guardata per versione: la domanda giusta non è \"quanti crash abbiamo\", è \"questa versione sta peggio della precedente?\".",
+          "code": null
+        },
+        {
+          "heading": "Feature flag, remote config e A/B test",
+          "body": "Un **feature flag** letto da remoto ti permette di spegnere una funzionalità senza passare da una nuova release e dalla review: è il *kill switch*, la rete di sicurezza di ogni rilascio, e si abbina al rollout graduale a percentuale.\n\nAttenzione al primo avvio: `fetchAndActivate` è asincrono e la prima sessione parte con i **valori di default compilati nell'app**. Quindi i default devono essere sensati da soli, e non puoi fare affidamento sul flag per qualcosa che serve subito. Prevedi anche cosa succede se la configurazione non arriva mai (utente offline).\n\nUn **A/B test** è un flag con in più una metrica decisa **prima**, un'assegnazione stabile per utente (chi è in B ci resta) e una durata minima. Senza queste tre cose è solo un rollout che qualcuno guarderà a occhio.",
+          "code": "await remoteConfig.setDefaults({'new_checkout': false});\nunawaited(remoteConfig.fetchAndActivate()); // la prima sessione usa i default\n\nif (remoteConfig.getBool('new_checkout')) { /* ... */ }"
+        },
+        {
+          "heading": "Deep link e push",
+          "body": "I **deep link** veri (Universal Links su iOS, App Links su Android) richiedono un file sul tuo dominio — `apple-app-site-association` e `assetlinks.json` — più le Associated Domains su iOS e un intent-filter con `autoVerify` su Android: è il dominio che dichiara di appartenere all'app. Lo schema custom (`myapp://`) è solo un ripiego, perché chiunque può registrarlo. Con `go_router` la rotta è la stessa dell'app, quindi il link deve poter ricostruire anche lo stack e gestire il caso \"utente non autenticato\".\n\nPer le **push** passi da APNs su iOS e FCM su Android (e da FCM verso APNs se le unifichi). Il token è per installazione e **cambia** (reinstallazione, ripristino, rotazione): va risincronizzato col backend a ogni avvio e su `onTokenRefresh`. Su iOS il permesso va chiesto, e vale la pena chiederlo nel momento in cui l'utente capisce a cosa serve.\n\nUna *notification message* la mostra il sistema anche ad app chiusa; un *data message* lo gestisci tu, e l'handler di background deve essere una funzione **top-level** annotata `@pragma('vm:entry-point')`, perché viene invocata su un isolate nuovo.",
+          "code": "@pragma('vm:entry-point')\nFuture<void> _onBackgroundMessage(RemoteMessage message) async {\n  await Firebase.initializeApp(); // isolate separato: va inizializzato\n  await LocalStore.enqueue(message.data);\n}\n\nFirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);"
+        },
+        {
+          "heading": "Offline e avvio",
+          "body": "Un'app mobile è offline spesso, non per eccezione. L'impianto che regge è **cache-first**: la sorgente di verità per la UI è il database locale (Drift, Isar, sqflite), la rete lo aggiorna. Le azioni dell'utente finiscono in una **coda di operazioni pendenti** da rigiocare alla riconnessione, con una regola esplicita per i conflitti; e all'utente si mostra sempre lo stato reale del dato, incluso \"non aggiornato\".\n\nSul **tempo di avvio**: `main` deve fare il minimo. Inizializzazioni pesanti (SDK, migrazioni, precache) vanno spostate dopo il primo frame o rese pigre; la splash nativa copre il gap, `--trace-startup` e le tracce del servizio di performance ti dicono dove va il tempo. Sulla dimensione del pacchetto agiscono il tree shaking delle icone, gli asset giusti e le *deferred components*.\n\nIn background il sistema comanda: `WorkManager` e `BGTaskScheduler` garantiscono che il lavoro *prima o poi* avvenga, mai *quando* — quindi non progettare niente che dipenda dall'orario preciso.",
+          "code": null
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Hai rilasciato ieri e i crash sono saliti: cosa fai?\"** La risposta buona è una sequenza: guardo il crash-free per versione per capire se è davvero la nuova release, fermo il rollout graduale, spengo la feature sospetta con il flag remoto (senza aspettare la review), riproduco con breadcrumb e stack trace simbolicato, poi correggo e riapro il rollout.\n\nIl senso generale è che una release non finisce al momento del rilascio: la si osserva, la si può spegnere e la si riapre gradualmente. Se citi kill switch, rollout a percentuale, simbolicazione dei crash e metriche per versione, hai detto che conosci la produzione, non solo il codice.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "flutter-production-1",
+          "prompt": "A cosa serve un feature flag letto da remoto?",
+          "code": null,
+          "options": [
+            "A ridurre la dimensione dell'app",
+            "Ad accendere o spegnere una funzionalità senza una nuova release",
+            "A velocizzare l'avvio",
+            "A tradurre l'app in più lingue"
+          ],
+          "answer": 1,
+          "explanation": "È il kill switch: se una feature causa problemi la spegni da remoto, senza aspettare una build e la review dello store. Serve anche per i rollout progressivi e per gli esperimenti.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Il codice della feature resta dentro l'app anche quando il flag è spento.",
+            null,
+            "Semmai aggiunge una lettura in più all'avvio: non è un'ottimizzazione.",
+            "Le lingue sono gestite dalla localizzazione, non dai flag."
+          ]
+        },
+        {
+          "id": "flutter-production-2",
+          "prompt": "Perché `print` non è un buon sistema di log in produzione?",
+          "code": null,
+          "options": [
+            "Perché viene rimosso automaticamente in release",
+            "Perché non ha livelli, non arriva a nessun servizio e può esporre dati",
+            "Perché blocca l'event loop",
+            "Perché funziona solo su Android"
+          ],
+          "answer": 1,
+          "explanation": "In produzione i log servono a ricostruire cosa è successo a un utente che non puoi interrogare: servono livelli, invio a un servizio e attenzione ai dati personali. `print` non dà nulla di tutto questo e finisce nella console di sistema.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`print` resta anche nelle build di release: è uno dei motivi per cui è un problema.",
+            null,
+            "Il costo è trascurabile e non è quello il difetto principale.",
+            "Funziona su tutte le piattaforme: il problema è cosa ci fai dopo."
+          ]
+        },
+        {
+          "id": "flutter-production-3",
+          "prompt": "Quali agganci servono per raccogliere gli errori di un'app Flutter?",
+          "code": null,
+          "options": [
+            "Solo `try`/`catch` nei punti critici",
+            "Solo `FlutterError.onError`",
+            "`FlutterError.onError` più `PlatformDispatcher.instance.onError`",
+            "Un `ErrorWidget.builder` personalizzato"
+          ],
+          "answer": 2,
+          "explanation": "Il primo intercetta gli errori del framework (build, layout, gesture), il secondo gli errori asincroni non gestiti che risalgono alla zona radice. Con uno solo dei due perdi metà dei crash.",
+          "difficulty": 2,
+          "whyWrong": [
+            "I `try`/`catch` coprono solo i punti che hai previsto: i crash veri arrivano da quelli che non hai previsto.",
+            "Da solo non cattura le eccezioni asincrone fuori dal framework.",
+            null,
+            "`ErrorWidget.builder` cambia cosa si vede a schermo quando un widget fallisce, ma non registra nulla."
+          ]
+        },
+        {
+          "id": "flutter-production-4",
+          "prompt": "Al primo avvio, prima che `fetchAndActivate` sia completata, che valore ha un flag di remote config?",
+          "code": null,
+          "options": [
+            "Il valore di default impostato nell'app",
+            "`null`, finché non arriva la risposta",
+            "L'ultimo valore visto da altri utenti",
+            "La chiamata è sincrona: il valore è già quello remoto"
+          ],
+          "answer": 0,
+          "explanation": "Il fetch è asincrono: la prima sessione gira con i default compilati nell'app. Per questo i default devono essere sensati da soli e non si può far dipendere da un flag qualcosa che serve immediatamente.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Le API restituiscono il default tipizzato, non `null`: è proprio il loro scopo.",
+            "La configurazione non si condivide fra dispositivi: ogni installazione parte dai propri default.",
+            "Il recupero passa dalla rete ed è inevitabilmente asincrono."
+          ]
+        },
+        {
+          "id": "flutter-production-5",
+          "prompt": "Cosa serve perché un Universal Link (iOS) o App Link (Android) apra l'app invece del browser?",
+          "code": null,
+          "options": [
+            "Registrare uno schema custom `myapp://`",
+            "Solo un intent-filter nel manifest",
+            "Un file di associazione pubblicato sul dominio più la configurazione nell'app",
+            "Dichiarare il dominio nello store"
+          ],
+          "answer": 2,
+          "explanation": "Servono `apple-app-site-association` e `assetlinks.json` serviti dal tuo dominio, più Associated Domains su iOS e l'intent-filter con `autoVerify` su Android: è il sito a certificare che quell'app può aprire i suoi link.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Lo schema custom è un ripiego non verificato: qualsiasi app può registrare lo stesso schema.",
+            "Senza `autoVerify` e senza `assetlinks.json` Android non verifica il dominio e mostra il selettore o apre il browser.",
+            null,
+            "Gli store non c'entrano: la verifica è fra dominio e app, tramite i file di associazione."
+          ]
+        },
+        {
+          "id": "flutter-production-6",
+          "prompt": "Il token push di un dispositivo può cambiare. Come lo gestisci?",
+          "code": null,
+          "options": [
+            "Lo salvi una volta sola alla prima installazione",
+            "Lo rileggi a ogni avvio e ascolti `onTokenRefresh`, risincronizzando il backend",
+            "Non serve salvarlo: lo ricava il servizio di push",
+            "Lo rigeneri tu a ogni notifica inviata"
+          ],
+          "answer": 1,
+          "explanation": "Reinstallazioni, ripristini e rotazioni cambiano il token: se il backend tiene quello vecchio, le notifiche vanno nel vuoto. Va aggiornato all'avvio e sull'evento di refresh, e ripulito al logout.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Il token salvato una volta diventa obsoleto e l'utente smette silenziosamente di ricevere le notifiche.",
+            null,
+            "Il backend deve conoscere il token per indirizzare l'invio: nessuno lo ricava da solo.",
+            "Il token non si rigenera a comando: lo emette il sistema, tu ne segui i cambiamenti."
+          ]
+        },
+        {
+          "id": "flutter-production-7",
+          "prompt": "Perché l'handler delle push in background deve essere top-level e annotato `@pragma('vm:entry-point')`?",
+          "code": null,
+          "options": [
+            "Per convenzione di stile del plugin",
+            "Perché viene invocato su un isolate nuovo e il tree shaking non deve rimuoverlo",
+            "Perché deve essere `const`",
+            "Perché altrimenti non compila in debug"
+          ],
+          "answer": 1,
+          "explanation": "Ad app chiusa il sistema avvia un isolate dedicato e ci entra da quella funzione: deve essere raggiungibile senza contesto (top-level o statica) e l'annotazione impedisce al compilatore AOT di eliminarla perché apparentemente mai chiamata.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Non è stile: senza quei due vincoli l'handler semplicemente non viene eseguito in release.",
+            null,
+            "Una funzione non può essere `const`, e non c'entra con il punto d'ingresso.",
+            "In debug spesso funziona lo stesso: il problema si manifesta in release, dove il tree shaking è attivo."
+          ]
+        },
+        {
+          "id": "flutter-production-8",
+          "prompt": "Impostazione più solida per un'app che deve funzionare offline?",
+          "code": null,
+          "options": [
+            "Chiamare la rete e mostrare un errore quando manca",
+            "Tenere una cache in memoria delle ultime risposte",
+            "Database locale come sorgente di verità, rete che lo aggiorna e coda di azioni pendenti",
+            "Bloccare l'interfaccia finché la connessione non torna"
+          ],
+          "answer": 2,
+          "explanation": "Con il locale come sorgente di verità la UI ha sempre qualcosa da mostrare, la rete diventa un aggiornamento e le azioni dell'utente si accodano per essere rigiocate alla riconnessione, con una regola esplicita per i conflitti.",
+          "difficulty": 3,
+          "whyWrong": [
+            "È il comportamento che rende l'app inutilizzabile in metropolitana: nessun dato, nessuna azione.",
+            "La cache in memoria sparisce alla chiusura dell'app e non copre le scritture offline.",
+            null,
+            "Bloccare l'interfaccia è la scelta peggiore: l'utente non può nemmeno leggere ciò che ha già scaricato."
+          ]
+        },
+        {
+          "id": "flutter-production-9",
+          "prompt": "L'avvio a freddo è lento. Da dove parti?",
+          "code": null,
+          "options": [
+            "Misuri con `--trace-startup` e sposti le inizializzazioni pesanti dopo il primo frame",
+            "Aggiungi una splash screen più lunga",
+            "Precarichi tutti gli asset in `main`",
+            "Passi tutti gli SDK a inizializzazione sincrona"
+          ],
+          "answer": 0,
+          "explanation": "Prima si misura: `--trace-startup` e le tracce del servizio di performance dicono quanto tempo va in `main`, negli SDK e nel primo frame. Poi si rende pigro o si posticipa tutto ciò che non serve per disegnare la prima schermata.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "La splash nasconde il problema all'utente ma l'avvio resta lento, e allungarla peggiora la percezione.",
+            "Precaricare tutto in `main` è spesso la causa dell'avvio lento, non il rimedio.",
+            "L'inizializzazione sincrona blocca il primo frame: è esattamente la direzione sbagliata."
+          ]
+        },
+        {
+          "id": "flutter-production-10",
+          "prompt": "Dopo un rilascio il crash-free scende dal 99,5% al 96%. Prima mossa?",
+          "code": null,
+          "options": [
+            "Preparare subito una hotfix e caricarla sullo store",
+            "Fermare il rollout e spegnere da remoto la feature sospetta",
+            "Aspettare qualche giorno per avere più dati",
+            "Invitare gli utenti a reinstallare l'app"
+          ],
+          "answer": 1,
+          "explanation": "Prima si ferma l'emorragia con le leve immediate — rollout a percentuale in pausa e kill switch — che non passano dalla review; poi si indaga con stack trace simbolicati e breadcrumb, si corregge e si riapre il rollout gradualmente.",
+          "difficulty": 3,
+          "whyWrong": [
+            "La hotfix serve, ma arriva dopo la review: nel frattempo gli utenti continuano a crashare.",
+            null,
+            "I dati bastano già: aspettare significa solo esporre più utenti al problema.",
+            "Reinstallare non cambia nulla se il bug è nel codice della nuova versione."
+          ]
+        }
+      ]
     }
   ]
 }

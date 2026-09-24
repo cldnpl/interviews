@@ -70,6 +70,9 @@ struct LessonSection: Codable, Hashable {
     let heading: String
     let body: String
     let code: String?
+    /// L'etichetta del blocco di codice quando non è il linguaggio del track
+    /// (uno snippet Swift o Kotlin dentro una lezione Flutter, una shell, un albero di cartelle).
+    let language: String?
 }
 
 struct Question: Codable, Hashable, Identifiable {

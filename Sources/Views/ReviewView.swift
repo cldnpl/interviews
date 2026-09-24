@@ -117,7 +117,7 @@ struct LessonView: View {
                         RichText(text: section.body)
                             .lineSpacing(3)
                         if let code = section.code, !code.isEmpty {
-                            CodeBlock(code: code, track: track)
+                            CodeBlock(code: code, track: track, language: section.language)
                         }
                     }
                     .padding(18)

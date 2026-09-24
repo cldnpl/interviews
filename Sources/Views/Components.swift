@@ -25,6 +25,14 @@ struct RichText: View {
 struct CodeBlock: View {
     let code: String
     var track: Track?
+    /// Se presente vince sul nome del track: serve alle lezioni che mostrano codice nativo.
+    var language: String?
+
+    private var label: String? {
+        if let language { return language }
+        guard let track else { return nil }
+        return track == .flutter ? "dart" : track == .uikit ? "swift" : track.rawValue
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -33,8 +41,8 @@ struct CodeBlock: View {
                     Circle().fill($0).frame(width: 9, height: 9)
                 }
                 Spacer()
-                if let track {
-                    Text(track == .flutter ? "dart" : track == .uikit ? "swift" : track.rawValue)
+                if let label {
+                    Text(label)
                         .font(.caption2.monospaced())
                         .foregroundStyle(.white.opacity(0.45))
                 }
