@@ -1,6 +1,6 @@
 name: Interviews
 options:
-  bundleIdPrefix: com.interviews
+  bundleIdPrefix: com.cldnpl
   developmentLanguage: en
   deploymentTarget:
     iOS: "17.0"
@@ -21,7 +21,7 @@ targets:
       - Resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.interviews.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.cldnpl.interviews
         INFOPLIST_KEY_CFBundleDisplayName: Interviews
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait

@@ -12,4 +12,4 @@ xcodebuild -project Interviews.xcodeproj -scheme Interviews -sdk iphonesimulator
   -destination "id=$UDID" -derivedDataPath $DD build -quiet
 xcrun simctl boot $UDID 2>/dev/null || true
 xcrun simctl install $UDID $DD/Build/Products/Debug-iphonesimulator/Interviews.app
-xcrun simctl launch $UDID com.interviews.app
+xcrun simctl launch $UDID com.cldnpl.interviews

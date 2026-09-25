@@ -1,7 +1,15 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ XP" : {
+    "%@ · © 2026 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · © 2026 %2$@"
+          }
+        }
+      },
       "shouldTranslate" : false
     },
     "%@ lessons" : {
@@ -24,15 +32,7 @@
         }
       }
     },
-    "%@ · © 2026 %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ · © 2026 %2$@"
-          }
-        }
-      },
+    "%@ XP" : {
       "shouldTranslate" : false
     },
     "%lld" : {
@@ -112,6 +112,26 @@
     "+%lld XP" : {
       "shouldTranslate" : false
     },
+    "🔥 %lld days in a row" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔥 %lld giorni di fila"
+          }
+        }
+      }
+    },
+    "🔥 1 day in a row" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔥 1 giorno di fila"
+          }
+        }
+      }
+    },
     "2 to 5 years, working on your own" : {
       "localizations" : {
         "it" : {
@@ -148,6 +168,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Precisione"
+          }
+        }
+      }
+    },
+    "and" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "e"
           }
         }
       }
@@ -245,6 +275,16 @@
         }
       }
     },
+    "correct" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "giuste"
+          }
+        }
+      }
+    },
     "Correct!" : {
       "localizations" : {
         "it" : {
@@ -281,6 +321,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Promemoria giornaliero"
+          }
+        }
+      }
+    },
+    "day" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "giorno"
+          }
+        }
+      }
+    },
+    "days" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "giorni"
           }
         }
       }
@@ -448,6 +508,16 @@
     "Interviews" : {
       "shouldTranslate" : false
     },
+    "iOS interface" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'interfaccia iOS"
+          }
+        }
+      }
+    },
     "It only rings on days you haven't done the quiz yet." : {
       "localizations" : {
         "it" : {
@@ -564,16 +634,6 @@
         }
       }
     },
-    "No XP this time" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessun XP questa volta"
-          }
-        }
-      }
-    },
     "No mistakes to review" : {
       "localizations" : {
         "it" : {
@@ -590,6 +650,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun problema: le lezioni sono lì apposta."
+          }
+        }
+      }
+    },
+    "No XP this time" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun XP questa volta"
           }
         }
       }
@@ -755,6 +825,7 @@
       }
     },
     "Redo onboarding" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -1216,76 +1287,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I tuoi percorsi"
-          }
-        }
-      }
-    },
-    "and" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "e"
-          }
-        }
-      }
-    },
-    "correct" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "giuste"
-          }
-        }
-      }
-    },
-    "day" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "giorno"
-          }
-        }
-      }
-    },
-    "days" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "giorni"
-          }
-        }
-      }
-    },
-    "iOS interface" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'interfaccia iOS"
-          }
-        }
-      }
-    },
-    "🔥 %lld days in a row" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🔥 %lld giorni di fila"
-          }
-        }
-      }
-    },
-    "🔥 1 day in a row" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🔥 1 giorno di fila"
           }
         }
       }
