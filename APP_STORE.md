@@ -36,8 +36,7 @@ spuntato; quello che resta va fatto a mano su App Store Connect.
 
 ### 1. Pubblicare le pagine
 
-Su GitHub: **Settings › Pages › Source: Deploy from a branch › `main` / `/docs`**.
-Dopo un paio di minuti devono rispondere:
+Fatto: GitHub Pages pubblica `main` / `/docs`. Queste pagine rispondono:
 
 - https://cldnpl.github.io/interviews/privacy.html
 - https://cldnpl.github.io/interviews/terms.html
@@ -57,7 +56,7 @@ sotto, in `Sources/Models/Legal.swift`. Poi rilancia `./scripts/make_legal_pages
 | Prezzo | Gratis, nessun acquisto in-app |
 | Categoria primaria | Istruzione |
 | Categoria secondaria | Consultazione |
-| Lingua principale | Italiano |
+| Lingua principale | English (U.S.), italiano come localizzazione |
 | Copyright | `2026 Claudia Napolitano` |
 | Content Rights | «Non contiene contenuti di terze parti» |
 | Age Rating | 4+ — rispondi *Nessuno/Mai* a tutte le domande del questionario |
@@ -72,14 +71,14 @@ l'app non ha rete, non ha SDK di terze parti, non ha account.
 
 Da incollare in *App Review Information › Notes*:
 
-> L'app è interamente offline: non richiede account, login o connessione a Internet.
-> Non c'è nulla da sbloccare e non servono credenziali demo.
-> Tutti i contenuti (domande, spiegazioni, lezioni) sono originali e scritti da me.
-> L'interfaccia e i contenuti sono in italiano.
-> Le uniche notifiche sono promemoria locali, pianificati dal dispositivo dopo
-> il consenso esplicito dell'utente: non esiste alcun server push.
-> I progressi restano in `UserDefaults` sul dispositivo e si cancellano da
-> Profilo › Azzera i progressi o disinstallando l'app.
+> The app works entirely offline: it needs no account, no login and no internet
+> connection. There is nothing to unlock and no demo credentials are required.
+> All content (questions, explanations, lessons) is original.
+> The app is in English by default; Italian can be selected in Profile › Language.
+> The only notifications are local reminders, scheduled on the device after the
+> user's explicit consent: there is no push server.
+> Progress is stored on the device (UserDefaults) and can be erased from
+> Profile › Reset progress or by deleting the app.
 
 Ricorda anche i tuoi recapiti in *App Review Information* (nome, email, telefono):
 Apple li usa se ha bisogno di chiamarti durante la review.
