@@ -89,8 +89,14 @@ Apple li usa se ha bisogno di chiamarti durante la review.
 **Nome** (max 30)
 
 ```
-Interviews
+Interviews: Mobile Dev Prep
 ```
+
+"Interviews" da solo è già preso sullo Store. Il nome sotto l'icona resta "Interviews"
+(`INFOPLIST_KEY_CFBundleDisplayName`): non deve essere unico. Crea l'app a mano in
+*My Apps › + › New App* (Bundle ID `com.cldnpl.interviews`, lingua principale
+English (U.S.)), poi carica da Xcode: l'upload la trova tramite il Bundle ID. Niente
+"Android" nel nome: la linea guida 2.3.10 vieta di citare altre piattaforme nei metadati.
 
 **Sottotitolo** (max 30)
 
@@ -195,9 +201,6 @@ può essere riusato.
 
 ## Rischi residui, da sapere
 
-- **Nome generico.** "Interviews" è una parola comune e potrebbe essere già in uso sullo
-  Store. Se App Store Connect lo rifiuta serve un nome diverso (per esempio
-  "Interviews — Colloqui Mobile"), da cambiare anche in `INFOPLIST_KEY_CFBundleDisplayName`.
 - **Marchi tra le parole chiave.** "swift", "kotlin", "flutter" descrivono davvero i
   contenuti, ma capita che la review contesti i marchi altrui nei metadati
   (Linea guida 5.2.5). Se succede, toglili: il disclaimer in-app e la loro presenza
