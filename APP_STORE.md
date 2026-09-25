@@ -86,17 +86,100 @@ Apple li usa se ha bisogno di chiamarti durante la review.
 
 ### 5. Testi della scheda
 
-**Nome** (max 30)
+La lingua principale è **English (U.S.)**, come l'app. L'italiano si aggiunge come
+localizzazione (menu della lingua in alto a destra nella pagina della versione): chi ha
+lo Store in italiano vede quei testi.
+
+Niente "Android" o "Google Play" nei testi: la linea guida 2.3.10 vieta di citare altre
+piattaforme mobili nei metadati. I nomi di linguaggi e framework (Swift, UIKit, Kotlin,
+Flutter) descrivono i contenuti e si possono usare.
+
+"Interviews" da solo è già preso sullo Store, da qui il nome più lungo. Sotto l'icona
+resta "Interviews" (`INFOPLIST_KEY_CFBundleDisplayName`), che non deve essere unico.
+Crea l'app a mano in *My Apps › + › New App* (Bundle ID `com.cldnpl.interviews`, lingua
+principale English (U.S.), SKU `interviews`), poi carica da Xcode: l'upload la trova
+tramite il Bundle ID.
+
+#### English (U.S.) — lingua principale
+
+**Name** (max 30)
 
 ```
 Interviews: Mobile Dev Prep
 ```
 
-"Interviews" da solo è già preso sullo Store. Il nome sotto l'icona resta "Interviews"
-(`INFOPLIST_KEY_CFBundleDisplayName`): non deve essere unico. Crea l'app a mano in
-*My Apps › + › New App* (Bundle ID `com.cldnpl.interviews`, lingua principale
-English (U.S.)), poi carica da Xcode: l'upload la trova tramite il Bundle ID. Niente
-"Android" nel nome: la linea guida 2.3.10 vieta di citare altre piattaforme nei metadati.
+**Subtitle** (max 30)
+
+```
+Ace your mobile tech interview
+```
+
+**Keywords** (max 100)
+
+```
+interview,swift,uikit,kotlin,flutter,ios,quiz,coding,developer,prep,senior,junior,mobile
+```
+
+**Promotional Text** (max 170)
+
+```
+Five questions a day to walk into your interview with no surprises. Swift, UIKit, Kotlin and Flutter, from your first optional all the way to senior topics.
+```
+
+**Description**
+
+```
+Interviews is the daily workout for anyone preparing for a mobile developer
+technical interview. Five questions a day, two minutes, and a path that grows
+with you.
+
+FOUR TRACKS, EACH ON ITS OWN
+Swift, UIKit, Kotlin and Flutter. Turn on one or all of them: each has its own
+topics, in the order it makes sense to study them. You start from the
+fundamentals of the language, never halfway through.
+
+THE DAILY QUIZ
+Five questions tuned to your level, drawn only from the topics you've already
+unlocked. Answer, read the explanation, keep your streak alive.
+
+XP AND RANKS
+From Junior I all the way to Staff. Every correct answer is worth 10, 20 or 30
+XP depending on difficulty, and as your rank goes up the mid and senior topics
+open up.
+
+REVIEW WITH REAL ANSWERS
+Short lessons with annotated code and, above all, the answer to actually give
+out loud to the person interviewing you.
+
+CORRECTIONS THAT EXPLAIN
+When you get one wrong you don't just see the right answer: you read why yours
+was wrong. Your mistakes stay set aside until you fix them.
+
+SMART REMINDERS
+One notification at the time you choose, only on days you haven't done the
+quiz yet. Never one more.
+
+OFFLINE, NO ACCOUNT
+Interviews works on the subway as well as on the couch. No sign-up, no ads, no
+tracking: your progress stays on your iPhone.
+
+Available in English and Italian.
+```
+
+**What's New** (1.0)
+
+```
+First release. Four tracks (Swift, UIKit, Kotlin and Flutter) with a daily quiz,
+XP and ranks, review lessons and reminders. In English and Italian.
+```
+
+#### Italiano — localizzazione
+
+**Nome** (max 30)
+
+```
+Interviews: Mobile Dev Prep
+```
 
 **Sottotitolo** (max 30)
 
@@ -104,10 +187,10 @@ English (U.S.)), poi carica da Xcode: l'upload la trova tramite il Bundle ID. Ni
 Preparati al colloquio mobile
 ```
 
-**Parole chiave** (max 100 caratteri, separate da virgola, senza spazi)
+**Parole chiave** (max 100)
 
 ```
-colloquio,swift,uikit,kotlin,flutter,ios,android,quiz,programmazione,sviluppatore,studio,mobile
+colloquio,swift,uikit,kotlin,flutter,ios,quiz,programmazione,sviluppatore,studio,mobile
 ```
 
 **Testo promozionale** (max 170)
@@ -130,8 +213,7 @@ mai da metà strada.
 
 IL QUIZ DEL GIORNO
 Cinque domande dosate sul tuo livello, pescate solo dagli argomenti che hai già
-sbloccato. Rispondi, leggi la spiegazione, tieni viva la serie. Ogni giorno saltato
-azzera lo streak: è quello che ti fa tornare.
+sbloccato. Rispondi, leggi la spiegazione, tieni viva la serie.
 
 XP E GRADI
 Da Junior I fino a Staff. Ogni risposta giusta vale 10, 20 o 30 XP secondo la
@@ -152,13 +234,15 @@ fatto. Mai una in più.
 SENZA RETE, SENZA ACCOUNT
 Interviews funziona in metropolitana come sul divano. Nessuna registrazione, nessuna
 pubblicità, nessuna statistica raccolta: i tuoi progressi restano sul tuo iPhone.
+
+Disponibile in inglese e in italiano: la lingua si cambia in Profilo.
 ```
 
 **Novità di questa versione** (1.0)
 
 ```
-Prima versione. Quattro percorsi — Swift, UIKit, Kotlin e Flutter — con quiz del
-giorno, XP e gradi, lezioni di ripasso e promemoria.
+Prima versione. Quattro percorsi (Swift, UIKit, Kotlin e Flutter) con quiz del
+giorno, XP e gradi, lezioni di ripasso e promemoria. In inglese e in italiano.
 ```
 
 ### 6. Screenshot
@@ -173,19 +257,9 @@ L'ingrandimento è del 4,8% e le proporzioni coincidono quasi al millesimo, quin
 si vede; se hai ancora il file di design, riesportare direttamente a 1320 × 2868 resta
 più nitido.
 
-**Da decidere: i mockup sono in inglese, l'app è solo in italiano.** La Linea guida
-2.3.3 chiede screenshot che mostrino l'app in uso, e quell'interfaccia inglese l'app
-non sa produrla: il revisore apre l'app e trova un'altra lingua. È il rischio di
-rifiuto più concreto rimasto. Le strade sono due, e la prima è quella giusta:
-
-1. Rifare i cinque mockup con i testi italiani dell'app (*Pronto per oggi?*,
-   *Quiz del giorno*, *I tuoi errori*, *Il tuo percorso*) e pubblicare la scheda in
-   italiano.
-2. Localizzare davvero l'app in inglese e tenere la scheda in inglese — molto più lavoro,
-   ma apre il mercato non italiano.
-
-Pubblicare la scheda in inglese tenendo l'app in italiano è l'unica combinazione da
-evitare: è esattamente quella che la 2.3.3 punisce.
+I mockup sono in inglese, come l'app al primo avvio: combaciano con quello che il
+revisore vede aprendola (linea guida 2.3.3). Per la localizzazione italiana puoi
+riusare gli stessi screenshot, oppure rifarli dopo aver scelto Italiano in Profilo.
 
 ### 7. Build
 
