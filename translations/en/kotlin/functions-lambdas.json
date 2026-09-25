@@ -1,0 +1,212 @@
+{
+  "title": "Functions and Lambdas",
+  "summary": "Higher-order functions, inline and reified, extension functions, and scope functions.",
+  "lesson": [
+    {
+      "heading": "Functions as values",
+      "body": "In Kotlin, functions are first-class: they have types like `(Int) -> String` and you pass them as lambdas or function references (`::format`). If a lambda has a single parameter, it can use the implicit name `it`.\n\nIf the last parameter is a function, the lambda can go outside the parentheses (**trailing lambda**), the syntax that DSLs and Compose are built on.",
+      "code": "fun apply(x: Int, op: (Int) -> Int): Int = op(x)\n\nval doubled = apply(4) { it * 2 }\nval squared = apply(4, ::square)\n\nfun square(n: Int) = n * n"
+    },
+    {
+      "heading": "Higher-order functions and inline",
+      "body": "A **higher-order function** takes or returns functions. Without optimization, every lambda becomes an allocated object; with `inline`, the compiler copies the body of the function and its lambdas into the call site, eliminating the allocation.\n\nInline lambdas allow **non-local returns** (a `return` exits the outer function). `noinline` excludes a lambda from inlining, and `crossinline` forbids non-local returns when the lambda is invoked from another context, for example inside a `Runnable`.",
+      "code": "inline fun measure(block: () -> Unit): Long {\n    val start = System.nanoTime()\n    block()\n    return System.nanoTime() - start\n}"
+    },
+    {
+      "heading": "reified",
+      "body": "Because of JVM **type erasure**, `T` doesn't exist at runtime inside a generic function. With `inline fun <reified T>`, the concrete type is substituted at the call site, so you can use `T::class`, `is T`, and `as T`.\n\nThat's why `reified` only works on `inline` functions. Common examples: `filterIsInstance<T>()`, JSON parsing, and `startActivity<T>()`.",
+      "code": "inline fun <reified T> List<*>.firstOfType(): T? =\n    firstOrNull { it is T } as T?\n\nval s = listOf(1, \"a\", 2.0).firstOfType<String>() // \"a\""
+    },
+    {
+      "heading": "Extension functions",
+      "body": "Extensions add functions to a type without inheritance: `fun String.isEmail(): Boolean`. They compile to static functions with the receiver as the first parameter, so they **can't access private members** and are resolved **statically**, based on the declared type rather than the runtime type.\n\nIf a member with the same signature exists, **the member always wins**. You can also define them on nullable types (`fun String?.orDash()`).",
+      "code": "fun String.initials(): String =\n    split(\" \").mapNotNull { it.firstOrNull() }.joinToString(\"\")\n\nprintln(\"Ada Lovelace\".initials()) // AL"
+    },
+    {
+      "heading": "Scope functions",
+      "body": "The five scope functions differ in how they expose the object and what they return. `let` uses `it` and returns the lambda result (typical with `?.`). `run` uses `this` and returns the result; `with(obj)` is the same but isn't an extension.\n\n`apply` uses `this` and **returns the object** (configuration); `also` uses `it` and returns the object (side effects like logging). Overusing them, especially nested, hurts readability.",
+      "code": "val intent = Intent(ctx, Detail::class.java).apply {\n    putExtra(\"id\", 42)\n}.also { Log.d(\"NAV\", \"open $it\") }\n\nval len = name?.let { it.trim().length } ?: 0"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Classic question: **\"What's the difference between let, run, with, apply, and also?\"** Short answer: two axes, receiver `this` vs argument `it`, and the return value, either the lambda result or the object itself. `apply` for configuration, `also` for side effects, `let` for null checks and transformations.\n\nOn `inline`, explain that it avoids lambda allocations and enables `reified` and non-local returns; on extensions, bring up static resolution."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What does this code print?",
+      "code": "val r = \"kotlin\".let { it.length }\nval s = \"kotlin\".also { it.length }\nprintln(\"$r $s\")",
+      "options": [
+        "6 6",
+        "kotlin kotlin",
+        "6 kotlin",
+        "kotlin 6"
+      ],
+      "answer": 2,
+      "explanation": "`let` returns the lambda result (6), while `also` always returns the receiver (\"kotlin\").",
+      "whyWrong": [
+        "`let` returns 6, but `also` ignores the lambda result and returns the receiver, which is \"kotlin\".",
+        "`let` doesn't return the receiver but the value of the lambda's last expression, here `it.length` = 6.",
+        null,
+        "You swapped the roles: `let` returns the lambda result (6) and `also` returns the receiver (\"kotlin\")."
+      ]
+    },
+    {
+      "prompt": "Which scope function uses `this` as the receiver and returns the object itself?",
+      "options": [
+        "let",
+        "run",
+        "also",
+        "apply"
+      ],
+      "answer": 3,
+      "explanation": "`apply` exposes `this` and returns the receiver: ideal for configuring an object. `also` returns the object but uses `it`.",
+      "whyWrong": [
+        "`let` exposes the object as `it` and returns the lambda result: neither of the required traits.",
+        "`run` uses `this` as the receiver, but it returns the lambda result, not the object itself.",
+        "`also` returns the object, but it exposes it as `it`, not `this`.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "open class A\nclass B : A()\n\nfun A.name() = \"A\"\nfun B.name() = \"B\"\n\nval x: A = B()\nprintln(x.name())",
+      "options": [
+        "B",
+        "A",
+        "AB",
+        "Doesn't compile"
+      ],
+      "answer": 1,
+      "explanation": "Extensions are resolved statically on the declared type (A), not the runtime type: there's no virtual dispatch.",
+      "whyWrong": [
+        "You're expecting virtual dispatch like with methods, but extensions are resolved statically: what matters is the declared type `A`, not the runtime type.",
+        null,
+        "Only one function gets called: the compiler picks `A.name()` based on the static type, it doesn't call both.",
+        "Two extensions with the same name on different receivers are legitimate overloads: the code compiles and picks one based on the static type."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "class C {\n    fun hi() = \"member\"\n}\nfun C.hi() = \"extension\"\n\nprintln(C().hi())",
+      "options": [
+        "extension",
+        "Ambiguity error",
+        "member",
+        "memberextension"
+      ],
+      "answer": 2,
+      "explanation": "With identical signatures, the member always takes precedence over the extension (which gets flagged as shadowed).",
+      "whyWrong": [
+        "An extension can't override a member with the same signature: the member always wins, and the extension gets flagged as shadowed.",
+        "There's no ambiguity: the rule is fixed, and the member takes precedence. At most you get a warning about the shadowed extension.",
+        null,
+        "Only one function gets called, the member: nothing is concatenated."
+      ]
+    },
+    {
+      "prompt": "Why does `reified` require an `inline` function?",
+      "options": [
+        "The concrete type is substituted at the call site thanks to inlining",
+        "reified uses reflection at runtime",
+        "Non-inline functions don't support generics",
+        "To avoid boxing primitives"
+      ],
+      "answer": 0,
+      "explanation": "Because of type erasure, T doesn't exist at runtime; only by copying the body to the call site can the compiler insert the real type.",
+      "whyWrong": [
+        null,
+        "`reified` doesn't use reflection: the type is known at compile time and written directly into the bytecode copied to the call site.",
+        "Non-inline functions support generics just fine; the limitation is that, due to type erasure, `T` isn't available at runtime.",
+        "Boxing has nothing to do with `reified`: its purpose is to make `T` usable at runtime, for example with `is T` or `T::class`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "fun find(list: List<Int>): String {\n    list.forEach {\n        if (it == 2) return \"found\"\n    }\n    return \"none\"\n}\n\nprintln(find(listOf(1, 2, 3)))",
+      "options": [
+        "none",
+        "Doesn't compile",
+        "foundnone",
+        "found"
+      ],
+      "answer": 3,
+      "explanation": "`forEach` is inline, so `return` is a non-local return that exits `find`, returning \"found\".",
+      "whyWrong": [
+        "It looks like `return` only exits the lambda, but `forEach` is inline: the unlabeled `return` exits `find`, returning \"found\".",
+        "A bare `return` in a lambda is only forbidden if the function isn't inline; `forEach` is, so the non-local return compiles.",
+        "The `return` exits `find` immediately: the final `return \"none\"` is never reached and nothing is concatenated.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does `crossinline` do on a lambda parameter?",
+      "options": [
+        "Prevents the lambda from being inlined",
+        "Forbids non-local returns in the lambda",
+        "Makes the lambda thread-safe",
+        "Lets you store it in a field"
+      ],
+      "answer": 1,
+      "explanation": "You need it when the lambda is invoked from another context (e.g. inside a Runnable): it stays inlined but without non-local returns. Excluding it from inlining is `noinline`.",
+      "whyWrong": [
+        "That's `noinline`: with `crossinline` the lambda is still inlined, but it can't contain non-local returns.",
+        null,
+        "`crossinline` has nothing to do with concurrency: it's purely a control-flow constraint, meaning no non-local returns.",
+        "To store the lambda in a field you need `noinline`, because it takes a real function object; `crossinline` doesn't allow that."
+      ]
+    },
+    {
+      "prompt": "In a lambda with a single parameter, what does `it` represent?",
+      "options": [
+        "The implicit name of the single parameter",
+        "The receiver of the outer function",
+        "The lambda's return value",
+        "The collection's iterator"
+      ],
+      "answer": 0,
+      "explanation": "If the lambda has a single parameter and you don't name it, it's available as `it`.",
+      "whyWrong": [
+        null,
+        "You refer to the receiver with `this` (in lambdas with a receiver), not `it`.",
+        "A lambda's return value is its last expression; `it` is the incoming parameter instead.",
+        "In `forEach`, `it` is the current element, not an `Iterator`: it's just the implicit name of the single parameter, in any lambda."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "listOf(1, 2, 3).forEach {\n    if (it == 2) return@forEach\n    print(it)\n}",
+      "options": [
+        "1",
+        "13",
+        "123",
+        "12"
+      ],
+      "answer": 1,
+      "explanation": "`return@forEach` only exits the current iteration, like a `continue`: only the 2 is skipped.",
+      "whyWrong": [
+        "`return@forEach` doesn't stop the loop like a `break`: it only skips the iteration for 2 and continues with 3.",
+        null,
+        "The 2 doesn't show up because `return@forEach` exits the lambda before `print(it)` for exactly that element.",
+        "It's the 2 that gets skipped, not the 3: `return@forEach` acts like a `continue` when `it == 2`."
+      ]
+    },
+    {
+      "prompt": "What's the main advantage of `inline` for a higher-order function?",
+      "options": [
+        "It always reduces bytecode size",
+        "It enables recursion",
+        "It avoids allocating objects for lambdas",
+        "It makes the function open"
+      ],
+      "answer": 2,
+      "explanation": "The body and lambdas are copied to the call site, so there are no function objects. Bytecode tends to grow, though, not shrink.",
+      "whyWrong": [
+        "It's the opposite: the body is copied to every call site, so bytecode tends to grow.",
+        "Inline functions can't be recursive: the compiler would have to expand them forever.",
+        null,
+        "`inline` has nothing to do with `open`: in fact, an inline function can't be virtual, because its body is fixed at compile time."
+      ]
+    }
+  ]
+}

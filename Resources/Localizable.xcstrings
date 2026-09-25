@@ -1,0 +1,1295 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ XP" : {
+      "shouldTranslate" : false
+    },
+    "%@ lessons" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lezioni di %@"
+          }
+        }
+      }
+    },
+    "%@ more XP to reach **%@**" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora %@ XP per diventare **%@**"
+          }
+        }
+      }
+    },
+    "%@ · © 2026 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · © 2026 %2$@"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "%lld" : {
+      "shouldTranslate" : false
+    },
+    "%lld cards, about %lld minutes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld schede, circa %lld minuti"
+          }
+        }
+      }
+    },
+    "%lld questions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld domande"
+          }
+        }
+      }
+    },
+    "%lld questions answered in total" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld domande risposte in totale"
+          }
+        }
+      }
+    },
+    "%lld questions for the %@ level" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld domande per il livello %@"
+          }
+        }
+      }
+    },
+    "%lld questions, about 2 minutes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld domande, circa 2 minuti"
+          }
+        }
+      }
+    },
+    "%lld to review, with corrections" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld da ripassare, con la correzione"
+          }
+        }
+      }
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "+%lld XP" : {
+      "shouldTranslate" : false
+    },
+    "2 to 5 years, working on your own" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Da 2 a 5 anni, lavori in autonomia"
+          }
+        }
+      }
+    },
+    "A recruiter could ask you tomorrow. Better to know it today." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un recruiter potrebbe chiedertelo domani. Meglio saperlo oggi."
+          }
+        }
+      }
+    },
+    "About" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informazioni"
+          }
+        }
+      }
+    },
+    "Accuracy" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Precisione"
+          }
+        }
+      }
+    },
+    "Android" : {
+      "shouldTranslate" : false
+    },
+    "Apple's standard EULA" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EULA standard di Apple"
+          }
+        }
+      }
+    },
+    "Best" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record"
+          }
+        }
+      }
+    },
+    "Best %lld%%" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record %lld%%"
+          }
+        }
+      }
+    },
+    "Beyond senior" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oltre il senior"
+          }
+        }
+      }
+    },
+    "By continuing you accept" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuando accetti"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiudi"
+          }
+        }
+      }
+    },
+    "Come back tomorrow for new questions. Meanwhile you can review." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Torna domani per le nuove domande. Intanto puoi ripassare."
+          }
+        }
+      }
+    },
+    "Contact support" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contatta il supporto"
+          }
+        }
+      }
+    },
+    "Continue" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continua"
+          }
+        }
+      }
+    },
+    "Correct!" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esatto!"
+          }
+        }
+      }
+    },
+    "Cross-platform" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Multipiattaforma"
+          }
+        }
+      }
+    },
+    "Daily quiz" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quiz del giorno"
+          }
+        }
+      }
+    },
+    "Daily reminder" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promemoria giornaliero"
+          }
+        }
+      }
+    },
+    "Days in a row" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giorni di fila"
+          }
+        }
+      }
+    },
+    "Don't break the streak: 5 questions on %@ are waiting." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non spezzare la serie: 5 domande su %@ ti aspettano."
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fatto"
+          }
+        }
+      }
+    },
+    "Done! %lld/%lld correct" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fatto! %lld/%lld giuste"
+          }
+        }
+      }
+    },
+    "Each track has its own topics, in order from the fundamentals to senior material. The daily questions mix the active tracks, drawing only from the topics your rank has already reached. At least one track must stay on." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni percorso ha i suoi argomenti, in ordine dalle fondamenta ai temi da senior. Le domande del giorno mescolano i percorsi attivi, pescando solo dagli argomenti che il tuo grado ha già raggiunto. Almeno un percorso deve restare acceso."
+          }
+        }
+      }
+    },
+    "Each track stands on its own, with its own topics and questions. Pick more than one: the daily quiz will mix them." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni percorso è a sé, con i suoi argomenti e le sue domande. Puoi sceglierne più di uno: il quiz del giorno li mescolerà."
+          }
+        }
+      }
+    },
+    "Enters the daily quiz from the %@ rank" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entra nel quiz del giorno dal grado %@"
+          }
+        }
+      }
+    },
+    "Every correct answer is worth 10, 20 or 30 XP depending on difficulty, in full only the first time. The daily quiz adds a bonus, larger when your streak is long. As your rank goes up the questions get harder." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni risposta giusta vale 10, 20 o 30 XP in base alla difficoltà, piena solo la prima volta. Il quiz del giorno aggiunge un bonus, più alto se lo streak è lungo. Salendo di grado le domande si fanno più difficili."
+          }
+        }
+      }
+    },
+    "Finish" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fine"
+          }
+        }
+      }
+    },
+    "Five questions, two minutes. Your next interview will thank you." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cinque domande, due minuti. Il prossimo colloquio ringrazia."
+          }
+        }
+      }
+    },
+    "Get ready for mobile tech interviews,\nwith five questions a day and short lessons." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparati ai colloqui tecnici mobile,\ncon cinque domande al giorno e lezioni brevi."
+          }
+        }
+      }
+    },
+    "Good afternoon" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buon pomeriggio"
+          }
+        }
+      }
+    },
+    "Good evening" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buonasera"
+          }
+        }
+      }
+    },
+    "Good morning" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buongiorno"
+          }
+        }
+      }
+    },
+    "Great work, almost flawless." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ottimo lavoro, quasi senza sbavature."
+          }
+        }
+      }
+    },
+    "In order, from the fundamentals to senior topics." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In ordine, dalle fondamenta ai temi da senior."
+          }
+        }
+      }
+    },
+    "Interviews" : {
+      "shouldTranslate" : false
+    },
+    "It only rings on days you haven't done the quiz yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suona solo nei giorni in cui non hai ancora fatto il quiz."
+          }
+        }
+      }
+    },
+    "Junior" : {
+      "shouldTranslate" : false
+    },
+    "Language" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lingua"
+          }
+        }
+      }
+    },
+    "Later" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Più tardi"
+          }
+        }
+      }
+    },
+    "Less than 2 years, or looking for your first job" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meno di 2 anni, o stai cercando il primo lavoro"
+          }
+        }
+      }
+    },
+    "Lesson read" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lezione letta"
+          }
+        }
+      }
+    },
+    "Lessons, questions and reminders switch too. Your progress stays as it is." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiano anche lezioni, domande e promemoria. I tuoi progressi restano come sono."
+          }
+        }
+      }
+    },
+    "Let's start" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniziamo"
+          }
+        }
+      }
+    },
+    "Level %@ · %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Livello %@ · %@"
+          }
+        }
+      }
+    },
+    "Mid" : {
+      "shouldTranslate" : false
+    },
+    "More than 5 years, leading technical decisions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Più di 5 anni, guidi scelte tecniche"
+          }
+        }
+      }
+    },
+    "New rank!" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo grado!"
+          }
+        }
+      }
+    },
+    "No" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No"
+          }
+        }
+      }
+    },
+    "No XP this time" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun XP questa volta"
+          }
+        }
+      }
+    },
+    "No mistakes to review" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun errore da ripassare"
+          }
+        }
+      }
+    },
+    "No problem: that's exactly what the lessons are for." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun problema: le lezioni sono lì apposta."
+          }
+        }
+      }
+    },
+    "Not quite" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non proprio"
+          }
+        }
+      }
+    },
+    "Notifications" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifiche"
+          }
+        }
+      }
+    },
+    "Notifications are turned off in iOS Settings: turn them on there for Interviews." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le notifiche sono disattivate nelle Impostazioni di iOS: attivale lì per Interviews."
+          }
+        }
+      }
+    },
+    "Null safety, coroutines, data classes, collections, Jetpack and Android lifecycle" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Null safety, coroutine, data class, collection, Jetpack e ciclo di vita Android"
+          }
+        }
+      }
+    },
+    "Optionals, value and reference types, protocols and generics, closures, ARC, concurrency" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional, value e reference type, protocolli e generics, closure, ARC, concorrenza"
+          }
+        }
+      }
+    },
+    "Perfect. That interview is yours 🎉" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perfetto. Il colloquio è tuo 🎉"
+          }
+        }
+      }
+    },
+    "Pick up today's questions on %@." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riparti con le domande di oggi su %@."
+          }
+        }
+      }
+    },
+    "Practice of the day" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allenamento del giorno"
+          }
+        }
+      }
+    },
+    "Privacy Policy" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informativa sulla privacy"
+          }
+        }
+      }
+    },
+    "Profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilo"
+          }
+        }
+      }
+    },
+    "Questions adapt to you. Answering earns XP and raises your rank, all the way to Staff." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le domande si adattano a te. Rispondendo guadagni XP e sali di grado, fino a Staff."
+          }
+        }
+      }
+    },
+    "Quizzes taken" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quiz fatti"
+          }
+        }
+      }
+    },
+    "Ranks" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gradi"
+          }
+        }
+      }
+    },
+    "Read the corrections, then try again: once you answer correctly, the mistake disappears from here." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leggi le correzioni, poi riprova: quando rispondi giusto l'errore sparisce da qui."
+          }
+        }
+      }
+    },
+    "Ready for the interview?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pronto per il colloquio?"
+          }
+        }
+      }
+    },
+    "Ready for today?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pronto per oggi?"
+          }
+        }
+      }
+    },
+    "Redo onboarding" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rifai l'onboarding"
+          }
+        }
+      }
+    },
+    "Reset" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azzera"
+          }
+        }
+      }
+    },
+    "Reset progress" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azzera i progressi"
+          }
+        }
+      }
+    },
+    "Reset streak, stats and mistakes?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azzerare streak, statistiche ed errori?"
+          }
+        }
+      }
+    },
+    "Retry %lld mistakes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riprova %lld errori"
+          }
+        }
+      }
+    },
+    "Review" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripasso"
+          }
+        }
+      }
+    },
+    "Review the %lld corrections" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rivedi le %lld correzioni"
+          }
+        }
+      }
+    },
+    "Review the correction" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rivedi la correzione"
+          }
+        }
+      }
+    },
+    "See your result" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vedi il risultato"
+          }
+        }
+      }
+    },
+    "Senior" : {
+      "shouldTranslate" : false
+    },
+    "Solid base. One review and you're there." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buona base. Un ripasso e ci sei."
+          }
+        }
+      }
+    },
+    "Start" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inizia"
+          }
+        }
+      }
+    },
+    "Streak" : {
+      "shouldTranslate" : false
+    },
+    "Streak extended! See you tomorrow." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streak allungato! Ci vediamo domani."
+          }
+        }
+      }
+    },
+    "Study the lesson" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Studia la lezione"
+          }
+        }
+      }
+    },
+    "Take it again for practice" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rifallo per allenarti"
+          }
+        }
+      }
+    },
+    "Take the quiz" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fai il quiz"
+          }
+        }
+      }
+    },
+    "Terms of Use" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termini d'uso"
+          }
+        }
+      }
+    },
+    "Test yourself" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mettiti alla prova"
+          }
+        }
+      }
+    },
+    "The fundamentals: start here." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le fondamenta: si parte da qui."
+          }
+        }
+      }
+    },
+    "The language" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il linguaggio"
+          }
+        }
+      }
+    },
+    "Time" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ora"
+          }
+        }
+      }
+    },
+    "Today" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oggi"
+          }
+        }
+      }
+    },
+    "Today's questions have arrived." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le domande del giorno sono arrivate."
+          }
+        }
+      }
+    },
+    "Today's quiz" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quiz di oggi"
+          }
+        }
+      }
+    },
+    "Today's quiz is ready" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il quiz di oggi è pronto"
+          }
+        }
+      }
+    },
+    "Top rank reached. Respect." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grado massimo raggiunto. Rispetto."
+          }
+        }
+      }
+    },
+    "Topics are in order: each one builds on the one before." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli argomenti sono in ordine: ognuno dà per letto quello prima."
+          }
+        }
+      }
+    },
+    "Turn on reminders" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attiva i promemoria"
+          }
+        }
+      }
+    },
+    "Two minutes for you" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due minuti per te"
+          }
+        }
+      }
+    },
+    "Version %@ (%@)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versione %@ (%@)"
+          }
+        }
+      }
+    },
+    "View lifecycle, Auto Layout, table and collection views, navigation, architectures" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciclo di vita delle view, Auto Layout, table e collection view, navigazione, architetture"
+          }
+        }
+      }
+    },
+    "We send a reminder at the time you prefer, only on days you haven't done the quiz yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ti mandiamo un promemoria all'ora che preferisci, solo nei giorni in cui non hai ancora fatto il quiz."
+          }
+        }
+      }
+    },
+    "What you need every day." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quello che serve tutti i giorni."
+          }
+        }
+      }
+    },
+    "What's your focus?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su cosa ti prepari?"
+          }
+        }
+      }
+    },
+    "What's your level?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qual è il tuo livello?"
+          }
+        }
+      }
+    },
+    "When do you practice?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando ti alleni?"
+          }
+        }
+      }
+    },
+    "When you get a question wrong it shows up here, with the correction." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando sbagli una domanda la trovi qui, con la correzione."
+          }
+        }
+      }
+    },
+    "Where experience shows." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I temi su cui si vede l'esperienza."
+          }
+        }
+      }
+    },
+    "Widgets and state, Dart, isolates, architecture, native integration, deployment" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widget e stato, Dart, isolate, architettura, integrazione nativa, deployment"
+          }
+        }
+      }
+    },
+    "Write to %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrivi a %@"
+          }
+        }
+      }
+    },
+    "Yes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sì"
+          }
+        }
+      }
+    },
+    "You're here" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sei qui"
+          }
+        }
+      }
+    },
+    "You've read them all. Now test yourself with the quizzes." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le hai lette tutte. Ora mettiti alla prova coi quiz."
+          }
+        }
+      }
+    },
+    "Your corrections" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le tue correzioni"
+          }
+        }
+      }
+    },
+    "Your mistakes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I tuoi errori"
+          }
+        }
+      }
+    },
+    "Your path" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo percorso"
+          }
+        }
+      }
+    },
+    "Your tracks" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I tuoi percorsi"
+          }
+        }
+      }
+    },
+    "and" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "e"
+          }
+        }
+      }
+    },
+    "correct" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "giuste"
+          }
+        }
+      }
+    },
+    "day" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "giorno"
+          }
+        }
+      }
+    },
+    "days" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "giorni"
+          }
+        }
+      }
+    },
+    "iOS interface" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'interfaccia iOS"
+          }
+        }
+      }
+    },
+    "🔥 %lld days in a row" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔥 %lld giorni di fila"
+          }
+        }
+      }
+    },
+    "🔥 1 day in a row" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔥 1 giorno di fila"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

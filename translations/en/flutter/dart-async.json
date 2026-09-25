@@ -1,0 +1,211 @@
+{
+  "title": "Asynchronous Dart",
+  "summary": "Futures, async/await, Streams, the event loop with microtasks, and isolates",
+  "lesson": [
+    {
+      "heading": "Futures and async/await",
+      "body": "A `Future<T>` represents a value (or an error) that will be available later. An `async` function always returns a Future, and inside it `await` suspends execution until the Future completes, **without blocking** the thread.\n\nImportant: the body of an `async` function runs **synchronously up to the first `await`**. Handle errors with `try/catch` around the `await`; without `await`, the exception ends up in the Future and isn't caught.",
+      "code": "Future<User> loadUser() async {\n  try {\n    final res = await http.get(uri);\n    return User.fromJson(jsonDecode(res.body));\n  } on SocketException {\n    throw const OfflineException();\n  }\n}"
+    },
+    {
+      "heading": "The event loop and microtasks",
+      "body": "Dart runs an isolate's code on **a single thread** with an event loop and two queues. The **microtask queue** is drained completely before moving on to the next event in the **event queue** (timers, I/O, gestures, frames).\n\n`scheduleMicrotask` and `Future.microtask` go into the microtask queue, as do continuations of already completed Futures. `Future(() {})` and `Future.delayed`, on the other hand, create a Timer, and therefore an event. An infinite chain of microtasks freezes the whole app.",
+      "code": "print('A');\nFuture(() => print('B'));        // event queue\nscheduleMicrotask(() => print('C')); // microtask\nprint('D');\n// Output: A D C B"
+    },
+    {
+      "heading": "Streams",
+      "body": "A `Stream<T>` is an asynchronous sequence of events. A **single-subscription** stream accepts only one listener (e.g. reading a file); a **broadcast** stream accepts many but drops events emitted while nobody is listening.\n\nYou consume them with `listen` (remembering to call `cancel()` on the subscription) or with `await for`. You produce them with a `StreamController` or with `async*` generator functions and `yield`.",
+      "code": "Stream<int> ticks(int n) async* {\n  for (var i = 0; i < n; i++) {\n    await Future.delayed(const Duration(seconds: 1));\n    yield i;\n  }\n}\n\nawait for (final t in ticks(3)) {\n  print(t);\n}"
+    },
+    {
+      "heading": "Isolates and compute",
+      "body": "Async doesn't mean parallel: a heavy computation inside a Future **still blocks** the UI thread and causes jank. For true parallelism you need **isolates**: each one has its own heap and event loop, they **don't share memory**, and they communicate via messages (`SendPort`/`ReceivePort`).\n\n`Isolate.run` (Dart 2.19+) and Flutter's `compute` run a function in a new isolate and return the result. Typical use cases: parsing very large JSON, image processing, cryptography.",
+      "code": "final items = await Isolate.run(() {\n  final data = jsonDecode(hugeJson) as List;\n  return data.map(Item.fromJson).toList();\n});"
+    },
+    {
+      "heading": "Combining Futures",
+      "body": "`Future.wait` runs several Futures **in parallel** (concurrently on the event loop) and completes when all of them have finished, or fails on the first error. `Future.any` completes with the first result.\n\nWatch out for \"forgotten\" Futures: an un-awaited Future that fails produces an unhandled error. If it's intentional, make that explicit with `unawaited()` and handle the errors.",
+      "code": "final (user, posts) = await (\n  api.user(id),\n  api.posts(id),\n).wait; // Dart 3: record of Futures\n\nfinal all = await Future.wait([a(), b(), c()]);"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"What's the output order?\"** with a mix of `print`, `Future`, `scheduleMicrotask`, and `await`. The method: first all the synchronous code, then the entire microtask queue, then one event at a time (draining the microtasks again after each one).\n\nAnother common one: **\"Does async mean multithreaded?\"** No: it's concurrency on a single thread. CPU-bound work needs an isolate (`Isolate.run` or `compute`), and since isolates don't share memory, you don't need locks."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What does this code print?",
+      "code": "import 'dart:async';\n\nvoid main() {\n  print('A');\n  Future(() => print('B'));\n  scheduleMicrotask(() => print('C'));\n  Future.microtask(() => print('D'));\n  print('E');\n}",
+      "options": [
+        "A B C D E",
+        "A E C D B",
+        "A E B C D",
+        "A C D E B"
+      ],
+      "answer": 1,
+      "explanation": "First the synchronous code (A, E), then the microtasks in order (C, D), and finally the event from the Timer created by `Future(...)` (B).",
+      "whyWrong": [
+        "Not everything runs in the order it's written: `Future(...)` and the microtasks are deferred, so the synchronous E comes right after A.",
+        null,
+        "`Future(...)` schedules a Timer on the event queue, which is only served after the microtask queue is drained: B comes last.",
+        "Microtasks don't interrupt synchronous code: `print('E')` runs before the event loop executes C and D."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "Future<void> f() async {\n  print('B');\n  await Future(() {});\n  print('D');\n}\n\nvoid main() {\n  print('A');\n  f();\n  print('C');\n}",
+      "options": [
+        "A C B D",
+        "B A C D",
+        "A B D C",
+        "A B C D"
+      ],
+      "answer": 3,
+      "explanation": "The body of `f` runs synchronously up to the first `await`, so B prints right after A. Then `main` continues with C, and only after that D.",
+      "whyWrong": [
+        "Calling an `async` function doesn't defer its body: it runs synchronously up to the first `await`, so B prints before C.",
+        "`main` prints A before it even calls `f()`, so B can't come first.",
+        "The first `await` suspends `f` and hands control back to `main`, which prints C before D can resume.",
+        null
+      ]
+    },
+    {
+      "prompt": "An `async` function that does `return 42;` has the return type:",
+      "options": [
+        "`Future<int>`",
+        "`int`",
+        "`Stream<int>`",
+        "`FutureOr<int>`, necessarily"
+      ],
+      "answer": 0,
+      "explanation": "An `async` function always wraps its return value in a Future. To produce a Stream you need `async*`.",
+      "whyWrong": [
+        null,
+        "Inside you write `return 42`, but an `async` function always wraps the result in a Future: the caller gets a `Future<int>`.",
+        "You get a Stream with `async*` and `yield`; an `async` function produces a single future value.",
+        "`FutureOr<int>` is an allowed return type, but not a required one: the idiomatic and most common one is `Future<int>`."
+      ]
+    },
+    {
+      "prompt": "What happens if you call `listen` twice on a single-subscription Stream?",
+      "options": [
+        "The second listener only gets new events",
+        "Both receive every event",
+        "A StateError is thrown",
+        "The first listener is canceled"
+      ],
+      "answer": 2,
+      "explanation": "A single-subscription stream accepts only one listener: the second `listen` throws `StateError: Stream has already been listened to`. You need `asBroadcastStream()` or a broadcast controller.",
+      "whyWrong": [
+        "That's how a broadcast stream behaves; a single-subscription stream rejects the second listener outright.",
+        "No kind of Stream replays every event to a second listener; here the second `listen` fails immediately.",
+        null,
+        "The first listener stays active: it's the second `listen` that throws `StateError`."
+      ]
+    },
+    {
+      "prompt": "Why parse a 10 MB JSON with `Isolate.run` or `compute`?",
+      "options": [
+        "Because `jsonDecode` is asynchronous",
+        "To avoid blocking the UI thread and causing jank",
+        "Because isolates share memory",
+        "So you can `await` the result"
+      ],
+      "answer": 1,
+      "explanation": "`jsonDecode` is synchronous and CPU-bound: on the main isolate it blocks frames. A separate isolate runs it in parallel.",
+      "whyWrong": [
+        "`jsonDecode` is synchronous and CPU-bound: that's exactly why it blocks the main isolate if you call it there.",
+        null,
+        "Isolates don't share memory: each has its own heap, and the result is passed back as a message.",
+        "You can `await` any Future; the point isn't the await, it's moving the heavy work off the UI thread."
+      ]
+    },
+    {
+      "prompt": "How do two isolates communicate?",
+      "options": [
+        "Through shared static variables",
+        "With locks and mutexes",
+        "By accessing the same heap",
+        "With messages over SendPort/ReceivePort"
+      ],
+      "answer": 3,
+      "explanation": "Isolates don't share memory: each has its own heap, and they exchange messages through ports. A static variable has a separate copy in each isolate.",
+      "whyWrong": [
+        "Each isolate has its own copy of static variables: changing it in one has no effect on the other.",
+        "Locks and mutexes are for shared memory, which isolates don't have: they communicate only through messages.",
+        "Each isolate has a separate heap; that isolation is precisely what prevents data races.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "Stream<int> count() async* {\n  for (var i = 1; i <= 3; i++) {\n    yield i;\n  }\n}\n\nvoid main() async {\n  final sum = await count().reduce((a, b) => a + b);\n  print(sum);\n}",
+      "options": [
+        "6",
+        "3",
+        "[1, 2, 3]",
+        "Instance of Stream<int>"
+      ],
+      "answer": 0,
+      "explanation": "The `async*` generator emits 1, 2, 3 and `reduce` adds them up, returning a Future whose value is 6.",
+      "whyWrong": [
+        null,
+        "3 is just the last emitted value; `reduce` combines all the elements with `a + b`, so 1 + 2 + 3 = 6.",
+        "`reduce` doesn't collect the events into a list (that's what `toList` does); it combines them into a single value.",
+        "Thanks to the `await`, `sum` is the value of the Future returned by `reduce`, not the Stream itself."
+      ]
+    },
+    {
+      "prompt": "What happens when you run this code?",
+      "code": "Future<void> fail() async => throw 'x';\n\nvoid main() {\n  try {\n    fail();\n  } catch (e) {\n    print('caught');\n  }\n}",
+      "options": [
+        "It prints 'caught'",
+        "Nothing, and no error",
+        "Unhandled error: `await` is missing",
+        "Compile error"
+      ],
+      "answer": 2,
+      "explanation": "An `async` function doesn't throw synchronously: the exception completes the Future with an error. Without `await`, the `try/catch` never sees it and the error goes unhandled.",
+      "whyWrong": [
+        "An `async` function doesn't throw synchronously: the error completes the Future, and without `await` the `try/catch` has already been left behind.",
+        "The error doesn't vanish: a failed Future with no handler becomes an unhandled error reported by the Zone.",
+        null,
+        "Ignoring a Future is valid code: at most a lint like `unawaited_futures` flags it, but it compiles."
+      ]
+    },
+    {
+      "prompt": "You have three independent network calls. How do you run them in parallel and wait for all of them?",
+      "options": [
+        "Three `await`s in sequence",
+        "`await Future.wait([a(), b(), c()])`",
+        "`await Future.any([a(), b(), c()])`",
+        "One `compute` for each"
+      ],
+      "answer": 1,
+      "explanation": "`Future.wait` starts all the calls and completes when they've all finished. Three `await`s in a row serialize them; `Future.any` returns only the first.",
+      "whyWrong": [
+        "Three `await`s in a row serialize the calls: the second only starts once the first has finished.",
+        null,
+        "`Future.any` completes with the first Future to finish and ignores the others' results, so you don't wait for all of them.",
+        "Network calls are asynchronous I/O, not CPU work: `compute` would move them into an isolate for no benefit at all."
+      ]
+    },
+    {
+      "prompt": "When is the microtask queue drained?",
+      "options": [
+        "Completely, before processing each event",
+        "On every frame, every 16 ms",
+        "After Timers, but not after I/O",
+        "Only when the event queue is empty"
+      ],
+      "answer": 0,
+      "explanation": "The event loop runs all pending microtasks before taking the next event from the event queue. That's why an infinite chain of microtasks freezes the app.",
+      "whyWrong": [
+        null,
+        "It isn't tied to frames: the event loop drains the microtask queue before every event, regardless of the 16 ms.",
+        "The event loop doesn't distinguish between event types: before a Timer, I/O, or any other event, it always drains the microtasks.",
+        "It's the other way around: microtasks take priority and run before the next event is taken, even when the event queue is full."
+      ]
+    }
+  ]
+}

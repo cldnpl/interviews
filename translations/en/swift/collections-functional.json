@@ -1,0 +1,212 @@
+{
+  "title": "Collections & Functional",
+  "summary": "Array, Set, Dictionary, higher-order functions, lazy, and complexity.",
+  "lesson": [
+    {
+      "heading": "Array, Set, and Dictionary",
+      "body": "`Array` is ordered and allows duplicates: index access is O(1), `append` is amortized O(1), while inserting or removing at the front and `contains` are O(n). `Set` is unordered with no duplicates, and `contains`, `insert`, and `remove` are O(1) on average. `Dictionary` maps keys to values with O(1) average lookup.\n\nSet elements and Dictionary keys must be `Hashable`. Iteration order for Set and Dictionary is not guaranteed and changes between runs, because hashing uses a random per-process seed.",
+      "code": "var seen = Set<String>()\nif seen.insert(id).inserted { process(id) }\nvar counts: [String: Int] = [:]\ncounts[word, default: 0] += 1"
+    },
+    {
+      "heading": "Equatable and Hashable",
+      "body": "For structs and enums, the compiler synthesizes `Equatable` and `Hashable` if all stored properties (or associated values) conform. If you implement them by hand, you must honor the contract: if `a == b`, their hashes must match too. The reverse isn't required, because collisions are allowed.\n\nIn `hash(into:)`, feed `hasher.combine` the same properties you compare in `==`.",
+      "code": "struct User: Hashable {\n    let id: UUID\n    var name: String\n    static func == (l: User, r: User) -> Bool { l.id == r.id }\n    func hash(into h: inout Hasher) { h.combine(id) }\n}"
+    },
+    {
+      "heading": "map, filter, reduce, and friends",
+      "body": "`map` transforms every element, `filter` keeps the ones that match a predicate, and `reduce` combines everything into a single value. `compactMap` transforms and drops the nils, and `flatMap` flattens a sequence of sequences.\n\n`reduce(into:)` mutates an `inout` accumulator instead of creating a new one at every step: when building arrays or dictionaries, it avoids repeated copies and quadratic cost.",
+      "code": "let ids = [\"1\", \"x\", \"3\"].compactMap { Int($0) }      // [1, 3]\nlet all = [[1, 2], [3]].flatMap { $0 }                  // [1, 2, 3]\nlet freq = words.reduce(into: [:]) { $0[$1, default: 0] += 1 }"
+    },
+    {
+      "heading": "lazy",
+      "body": "A `map`/`filter` chain on an Array creates an intermediate array at every step. With `.lazy`, the transformations are composed and evaluated **on demand**, one element at a time, and stop as soon as the result is known (for example with `first(where:)`).\n\nThe flip side: a lazy sequence evaluated multiple times repeats the work, and the closures run only when elements are accessed, which can be surprising if they have side effects.",
+      "code": "let firstBig = (1...1_000_000).lazy\n    .map { $0 * $0 }\n    .first { $0 > 1_000 }   // computes only 32 squares"
+    },
+    {
+      "heading": "Handy idioms",
+      "body": "`Dictionary(grouping:by:)` groups elements by key, `Dictionary(uniqueKeysWithValues:)` builds one from pairs, `zip` pairs up two sequences, and `enumerated()` gives you offset and value. `sorted(by:)` is O(n log n), and `min`/`max` are O(n).\n\nRemember that collections are value types with copy-on-write: passing them to a function is cheap as long as nobody mutates them.",
+      "code": "let byInitial = Dictionary(grouping: names) { $0.first! }\nfor (i, name) in names.enumerated() { print(i, name) }"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"Array or Set? What's the complexity of contains?\"**. Short answer: Array when order matters or you need duplicates, Set when you need uniqueness and O(1) average lookup instead of O(n); the price is `Hashable` conformance and losing the order.\n\nAlso be ready to explain the difference between `map`, `compactMap`, and `flatMap`, and to justify `reduce(into:)` and `lazy` in terms of allocations."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What does this code print?",
+      "code": "let r = [\"1\", \"a\", \"3\"].compactMap { Int($0) }\nprint(r)",
+      "options": [
+        "[1, nil, 3]",
+        "[Optional(1), Optional(3)]",
+        "[\"1\", \"3\"]",
+        "[1, 3]"
+      ],
+      "answer": 3,
+      "explanation": "`compactMap` applies the transform and drops the nil results.",
+      "whyWrong": [
+        "That would be the result of `map`, which produces `[Int?]`. `compactMap` drops the nils and returns `[Int]`.",
+        "`compactMap` doesn't just filter out the nils, it also unwraps: the result is `[Int]`, printed without `Optional(...)`.",
+        "`compactMap` returns the transformed values, not the original elements: `Int(\"1\")` is `1`, an `Int`, not a string.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "print([[1, 2], [3]].flatMap { $0 })",
+      "options": [
+        "[1, 2, 3]",
+        "[[1, 2], [3]]",
+        "[3, 3]",
+        "6"
+      ],
+      "answer": 0,
+      "explanation": "`flatMap` with a closure that returns a sequence concatenates the results into a flat array.",
+      "whyWrong": [
+        null,
+        "With `map { $0 }` you'd get the array back unchanged. `flatMap` concatenates the returned sequences, flattening one level.",
+        "`flatMap` doesn't count the elements of the sub-arrays: it concatenates them into a single array.",
+        "Nothing gets summed: `flatMap` concatenates the sub-arrays. To sum them you'd need a `reduce(0, +)` on the result."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let r = [1, 2, 3, 4].reduce(0) { $0 + $1 * 2 }\nprint(r)",
+      "options": [
+        "10",
+        "18",
+        "20",
+        "12"
+      ],
+      "answer": 2,
+      "explanation": "Each element is doubled and added to the accumulator: 2 + 4 + 6 + 8 = 20.",
+      "whyWrong": [
+        "10 is the plain sum of the elements. The closure doubles each one before adding it: 2 + 4 + 6 + 8 = 20.",
+        "No element is skipped: with an initial value of 0, the closure runs on all four, so 0 + 2 + 4 + 6 + 8 = 20.",
+        null,
+        "Watch the roles: `$0` is the accumulator and `$1` is the element, and only the element is doubled at each step. The total is 20."
+      ]
+    },
+    {
+      "prompt": "What is the average complexity of `contains` on a `Set`?",
+      "options": [
+        "O(n)",
+        "O(log n)",
+        "O(1)",
+        "O(n log n)"
+      ],
+      "answer": 2,
+      "explanation": "A Set is a hash table: lookup is constant on average, and O(n) only in the degenerate case of heavy collisions.",
+      "whyWrong": [
+        "O(n) applies to `contains` on an Array, which scans every element; a Set uses the hash to jump straight to the bucket.",
+        "O(log n) is typical of ordered structures like trees or binary search. `Set` is an unordered hash table: lookup is O(1) on average.",
+        null,
+        "O(n log n) is the cost of sorting, not searching: `Set.contains` is O(1) on average."
+      ]
+    },
+    {
+      "prompt": "What is the complexity of `array.insert(x, at: 0)`?",
+      "options": [
+        "O(1)",
+        "O(log n)",
+        "Amortized O(1)",
+        "O(n)"
+      ],
+      "answer": 3,
+      "explanation": "Inserting at the front shifts every existing element; only `append` is amortized O(1).",
+      "whyWrong": [
+        "An Array uses contiguous memory: inserting at the front means shifting every element by one position, so O(n).",
+        "There's no binary search involved: the cost comes from shifting all n existing elements.",
+        "Amortized O(1) applies to `append` at the end. At the front every element has to move, so each insertion costs O(n).",
+        null
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "var c: [Character: Int] = [:]\nfor ch in \"banana\" { c[ch, default: 0] += 1 }\nprint(c[\"a\"]!)",
+      "options": [
+        "1",
+        "3",
+        "2",
+        "nil"
+      ],
+      "answer": 1,
+      "explanation": "The `default` subscript starts at 0 for missing keys; \"banana\" contains three `a`s.",
+      "whyWrong": [
+        "The `default` subscript doesn't reset to 0 every time: it only uses it when the key is missing, then accumulates. \"banana\" has three `a`s.",
+        null,
+        "Count carefully: b-a-n-a-n-a contains three `a`s; it's the `n`s that appear twice.",
+        "After the loop the key `a` exists and `!` unwraps the Optional: it prints an `Int`, namely 3."
+      ]
+    },
+    {
+      "prompt": "Which rule must a `Hashable` implementation follow?",
+      "options": [
+        "If the hashes are equal, then `a == b`",
+        "The hash must be unique for every value",
+        "If `a == b`, then `a` and `b` have the same hash",
+        "The hash must stay the same across runs"
+      ],
+      "answer": 2,
+      "explanation": "Collisions are allowed, but equal values with different hashes would break Set and Dictionary.",
+      "whyWrong": [
+        "That's the implication reversed: collisions are allowed, so different values can share a hash. Only `a == b` ⇒ equal hashes holds.",
+        "Uniqueness is impossible in general, because there are more possible values than possible hashes: collisions are allowed and handled by Set and Dictionary.",
+        null,
+        "Swift uses a random per-process seed, so the hash changes between runs: never persist it or compare it across runs."
+      ]
+    },
+    {
+      "prompt": "What does `print(Set([3, 1, 2]))` print?",
+      "options": [
+        "Always [1, 2, 3]",
+        "Always [3, 1, 2]",
+        "Error: Set isn't printable",
+        "The three numbers in no guaranteed order"
+      ],
+      "answer": 3,
+      "explanation": "Set is unordered and hashing uses a random per-process seed: the order can change between runs.",
+      "whyWrong": [
+        "`Set` doesn't sort its elements: the order depends on hashing with a random per-process seed. To get them sorted, use `sorted()`.",
+        "Insertion order isn't preserved: elements land in buckets based on their hash, and the order can change between runs.",
+        "`Set` is `CustomStringConvertible`: `print` works and shows the elements in square brackets, in no guaranteed order.",
+        null
+      ]
+    },
+    {
+      "prompt": "What do the `print` calls in the closure print?",
+      "code": "let r = [1, 2, 3, 4].lazy\n    .map { x -> Int in print(x); return x * 10 }\n    .first { $0 > 15 }",
+      "options": [
+        "1 and 2",
+        "1, 2, 3, and 4",
+        "Nothing",
+        "Only 2"
+      ],
+      "answer": 0,
+      "explanation": "With `.lazy`, `map` is evaluated on demand and `first(where:)` stops at 20, the first value greater than 15.",
+      "whyWrong": [
+        null,
+        "That would be true without `.lazy`, because `map` would transform everything up front. With `.lazy`, elements are processed on demand and `first` stops at 20.",
+        "`.lazy` defers the work, but `first(where:)` asks for it right away: it consumes elements until it finds a match, so 1 and 2 get printed.",
+        "Elements are processed in order from the start: first 1 (10, not > 15), then 2 (20, match). So both 1 and 2 are printed."
+      ]
+    },
+    {
+      "prompt": "Why prefer `reduce(into:)` over `reduce(_:_:)` to build an array?",
+      "options": [
+        "It's the only one that supports Dictionary",
+        "It mutates the accumulator in place, avoiding a copy at every step",
+        "It runs in parallel",
+        "It doesn't need an initial value"
+      ],
+      "answer": 1,
+      "explanation": "With `reduce(_:_:)`, every iteration returns a new accumulator, risking O(n²) cost.",
+      "whyWrong": [
+        "`reduce(_:_:)` works with Dictionary too; the advantage of `into:` is in-place mutation, whatever the accumulator's type.",
+        null,
+        "`reduce(into:)` is just as sequential as the other one: the difference is that it mutates the accumulator instead of recreating it at every step.",
+        "You still need an initial value, for example `reduce(into: [])`: the only change is that the closure receives the accumulator as `inout`."
+      ]
+    }
+  ]
+}

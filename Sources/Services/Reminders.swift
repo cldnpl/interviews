@@ -52,14 +52,21 @@ enum Reminders {
 
     private static func message(streak: Int, tracks: String, index: Int) -> (String, String) {
         if streak > 0 {
-            return ("🔥 \(streak) \(streak == 1 ? "giorno" : "giorni") di fila",
-                    "Non spezzare la serie: 5 domande su \(tracks) ti aspettano.")
+            // Due frasi intere invece di incollare "day"/"days": una lingua che declina
+            // il numero non si traduce una parola alla volta.
+            let title = streak == 1 ? String(localized: "🔥 1 day in a row", bundle: .app)
+                                    : String(localized: "🔥 \(streak) days in a row", bundle: .app)
+            return (title, String(localized: "Don't break the streak: 5 questions on \(tracks) are waiting.", bundle: .app))
         }
         let pool = [
-            ("Il quiz di oggi è pronto", "Cinque domande, due minuti. Il prossimo colloquio ringrazia."),
-            ("Allenamento del giorno", "Un recruiter potrebbe chiedertelo domani. Meglio saperlo oggi."),
-            ("Due minuti per te", "Riparti con le domande di oggi su \(tracks)."),
-            ("Pronto per il colloquio?", "Le domande del giorno sono arrivate."),
+            (String(localized: "Today's quiz is ready", bundle: .app),
+             String(localized: "Five questions, two minutes. Your next interview will thank you.", bundle: .app)),
+            (String(localized: "Practice of the day", bundle: .app),
+             String(localized: "A recruiter could ask you tomorrow. Better to know it today.", bundle: .app)),
+            (String(localized: "Two minutes for you", bundle: .app),
+             String(localized: "Pick up today's questions on \(tracks).", bundle: .app)),
+            (String(localized: "Ready for the interview?", bundle: .app),
+             String(localized: "Today's questions have arrived.", bundle: .app)),
         ]
         return pool[abs(index) % pool.count]
     }

@@ -17,10 +17,10 @@ enum Tier: Int, Codable, CaseIterable, Identifiable, Comparable {
 
     var experience: String {
         switch self {
-        case .junior: "Meno di 2 anni, o stai cercando il primo lavoro"
-        case .mid: "Da 2 a 5 anni, lavori in autonomia"
-        case .senior: "Più di 5 anni, guidi scelte tecniche"
-        case .staff: "Oltre il senior"
+        case .junior: String(localized: "Less than 2 years, or looking for your first job", bundle: .app)
+        case .mid: String(localized: "2 to 5 years, working on your own", bundle: .app)
+        case .senior: String(localized: "More than 5 years, leading technical decisions", bundle: .app)
+        case .staff: String(localized: "Beyond senior", bundle: .app)
         }
     }
 

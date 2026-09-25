@@ -67,7 +67,7 @@ struct OnboardingView: View {
             VStack(spacing: 12) {
                 Text("Interviews")
                     .font(.system(size: 44, weight: .heavy, design: .rounded))
-                Text("Preparati ai colloqui tecnici mobile.\ncon cinque domande al giorno e lezioni semplificate")
+                Text("Get ready for mobile tech interviews,\nwith five questions a day and short lessons.")
                     .font(.title3)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
@@ -76,7 +76,7 @@ struct OnboardingView: View {
                 ForEach(Track.allCases) { TrackChip(track: $0) }
             }
             Spacer()
-            Button("Iniziamo") { go(to: 1) }
+            Button("Let's start") { go(to: 1) }
                 .buttonStyle(PrimaryButtonStyle(gradient: Track.swift.theme.linear))
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
@@ -89,9 +89,9 @@ struct OnboardingView: View {
     private var trackPicker: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Su cosa ti prepari?")
+                Text("What's your focus?")
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                Text("Ogni percorso è a sé, con i suoi argomenti e le sue domande. Puoi sceglierne più di uno: il quiz del giorno li mescolerà.")
+                Text("Each track stands on its own, with its own topics and questions. Pick more than one: the daily quiz will mix them.")
                     .foregroundStyle(.secondary)
             }
             .padding(.top, 24)
@@ -110,7 +110,7 @@ struct OnboardingView: View {
             }
             .scrollIndicators(.hidden)
 
-            Button("Continua") { go(to: 2) }
+            Button("Continue") { go(to: 2) }
                 .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
                 .disabled(tracks.isEmpty)
                 .opacity(tracks.isEmpty ? 0.4 : 1)
@@ -124,9 +124,9 @@ struct OnboardingView: View {
     private var levelPicker: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Qual è il tuo livello?")
+                Text("What's your level?")
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                Text("Le domande si adattano a te. Rispondendo guadagni XP e sali di grado, fino a Staff.")
+                Text("Questions adapt to you. Answering earns XP and raises your rank, all the way to Staff.")
                     .foregroundStyle(.secondary)
             }
             .padding(.top, 24)
@@ -141,7 +141,7 @@ struct OnboardingView: View {
 
             Spacer()
 
-            Button("Continua") { go(to: 3) }
+            Button("Continue") { go(to: 3) }
                 .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
                 .disabled(tier == nil)
                 .opacity(tier == nil ? 0.4 : 1)
@@ -155,9 +155,9 @@ struct OnboardingView: View {
     private var reminder: some View {
         VStack(spacing: 24) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Quando ti alleni?")
+                Text("When do you practice?")
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                Text("Ti mandiamo un promemoria all'ora che preferisci, solo nei giorni in cui non hai ancora fatto il quiz.")
+                Text("We send a reminder at the time you prefer, only on days you haven't done the quiz yet.")
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -173,7 +173,7 @@ struct OnboardingView: View {
                     .symbolEffect(.pulse, options: .repeating)
             }
 
-            DatePicker("Ora", selection: $reminderTime, displayedComponents: .hourAndMinute)
+            DatePicker("Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
                 .datePickerStyle(.wheel)
                 .labelsHidden()
                 .frame(height: 150)
@@ -182,11 +182,12 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: 12) {
-                Button("Attiva i promemoria") { finish(reminders: true) }
+                Button("Turn on reminders") { finish(reminders: true) }
                     .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
-                Button("Più tardi") { finish(reminders: false) }
+                Button("Later") { finish(reminders: false) }
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
+                LegalConsentNote(tint: theme.primary)
             }
             .padding(.bottom, 16)
         }

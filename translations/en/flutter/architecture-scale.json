@@ -1,0 +1,208 @@
+{
+  "title": "Architecture at Scale",
+  "summary": "Feature-first, domain/data/presentation layers, dependency inversion, repositories, packages, and design systems",
+  "lesson": [
+    {
+      "heading": "Feature-first, not layer-first",
+      "body": "Organizing by type (`models/`, `widgets/`, `services/`) holds up while the app is small. At twenty screens, every change touches five folders and two teams keep stepping on each other's toes in the same files.\n\nWith a **feature-first** layout, each feature is a folder containing its own layers, and `core/` (or `shared/`) holds only what everyone genuinely needs: networking, storage, the design system, errors.\n\nThe test is harsh but useful: **a feature should be deletable**. If you delete `features/checkout/` and the app still compiles apart from the routes, your boundaries are right. If ten scattered files break, it was never really a feature.",
+      "code": "lib/\n  core/            # networking, storage, theme, errors\n  features/\n    catalog/\n      domain/      # entities, abstract repositories, use cases\n      data/        # DTOs, APIs, implementations\n      presentation/# widgets and state holders\n    checkout/\n      domain/ data/ presentation/\n  app.dart         # router and composition root"
+    },
+    {
+      "heading": "The three layers",
+      "body": "**Presentation**: widgets and whatever holds the state (Bloc, Notifier, ViewModel). It turns user events into calls and state into pixels. No `http`, no SQL, no business rules.\n\n**Domain**: the heart of the app. Entities, rules, use cases, repository interfaces. It's **pure Dart**: it doesn't import `package:flutter` and has no idea what JSON is. If the app someday becomes a CLI or a server, this layer comes along untouched.\n\n**Data / infrastructure**: DTOs, HTTP clients, databases, caches, mappers. It implements the domain's interfaces and translates the outside world into entities.\n\nThere's exactly one dependency rule: **dependencies point inward**. Presentation and data know about the domain; the domain knows about nobody.",
+      "code": "// domain/ — pure Dart\nclass Order {\n  final String id;\n  final Money total;\n  bool get isRefundable => total.amount > 0 && !isShipped;\n}\n\nabstract interface class OrderRepository {\n  Future<Order> byId(String id);\n}"
+    },
+    {
+      "heading": "Dependency inversion and repositories",
+      "body": "The repository **interface** lives in the domain, the **implementation** in data. That flips the arrow: the domain doesn't depend on Dio or sqflite; the infrastructure has to conform to the domain's contract. It's the only way to test logic without a network and to swap data sources without rewriting features.\n\nA repository isn't \"one class per table\": it's the **boundary**. Inside it, DTOs become entities, errors become typed `Failure`s, and the cache decides whether to hit the network. Outside it, nobody knows there's a snake_case `created_at` field.\n\nInterface and implementation are wired together in exactly one place, the **composition root** (get_it, Riverpod, a constructor). The rest of the code receives its dependencies; it doesn't build them.",
+      "code": "// data/\nclass HttpOrderRepository implements OrderRepository {\n  HttpOrderRepository(this._api);\n  final ApiClient _api;\n\n  @override\n  Future<Order> byId(String id) async {\n    final dto = await _api.getOrder(id); // OrderDto, snake_case\n    return dto.toDomain();               // mapper at the boundary\n  }\n}\n\n// test: no network\nclass FakeOrderRepository implements OrderRepository { /* ... */ }"
+    },
+    {
+      "heading": "Modularizing into packages",
+      "body": "A folder is a convention: nothing stops `checkout` from importing a private file from `catalog`. A **package** is a real boundary, enforced by the compiler: if it's not in `pubspec.yaml`, you can't import it.\n\nA monorepo with multiple packages (managed with Melos or Dart workspaces) also gives you incremental tests and analysis, and lets a team ship its own piece. There's a cost: versioning, tooling, noisier refactors.\n\nRule of thumb: **extract a package once the boundary is already stable**, not before. Starting with twenty packages on a domain that's still in flux means spending the next few months moving classes from one package to another.",
+      "code": "packages/\n  core_ui/        # design system\n  core_network/   # client, interceptors, retry\n  feature_catalog/\n  feature_checkout/\napps/\n  mobile/         # composition: depends on the features"
+    },
+    {
+      "heading": "Design system and shared components",
+      "body": "At scale, visual consistency doesn't come from discipline; it comes from code: **tokens** (colors, spacing, radii, typography) exposed through the theme, and components that use them. `Colors.blue` and `EdgeInsets.all(17)` scattered across files are a sign the design system doesn't exist.\n\nIn Flutter you add tokens to the theme with a `ThemeExtension`, so they stay typed, can be interpolated in animations, and are available everywhere via `Theme.of(context)`.\n\nShared components must have **no domain logic**: an `AppButton` doesn't know what an order is. A component gallery (Widgetbook, Storybook) and golden tests keep them honest over time.",
+      "code": "@immutable\nclass AppColors extends ThemeExtension<AppColors> {\n  const AppColors({required this.brand, required this.danger});\n  final Color brand;\n  final Color danger;\n\n  @override\n  AppColors copyWith({Color? brand, Color? danger}) => /* ... */;\n  @override\n  AppColors lerp(AppColors? other, double t) => /* ... */;\n}\n\nfinal brand = Theme.of(context).extension<AppColors>()!.brand;"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"How would you structure an app that five teams work on?\"** Answer: feature-first, each feature with its three layers and an explicit boundary; `core` only for what's truly cross-cutting; dependencies pointing toward the domain; packages once the boundary is stable, so the compiler enforces the rules nobody will re-check in PRs.\n\nAlways add the *why*: you don't build layers for elegance, you build them so you can test logic without a network, change the backend without touching the UI, and let two teams work in parallel without conflicts. And own the trade-off: for a three-screen app this structure is overkill, and saying so counts in your favor, not against you."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Where does a rule like \"an order can be refunded only if it hasn't shipped\" belong?",
+      "options": [
+        "In the widget that shows the button",
+        "In the domain layer",
+        "In the HTTP client",
+        "In the infrastructure repository"
+      ],
+      "answer": 1,
+      "explanation": "It's a business rule, so it belongs in the domain (an entity or a use case), where you can test it without a network or a UI. The presentation layer just queries it to decide what to draw.",
+      "whyWrong": [
+        "In the widget, the rule can't be tested without building the UI, and it gets duplicated as soon as you need it elsewhere.",
+        null,
+        "The HTTP client moves data around: it shouldn't know anything about domain rules.",
+        "The repository implements data access; the rule would end up tied to the data source instead of the domain."
+      ]
+    },
+    {
+      "prompt": "What's the main advantage of a feature-first layout over organizing by type?",
+      "options": [
+        "It reduces the number of files in the project",
+        "It makes the app start up faster",
+        "A change stays inside one folder and the feature is deletable",
+        "It saves you from writing tests"
+      ],
+      "answer": 2,
+      "explanation": "With folders by type, every change touches `models/`, `services/`, `widgets/`. With feature-first, work stays local, conflicts between teams drop, and removing a feature is a clean operation.",
+      "whyWrong": [
+        "The file count is essentially the same: only the grouping changes.",
+        "Folder structure has no effect on runtime performance.",
+        null,
+        "You still need tests; if anything they get easier because the boundaries are clear."
+      ]
+    },
+    {
+      "prompt": "Which import in a **domain** layer file is a sign that something is in the wrong place?",
+      "options": [
+        "`package:flutter/material.dart`",
+        "`dart:async`",
+        "`dart:math`",
+        "Another domain file"
+      ],
+      "answer": 0,
+      "explanation": "The domain is pure Dart: if it imports Flutter, UI has leaked into it (a `BuildContext`, a `Color`), and with it the framework dependency you were trying to avoid.",
+      "whyWrong": [
+        null,
+        "`dart:async` is part of the standard library: `Future` and `Stream` are perfectly fine in the domain.",
+        "`dart:math` is pure Dart and doesn't tie the domain to any framework.",
+        "Imports within the domain are normal: it's the same layer."
+      ]
+    },
+    {
+      "prompt": "Why does the repository **interface** go in the domain rather than in data?",
+      "options": [
+        "It's a convention of typed languages",
+        "So the domain doesn't depend on the infrastructure",
+        "Because the data layer can't expose abstract classes",
+        "To reduce the number of files"
+      ],
+      "answer": 1,
+      "explanation": "That's dependency inversion: whoever uses the contract defines it. The domain stays independent of Dio, sqflite, or Firebase, and in tests you swap in a fake.",
+      "whyWrong": [
+        "It's not a style convention: it actually changes the direction of dependencies between layers.",
+        null,
+        "The data layer can declare abstract classes just fine; the point is who owns the contract.",
+        "You end up with more files, not fewer: the payoff is decoupling."
+      ]
+    },
+    {
+      "prompt": "Why keep DTOs separate from domain entities?",
+      "options": [
+        "Because DTOs can't be serialized",
+        "To avoid writing mappers",
+        "So an API format change stops at the boundary",
+        "Because entities can't have `final` fields"
+      ],
+      "answer": 2,
+      "explanation": "The DTO has whatever shape the backend wants (snake_case, optional fields, dates as strings); the entity has the shape the domain needs. The mapper in the repository absorbs API changes without spreading them to the UI and the logic.",
+      "whyWrong": [
+        "It's the opposite: DTOs exist precisely for serialization, while entities often don't implement it.",
+        "You write mappers either way: they're the price of the separation, not the reason for it.",
+        null,
+        "Entities are typically immutable with `final` fields: nothing prevents that."
+      ]
+    },
+    {
+      "prompt": "What does an internal package give you that a plain folder doesn't?",
+      "options": [
+        "A boundary the compiler enforces",
+        "Faster code at runtime",
+        "Faster hot reload",
+        "The ability to use different Dart versions"
+      ],
+      "answer": 0,
+      "explanation": "Inside a package you can only import what's declared in `pubspec.yaml`, and from outside, only what the package exports: the boundary no longer depends on the discipline of whoever writes the PRs.",
+      "whyWrong": [
+        null,
+        "The compiled code is the same: modularization is a build constraint, not an optimization.",
+        "Hot reload doesn't improve; with many packages the tooling is, if anything, a bit heavier.",
+        "All packages in an app share the same Dart SDK resolved from the pubspec."
+      ]
+    },
+    {
+      "prompt": "What's wrong with this widget?",
+      "code": "class OrderPage extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    return FutureBuilder(\n      future: Dio().get('https://api.app.io/orders/42'),\n      builder: (context, snap) => Text(snap.data?.data['total'] ?? ''),\n    );\n  }\n}",
+      "options": [
+        "`FutureBuilder` can only be used with a `StatefulWidget`",
+        "`FutureBuilder` is missing its generic type",
+        "The presentation layer knows about HTTP and the API format",
+        "`Dio` must always be used with `await`"
+      ],
+      "answer": 2,
+      "explanation": "The widget builds its own client, knows the URL, and reads the raw JSON map: it can't be tested without a network, and every API change touches the UI. It should depend on a repository that returns an entity.",
+      "whyWrong": [
+        "`FutureBuilder` works fine in a `StatelessWidget`; the problem here is something else.",
+        "The generic type helps readability, but it isn't the architectural flaw.",
+        null,
+        "`FutureBuilder` wants a `Future` that hasn't been awaited: calling it without `await` is correct."
+      ]
+    },
+    {
+      "prompt": "In a layered architecture, which way do dependencies point?",
+      "options": [
+        "Domain depends on data, which depends on presentation",
+        "Each layer depends on the one below it, in a cascade",
+        "Presentation and data depend on the domain",
+        "Every layer depends on `core`"
+      ],
+      "answer": 2,
+      "explanation": "The domain is the center and knows about nobody: presentation and data depend on it. That's what lets you swap the UI or the data source without touching the rules.",
+      "whyWrong": [
+        "That's inversion in reverse: the domain would stay tied to the infrastructure and the UI.",
+        "A strict cascade makes the domain depend on data, which is exactly what inversion avoids.",
+        null,
+        "`core` provides cross-cutting services, but it isn't the center of the architecture, and it doesn't become that for every layer."
+      ]
+    },
+    {
+      "prompt": "When does it make sense to extract a feature into a separate package?",
+      "options": [
+        "Right away, before writing any code",
+        "When the boundary is stable and extracting it brings a concrete benefit",
+        "Only once the project exceeds 100,000 lines",
+        "Never: internal packages aren't used in Flutter"
+      ],
+      "answer": 1,
+      "explanation": "A package freezes a boundary: extracting too early, on a domain that's still in flux, means moving classes between packages for months. You extract when there's a real need: reuse, a separate team, incremental builds.",
+      "whyWrong": [
+        "Before writing the code, you don't yet know where the right boundary is.",
+        null,
+        "There's no line-count threshold: what matters is how stable the boundary is and the organizational benefit.",
+        "Internal packages in a monorepo are common practice, with Melos or Dart workspaces."
+      ]
+    },
+    {
+      "prompt": "How do you expose design system tokens (brand colors, spacing) to the whole app?",
+      "options": [
+        "With global constants in a `constants.dart` file",
+        "With a hand-written `InheritedWidget` for each token",
+        "With a `ThemeExtension` registered in `ThemeData`",
+        "By passing them as parameters to widgets"
+      ],
+      "answer": 2,
+      "explanation": "A `ThemeExtension` puts typed tokens inside the theme: you read them with `Theme.of(context).extension<AppColors>()`, they change with the light/dark theme, and they're interpolated during transitions.",
+      "whyWrong": [
+        "Global constants ignore the theme: with dark mode you'd need an `if` at every use site.",
+        "You'd be hand-writing what `ThemeExtension` already does, including `lerp` and integration with `ThemeData`.",
+        null,
+        "Passing tokens by hand threads them through the entire tree and duplicates them in every constructor."
+      ]
+    }
+  ]
+}

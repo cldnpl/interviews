@@ -1,0 +1,213 @@
+{
+  "title": "Closures",
+  "summary": "Escaping, capture lists, trailing closures, and @autoclosure, without the surprises.",
+  "lesson": [
+    {
+      "heading": "Syntax and trailing closures",
+      "body": "Closures are first-class blocks of code: you can assign them, pass them around, and return them. Swift offers plenty of shortcuts: type inference, implicit return for single expressions, and shorthand arguments `$0`, `$1`.\n\nIf the last parameter is a closure, you can write it as a **trailing closure** outside the parentheses; since Swift 5.3, **multiple trailing closures** with labels are supported too.",
+      "code": "let doubled = [1, 2, 3].map { $0 * 2 }\nUIView.animate(withDuration: 0.3) {\n    view.alpha = 0\n} completion: { _ in\n    view.removeFromSuperview()\n}"
+    },
+    {
+      "heading": "Escaping and non-escaping",
+      "body": "By default, closure parameters are **non-escaping**: the compiler knows they run before the function returns, so it can optimize them and doesn't require an explicit `self`. You need `@escaping` when the closure is stored in a property or runs after the function returns, for example in an asynchronous completion handler.\n\nInside a class, escaping closures require you to use `self` explicitly (or `[self]` in the capture list), precisely to make the risk of a retain cycle visible.",
+      "code": "var handlers: [() -> Void] = []\nfunc register(_ h: @escaping () -> Void) {\n    handlers.append(h)\n}"
+    },
+    {
+      "heading": "Capturing Variables",
+      "body": "A closure captures variables from its surrounding context **by reference**: if the variable changes after the closure is created, the closure sees the new value, even for value types. That's how counters built by factory functions work.\n\nA **capture list** `[x]`, on the other hand, copies the value at the moment the closure is created. For a reference type, what gets copied is the reference, so mutations to the object are still visible.",
+      "code": "var n = 1\nlet byRef = { print(n) }\nlet byValue = { [n] in print(n) }\nn = 2\nbyRef()    // 2\nbyValue()  // 1"
+    },
+    {
+      "heading": "Closures and retain cycles",
+      "body": "Closures are **reference types**: if an object holds on to a closure that captures `self` strongly, you get a cycle. You break it with `[weak self]` (self becomes an Optional) or `[unowned self]` (not Optional, crashes if the object has already been deallocated).\n\nSince Swift 5.7 you can write `guard let self else { return }`. Non-escaping closures, like the ones passed to `map` or `filter`, can't create cycles because they don't outlive the call.",
+      "code": "service.onUpdate = { [weak self] data in\n    guard let self else { return }\n    self.render(data)\n}"
+    },
+    {
+      "heading": "@autoclosure",
+      "body": "`@autoclosure` automatically wraps an expression passed as an argument in a closure with no parameters, deferring its evaluation. It's the mechanism behind `??`, `&&`, `||`, and `assert`: the right-hand expression is computed only if it's needed.\n\nUse it sparingly, because it hides from the caller the fact that the argument might never be evaluated.",
+      "code": "func log(_ msg: @autoclosure () -> String, enabled: Bool) {\n    if enabled { print(msg()) }\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"When do you need `@escaping`, and why do you use `[weak self]`?\"** Concise answer: `@escaping` is needed when the closure outlives the function; in that case, if the object retains the closure and the closure retains the object, you get a retain cycle, which I break with `[weak self]`.\n\nMake the point that `[weak self]` isn't needed everywhere: in non-escaping closures, or in closures that aren't retained by `self`, it's unnecessary, although it can still shorten the object's lifetime."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What does this code print?",
+      "code": "var n = 1\nlet f = { print(n) }\nn = 2\nf()",
+      "options": [
+        "1",
+        "2",
+        "nil",
+        "Compile error"
+      ],
+      "answer": 1,
+      "explanation": "Without a capture list, the closure captures the variable by reference and reads its value at the time it runs.",
+      "whyWrong": [
+        "It would be 1 with `[n]` in the capture list. Without it, the closure captures the variable itself and reads 2 when `f()` runs.",
+        null,
+        "`n` is a non-optional `Int`: the closure always prints a number, here 2.",
+        "Capturing a `var` in a closure and modifying it afterward is perfectly legal."
+      ]
+    },
+    {
+      "prompt": "When is `@escaping` required?",
+      "options": [
+        "When the closure throws errors",
+        "When the closure returns a value",
+        "When the closure may run after the function returns",
+        "Always, for closures that take parameters"
+      ],
+      "answer": 2,
+      "explanation": "For example, if it's stored in a property or passed to an asynchronous API.",
+      "whyWrong": [
+        "Throwing closures need `throws` in their type, not `@escaping`: the two are independent concerns.",
+        "The return type doesn't matter: a `() -> Int` closure can be non-escaping. `@escaping` is only about the closure living beyond the function.",
+        null,
+        "Since Swift 3, closure parameters are non-escaping by default, with or without parameters; `@escaping` is needed only if the closure outlives the call."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let nums = [1, 2, 3]\nprint(nums.map { $0 * 2 })",
+      "options": [
+        "[1, 2, 3]",
+        "12",
+        "[[2], [4], [6]]",
+        "[2, 4, 6]"
+      ],
+      "answer": 3,
+      "explanation": "`map` applies the trailing closure to each element and returns a new array.",
+      "whyWrong": [
+        "`map` doesn't return the original array but a new one, with the closure applied to each element: the values come out doubled.",
+        "12 is the sum of the doubled values, which is what a `reduce` would give you. `map` transforms element by element and returns an array.",
+        "The closure returns an `Int`, not an array: so `map` produces an `[Int]`, with no nesting.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "var n = 1\nlet f = { [n] in print(n) }\nn = 2\nf()",
+      "options": [
+        "2",
+        "nil",
+        "1",
+        "Compile error"
+      ],
+      "answer": 2,
+      "explanation": "The capture list `[n]` copies the value of `n` at the moment the closure is created.",
+      "whyWrong": [
+        "Without a capture list it would be 2. With `[n]`, the closure copies its value at creation, when `n` is still 1.",
+        "The captured copy is a non-optional `Int` equal to 1: there's no nil involved.",
+        null,
+        "A capture list containing a variable name is valid syntax: `[n]` creates a local constant with the current value."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "func log(_ msg: @autoclosure () -> String, enabled: Bool) {\n    if enabled { print(msg()) }\n}\nfunc build() -> String { print(\"build\"); return \"x\" }\nlog(build(), enabled: false)",
+      "options": [
+        "Nothing",
+        "build",
+        "build, then x",
+        "x"
+      ],
+      "answer": 0,
+      "explanation": "With `@autoclosure`, the argument `build()` is evaluated only if `msg()` is called, which doesn't happen here.",
+      "whyWrong": [
+        null,
+        "With a regular parameter, `build()` would be evaluated before the call. With `@autoclosure` it becomes a closure, never invoked because `enabled` is false.",
+        "That would need `enabled: true`. Here `msg()` is never called, so neither `build()` nor the printing of x happens.",
+        "To print x you'd have to call `msg()`, but that's inside `if enabled`, which is false: nothing gets printed."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "func makeCounter() -> () -> Int {\n    var c = 0\n    return { c += 1; return c }\n}\nlet a = makeCounter()\nlet b = makeCounter()\n_ = a()\nprint(a(), b())",
+      "options": [
+        "1 1",
+        "2 2",
+        "3 1",
+        "2 1"
+      ],
+      "answer": 3,
+      "explanation": "Each call to `makeCounter` creates a new captured `c`; `a` has been called twice, `b` once.",
+      "whyWrong": [
+        "This overlooks `_ = a()`: the result is discarded, but `a`'s counter still goes to 1, so the second call returns 2.",
+        "`a` and `b` don't share `c`: each `makeCounter()` creates a new variable, so `b()` returns 1 on its first call.",
+        "`a()` is called twice in total (once discarded and once inside `print`), so it returns 2, not 3.",
+        null
+      ]
+    },
+    {
+      "prompt": "Are closures in Swift value types or reference types?",
+      "options": [
+        "Value types, like structs",
+        "Reference types",
+        "Value types with copy-on-write",
+        "It depends on what they capture"
+      ],
+      "answer": 1,
+      "explanation": "Assigning a closure to two variables shares the same captured context; that's why closures can create retain cycles.",
+      "whyWrong": [
+        "Assigning a closure to another variable doesn't copy its context: both share the same captured values, just like with a class.",
+        null,
+        "Copy-on-write is a mechanism used by some value types, like Array. Closures aren't copied: they're references managed by ARC.",
+        "The nature of the type doesn't change with what's captured: a closure is always a reference type, even when it captures nothing."
+      ]
+    },
+    {
+      "prompt": "Do you need `[weak self]` in `items.map { self.format($0) }`?",
+      "options": [
+        "No: the closure is non-escaping and can't create cycles",
+        "Yes, always when using self",
+        "Yes, otherwise it won't compile",
+        "Only if `self` is a struct"
+      ],
+      "answer": 0,
+      "explanation": "The closure passed to `map` runs and is released before the function returns, so it can't hold on to `self` over time.",
+      "whyWrong": [
+        null,
+        "`[weak self]` matters when an escaping closure is retained over time. The one passed to `map` finishes before the return: no cycle is possible.",
+        "It compiles just fine: in non-escaping closures you can use `self` freely, even without `[weak self]`.",
+        "You can't use `weak` with a struct at all; it applies only to reference types. And in any case, there's no cycle here."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "class C { var v = 0 }\nlet c = C()\nlet f = { [c] in print(c.v) }\nc.v = 5\nf()",
+      "options": [
+        "0",
+        "nil",
+        "5",
+        "Compile error"
+      ],
+      "answer": 2,
+      "explanation": "The capture list copies the reference, not the object: the closure and the variable point to the same instance.",
+      "whyWrong": [
+        "The capture list copies the value of `c`, but that value is a reference: the closure points to the same instance and sees `v` = 5.",
+        "`[c]` captures a strong, non-optional reference; you'd only get nil with `weak` and an object that's already been deallocated.",
+        null,
+        "Putting a class-type constant in the capture list is legal: it creates a strong copy of the reference."
+      ]
+    },
+    {
+      "prompt": "What happens if a closure with `[unowned self]` runs after self has been deallocated?",
+      "options": [
+        "`self` is nil and the code is skipped",
+        "The closure doesn't run",
+        "The object is recreated",
+        "Runtime crash"
+      ],
+      "answer": 3,
+      "explanation": "`unowned` isn't Optional: accessing an unowned reference to a deallocated object causes a trap.",
+      "whyWrong": [
+        "That's what happens with `[weak self]` and `self?`. `unowned` isn't Optional: accessing a deallocated object causes a trap.",
+        "The closure doesn't check self's state before it starts: it runs, and it's the access to `self` that crashes.",
+        "Swift never recreates deallocated objects: `unowned` assumes the object is alive, and if it isn't, the access terminates the program.",
+        null
+      ]
+    }
+  ]
+}

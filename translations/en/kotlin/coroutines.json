@@ -1,0 +1,208 @@
+{
+  "title": "Coroutines",
+  "summary": "suspend, launch/async, Dispatchers, structured concurrency, cancellation and errors.",
+  "lesson": [
+    {
+      "heading": "Suspend functions",
+      "body": "A `suspend` function can suspend without blocking the thread: the compiler turns it into a **state machine** with a hidden `Continuation` parameter. While it is suspended, the thread is free to run other work.\n\nIt can only be called from a coroutine or from another suspend function. `suspend` does not mean \"in the background\": the thread it runs on depends on the dispatcher.",
+      "code": "suspend fun loadUser(id: String): User =\n    withContext(Dispatchers.IO) {\n        api.getUser(id)\n    }"
+    },
+    {
+      "heading": "launch vs async",
+      "body": "`launch` starts a \"fire and forget\" coroutine and returns a `Job`, which you can use to cancel it or wait for it with `join()`. `async` returns a `Deferred<T>` whose result you get with `await()`, and it's meant for **parallel** work.\n\nAn exception in `launch` propagates to the parent right away. In `async` it is rethrown by `await()`, but inside a structured scope the failure still cancels the parent immediately.",
+      "code": "suspend fun dashboard() = coroutineScope {\n    val user = async { repo.user() }\n    val feed = async { repo.feed() }\n    Dashboard(user.await(), feed.await())\n}"
+    },
+    {
+      "heading": "Dispatchers",
+      "body": "`Dispatchers.Main` runs on the Android main (UI) thread. `Dispatchers.IO` is for blocking I/O (network, disk, database) and has an elastic pool (up to 64 threads by default). `Dispatchers.Default` is for CPU-bound work, with as many threads as there are cores.\n\n`withContext` switches the dispatcher for a block and returns its result. Best practice: make suspend functions **main-safe** by moving blocking work inside them instead of leaving it to the caller."
+    },
+    {
+      "heading": "Structured concurrency and scopes",
+      "body": "Every coroutine lives in a `CoroutineScope`: the parent waits for its children, cancelling the parent cancels the children, and a failing child cancels the parent and its siblings. No \"orphan\" coroutines, no leaks.\n\n`coroutineScope` enforces this rule; `supervisorScope` and `SupervisorJob` make sure a failed child doesn't cancel the others. On Android you use `viewModelScope` (`SupervisorJob` + `Dispatchers.Main.immediate`, cancelled in `onCleared`) and `lifecycleScope`. Avoid `GlobalScope`.",
+      "code": "class FeedViewModel(private val repo: Repo) : ViewModel() {\n    fun refresh() {\n        viewModelScope.launch {\n            _state.value = repo.load()\n        }\n    }\n}"
+    },
+    {
+      "heading": "Cancellation and exceptions",
+      "body": "Cancellation is **cooperative**: kotlinx functions (`delay`, `withContext`, `yield`) check the state and throw `CancellationException`. A CPU-bound loop has to check `isActive` or call `ensureActive()`. Never swallow `CancellationException` with a generic `catch (e: Exception)`: rethrow it.\n\nFor errors: `try/catch` around the suspend code or around `await()`. A `CoroutineExceptionHandler` only applies to **root** coroutines (or direct children of a supervisor), not to regular children. For cleanup that needs to suspend, use `withContext(NonCancellable)`.",
+      "code": "launch {\n    try {\n        repo.sync()\n    } catch (e: CancellationException) {\n        throw e\n    } catch (e: IOException) {\n        showError(e)\n    }\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"What is structured concurrency, and how do you handle errors and cancellation?\"**. Short answer: every coroutine has a parent scope, so lifecycle, cancellation and errors propagate along the tree; on Android, `viewModelScope` ties the work to the ViewModel.\n\nThen add `launch` vs `async`, `withContext` for main-safety, cooperative cancellation, never swallowing `CancellationException`, and `SupervisorJob` when children need to be independent."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What do `launch` and `async` return, respectively?",
+      "options": [
+        "launch → Deferred<T>, async → Job",
+        "launch → Job, async → Deferred<T>",
+        "Both return a Job",
+        "Both return a Deferred<T>"
+      ],
+      "answer": 1,
+      "explanation": "`launch` returns a Job; `async` returns a Deferred<T> (which extends Job) whose result you read with await().",
+      "whyWrong": [
+        "You swapped them: it's `async` that returns the `Deferred<T>` you read the result from with `await()`, while `launch` gives you a plain `Job`.",
+        null,
+        "`async` has to let you get a result back: it returns `Deferred<T>`, which extends `Job` and adds `await()`.",
+        "`launch` is \"fire and forget\" and produces no value: it returns a `Job`, not a `Deferred`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "runBlocking {\n    launch {\n        delay(100)\n        print(\"A\")\n    }\n    print(\"B\")\n    delay(200)\n    print(\"C\")\n}",
+      "options": [
+        "ABC",
+        "BCA",
+        "ACB",
+        "BAC"
+      ],
+      "answer": 3,
+      "explanation": "`launch` doesn't block: B is printed right away; after 100 ms the child coroutine prints A; after 200 ms the parent prints C.",
+      "whyWrong": [
+        "`launch` doesn't run the block immediately: the child coroutine suspends on `delay(100)` while the parent prints B.",
+        "The parent waits 200 ms before C, while the child prints A after just 100 ms: A comes before C.",
+        "A can't come first: the child suspends for 100 ms, and meanwhile the parent prints B immediately.",
+        null
+      ]
+    },
+    {
+      "prompt": "Which dispatcher should you use for a database query or a blocking network call?",
+      "options": [
+        "Dispatchers.Main",
+        "Dispatchers.Default",
+        "Dispatchers.IO",
+        "Dispatchers.Unconfined"
+      ],
+      "answer": 2,
+      "explanation": "IO has an elastic pool designed for blocking operations; Default is sized to the number of cores for CPU-bound work.",
+      "whyWrong": [
+        "`Main` is the UI thread: a blocking operation there freezes the interface and can cause an ANR.",
+        "`Default` has as many threads as cores and is meant for CPU-bound work: blocking them with I/O would starve other tasks.",
+        null,
+        "`Unconfined` doesn't move work to a dedicated pool: it runs on the current thread until the first suspension, so it's not suited to blocking I/O."
+      ]
+    },
+    {
+      "prompt": "Where does a `CoroutineExceptionHandler` take effect?",
+      "options": [
+        "In root coroutines (e.g. a launch directly in the scope)",
+        "In any child coroutine",
+        "Only in coroutines created with async",
+        "Only inside runBlocking"
+      ],
+      "answer": 0,
+      "explanation": "Children delegate exceptions to their parent: the handler is only used by root coroutines or direct children of a supervisor.",
+      "whyWrong": [
+        null,
+        "A child coroutine of a regular Job delegates the exception to its parent: a handler installed on it is ignored.",
+        "With `async` the exception is exposed through `await()`: the handler isn't used there; it applies to root coroutines created with `launch`.",
+        "`runBlocking` has nothing to do with it: exceptions inside it are rethrown to the caller. The handler applies to root coroutines, like a `scope.launch`."
+      ]
+    },
+    {
+      "prompt": "Why can a CPU-bound loop keep running after `job.cancel()`?",
+      "options": [
+        "cancel() only works on Dispatchers.Main",
+        "Cancellation is cooperative: you need isActive or ensureActive()",
+        "You have to call job.join() first",
+        "Loops are never cancellable"
+      ],
+      "answer": 1,
+      "explanation": "cancel() only sets the state: the code has to check it (isActive, ensureActive, yield) or reach a suspension point.",
+      "whyWrong": [
+        "`cancel()` works on any dispatcher: the problem is that a loop with no suspension points never checks the cancellation state.",
+        null,
+        "`join()` waits for the job to finish; it doesn't enable cancellation: if the loop doesn't check `isActive`, even `cancelAndJoin` would keep waiting.",
+        "Loops are cancellable if they cooperate: just check `isActive`, or call `ensureActive()` or `yield()`."
+      ]
+    },
+    {
+      "prompt": "What's wrong with this code?",
+      "code": "launch {\n    try {\n        delay(1000)\n    } catch (e: Exception) {\n        log(e)\n    }\n    doMoreWork()\n}",
+      "options": [
+        "Nothing",
+        "delay never throws exceptions",
+        "It swallows the CancellationException and keeps working",
+        "log blocks the main thread"
+      ],
+      "answer": 2,
+      "explanation": "`catch (e: Exception)` also catches CancellationException: after cancellation, `doMoreWork()` still runs. It must be rethrown.",
+      "whyWrong": [
+        "There is a problem: `catch (e: Exception)` also catches the `CancellationException` from `delay`, and the coroutine carries on with `doMoreWork()`.",
+        "`delay` is cancellable and, if the coroutine is cancelled, it throws exactly the `CancellationException` that gets caught here.",
+        null,
+        "Logging isn't the issue: the bug is the swallowed cancellation exception. And the code doesn't even tell you which dispatcher `launch` runs on."
+      ]
+    },
+    {
+      "prompt": "Which Job and dispatcher is `viewModelScope` configured with?",
+      "options": [
+        "Job + Dispatchers.IO",
+        "Job + Dispatchers.Default",
+        "No Job, it uses GlobalScope",
+        "SupervisorJob + Dispatchers.Main.immediate"
+      ],
+      "answer": 3,
+      "explanation": "The SupervisorJob keeps one coroutine's failure from cancelling the others; the scope is cancelled in onCleared().",
+      "whyWrong": [
+        "Neither a plain Job nor IO: a regular `Job` would cancel everything on the first failure, and coroutines start on `Dispatchers.Main.immediate`.",
+        "It doesn't use `Default`: a ViewModel's coroutines start on the main thread with `Dispatchers.Main.immediate`, and the Job is a `SupervisorJob`.",
+        "`GlobalScope` isn't tied to any lifecycle: `viewModelScope` has its own `SupervisorJob`, cancelled in `onCleared()`.",
+        null
+      ]
+    },
+    {
+      "prompt": "What's the key difference between `coroutineScope` and `supervisorScope`?",
+      "options": [
+        "supervisorScope doesn't wait for its children",
+        "In supervisorScope a failing child doesn't cancel the others",
+        "coroutineScope creates a new thread",
+        "None, they're aliases"
+      ],
+      "answer": 1,
+      "explanation": "Both wait for their children; in coroutineScope a failed child cancels the scope and its siblings, in supervisorScope it doesn't.",
+      "whyWrong": [
+        "`supervisorScope` also waits for all its children before returning: the only difference is how failures are handled.",
+        null,
+        "Neither one creates threads: they're scopes that run on the dispatcher of the current context.",
+        "They're not aliases: in `coroutineScope` a failed child cancels the scope and its siblings, in `supervisorScope` it doesn't."
+      ]
+    },
+    {
+      "prompt": "Where can you call a `suspend` function from?",
+      "options": [
+        "From any function",
+        "Only from the main thread",
+        "From a coroutine or another suspend function",
+        "Only from Dispatchers.IO"
+      ],
+      "answer": 2,
+      "explanation": "A suspend function needs a Continuation, which is only available in a coroutine or in another suspend function.",
+      "whyWrong": [
+        "A regular function doesn't have the `Continuation` the compiler passes to suspend functions: the call doesn't compile.",
+        "Suspend functions aren't tied to a specific thread: you call them from coroutines on any dispatcher.",
+        null,
+        "The dispatcher doesn't matter: any coroutine, on any dispatcher, can call a suspend function."
+      ]
+    },
+    {
+      "prompt": "An `async` inside a `coroutineScope` fails. What happens?",
+      "options": [
+        "The failure cancels the scope immediately and await() rethrows the error",
+        "The exception only surfaces when you call await()",
+        "The exception is ignored",
+        "You need a CoroutineExceptionHandler to see it"
+      ],
+      "answer": 0,
+      "explanation": "The trap is thinking async \"holds\" the error until await(): in a structured scope, the child's failure cancels the parent right away.",
+      "whyWrong": [
+        null,
+        "This is the classic trap: `async` looks like it holds the error until `await()`, but as a child of a structured scope it fails the parent immediately.",
+        "With structured concurrency, exceptions aren't ignored: the `async` failure cancels `coroutineScope` and its siblings.",
+        "You don't need a handler to \"see\" the error: `coroutineScope` rethrows it to the caller, where you can catch it with a regular try/catch."
+      ]
+    }
+  ]
+}

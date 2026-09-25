@@ -90,6 +90,17 @@ final class AppState {
         if let data = try? JSONEncoder().encode(saved) { defaults.set(data, forKey: Self.key) }
     }
 
+    // MARK: Lingua
+
+    /// Sta fuori da `SavedState`: azzerare i progressi non deve cambiare lingua.
+    var language: AppLanguage = .current {
+        didSet {
+            guard language != oldValue else { return }
+            AppLanguage.current = language
+            ContentStore.shared.reload(for: language)
+        }
+    }
+
     // MARK: Profilo
 
     var hasOnboarded: Bool { saved.hasOnboarded }

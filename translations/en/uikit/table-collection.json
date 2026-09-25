@@ -1,0 +1,207 @@
+{
+  "title": "Table and Collection Views",
+  "summary": "Cell reuse, data sources, diffable, compositional layout, and prefetching.",
+  "lesson": [
+    {
+      "heading": "Data source and delegate",
+      "body": "`UITableView` and `UICollectionView` split responsibilities: the **data source** supplies the data (`numberOfRowsInSection`, `cellForRowAt`), and the **delegate** handles behavior and appearance (`didSelectRowAt`, `willDisplay`, heights).\n\nThe model must always match what the view thinks it's showing: inserting rows with `insertRows` without updating the array first crashes with `NSInternalInconsistencyException`."
+    },
+    {
+      "heading": "Cell reuse",
+      "body": "Cells are recycled: only the visible ones exist, plus a few in the reuse queue. You register a class or nib and call `dequeueReusableCell(withIdentifier:for:)`, which crashes if the identifier isn't registered.\n\nGolden rule: in `cellForRowAt`, **set all of the cell's state**, because it may arrive carrying another row's data. In `prepareForReuse`, reset transient state and cancel async tasks, such as an image download.",
+      "code": "override func prepareForReuse() {\n    super.prepareForReuse()\n    imageTask?.cancel()\n    thumbnail.image = nil\n}"
+    },
+    {
+      "heading": "Diffable data source",
+      "body": "Since iOS 13, `UITableViewDiffableDataSource` and `UICollectionViewDiffableDataSource` replace manual index path bookkeeping: you build an `NSDiffableDataSourceSnapshot` with unique `Hashable` identifiers, then call `apply`, which computes the differences and animates them.\n\nTo update the content of an existing item, use `reconfigureItems` (iOS 15), which reconfigures the existing cell instead of dequeuing a new one the way `reloadItems` does.",
+      "code": "var snapshot = NSDiffableDataSourceSnapshot<Section, Item.ID>()\nsnapshot.appendSections([.main])\nsnapshot.appendItems(items.map(\\.id))\ndataSource.apply(snapshot, animatingDifferences: true)"
+    },
+    {
+      "heading": "Compositional layout",
+      "body": "`UICollectionViewCompositionalLayout` describes the layout as **item → group → section**, with `fractionalWidth`, `absolute`, or `estimated` dimensions. Each section can have its own layout, and `orthogonalScrollingBehavior` gives you horizontal carousels without nested collection views.\n\nIt's the modern alternative to `UICollectionViewFlowLayout` and to custom `UICollectionViewLayout` subclasses.",
+      "code": "let item = NSCollectionLayoutItem(layoutSize: .init(\n    widthDimension: .fractionalWidth(0.5), heightDimension: .fractionalHeight(1)))\nlet group = NSCollectionLayoutGroup.horizontal(layoutSize: .init(\n    widthDimension: .fractionalWidth(1), heightDimension: .absolute(120)),\n    subitems: [item])\nlet layout = UICollectionViewCompositionalLayout(section: .init(group: group))"
+    },
+    {
+      "heading": "Prefetching and performance",
+      "body": "With `UITableViewDataSourcePrefetching` you get `prefetchRowsAt` for upcoming rows and `cancelPrefetchingForRowsAt` for rows that are no longer needed. Prefetching is a hint: `cellForRowAt` must still be able to load the data on its own.\n\nAvoid heavy work in `cellForRowAt` (parsing, image decoding, creating formatters every time). For self-sizing cells, use `UITableView.automaticDimension` with a reasonable estimate."
+    },
+    {
+      "heading": "In the interview",
+      "body": "Classic question: **\"Why does a list sometimes show the wrong image in a cell?\"** Short answer: because of reuse, the download finishes when the cell is already showing a different row. You fix it by canceling the task in `prepareForReuse` and checking that the row's identifier is still the same before assigning the image. Wrap up by mentioning diffable data sources and `reconfigureItems` as the modern approach."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Why does `UITableView` reuse cells?",
+      "options": [
+        "To preserve cell state across scrolls",
+        "Because cells can't be deallocated",
+        "To limit memory and allocations to just the visible cells",
+        "To enable insertion animations"
+      ],
+      "answer": 2,
+      "explanation": "Allocating a cell for every row would be expensive: only the visible ones stay alive, plus a small reuse queue.",
+      "whyWrong": [
+        "Reuse does the opposite: a reused cell carries over the previous row's state, which is exactly why you have to reconfigure it every time.",
+        "Cells can be deallocated just fine; reuse is an efficiency choice, not a constraint.",
+        null,
+        "Insertion animations exist regardless of reuse: the reason is to limit allocations and memory to the visible cells."
+      ]
+    },
+    {
+      "prompt": "When scrolling fast, some cells briefly show another row's image. Why?",
+      "code": "func tableView(_ tv: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {\n    let cell = tv.dequeueReusableCell(withIdentifier: \"c\", for: ip) as! PhotoCell\n    loader.load(items[ip.row].url) { image in\n        cell.photo.image = image\n    }\n    return cell\n}",
+      "options": [
+        "`dequeueReusableCell` returns random cells",
+        "The download finishes after the cell has already been reused",
+        "The closure runs twice",
+        "Images must be assigned in `willDisplay`"
+      ],
+      "answer": 1,
+      "explanation": "The captured cell may be showing a different row by the time the response arrives: cancel the task in `prepareForReuse` or verify identity.",
+      "whyWrong": [
+        "`dequeue` isn't random: it returns a cell from the reuse queue, but that cell may have been used by another row.",
+        null,
+        "The closure runs once per request; the problem is that it writes to a cell that **in the meantime** is showing a different row.",
+        "Moving the assignment to `willDisplay` doesn't fix it: the async download can still land after the cell has been reused."
+      ]
+    },
+    {
+      "prompt": "What happens if you run only this line without changing the `items` array?",
+      "code": "tableView.insertRows(at: [IndexPath(row: 0, section: 0)],\n                     with: .automatic)",
+      "options": [
+        "An empty cell is inserted",
+        "The line is ignored",
+        "Crash with `NSInternalInconsistencyException`",
+        "The table fully reloads"
+      ],
+      "answer": 2,
+      "explanation": "The table checks that the row count after the update equals the previous count plus the insertions: the data source doesn't add up, so the app crashes.",
+      "whyWrong": [
+        "The table doesn't conjure cells out of nothing: it compares the row count before and after, and if it doesn't match the data source, it throws an exception.",
+        "UIKit doesn't ignore the inconsistency: it checks that `numberOfRows` equals the previous rows plus the insertions, and crashes otherwise.",
+        null,
+        "`insertRows` doesn't turn into `reloadData()`: with an unchanged data source, the consistency check fails and the app crashes."
+      ]
+    },
+    {
+      "prompt": "What happens when you call `dequeueReusableCell(withIdentifier:for:)` with an identifier that was never registered?",
+      "options": [
+        "It returns `nil`",
+        "It creates a default `UITableViewCell`",
+        "It returns the first registered cell",
+        "An exception is raised and the app crashes"
+      ],
+      "answer": 3,
+      "explanation": "The `for:` variant always returns a non-optional cell, so without registration it raises an exception.",
+      "whyWrong": [
+        "That's what the old variant without `for:` does, returning an optional: the `for:` variant returns a non-optional cell and crashes.",
+        "UIKit doesn't make up a default cell: without registration it doesn't know which class or nib to use, so it raises an exception.",
+        "There's no fallback to the first registered cell: every identifier must be registered, or the app crashes.",
+        null
+      ]
+    },
+    {
+      "prompt": "What requirement must the item identifiers in a diffable snapshot meet?",
+      "options": [
+        "Be `Codable`",
+        "Be consecutive `Int`s",
+        "Be class types for identity",
+        "Be `Hashable` and unique within the snapshot"
+      ],
+      "answer": 3,
+      "explanation": "Diffing relies on hashing; duplicate identifiers cause an error when you apply the snapshot.",
+      "whyWrong": [
+        "`Codable` is for serialization, but diffing relies on hashing and equality: the requirement is `Hashable`.",
+        "Identifiers can be any `Hashable` type, including `UUID` or strings; they don't need to be integers, let alone consecutive ones.",
+        "Structs and enums work perfectly well: identity comes from `Hashable`, not from being a reference type.",
+        null
+      ]
+    },
+    {
+      "prompt": "What's the advantage of `reconfigureItems` over `reloadItems` on a diffable snapshot?",
+      "options": [
+        "It updates the existing cell without dequeuing a new one",
+        "It recomputes the entire collection layout",
+        "It also works with non-`Hashable` identifiers",
+        "It doesn't require applying the snapshot"
+      ],
+      "answer": 0,
+      "explanation": "`reloadItems` replaces the cell with a new one; `reconfigureItems` (iOS 15) reruns the configuration on the already visible cell, which is more efficient.",
+      "whyWrong": [
+        null,
+        "`reconfigureItems` acts on the specific cells you pass it; it doesn't redo the layout of the whole collection.",
+        "Every identifier in a diffable snapshot must be `Hashable`, including for `reconfigureItems`.",
+        "You still have to `apply` the snapshot: `reconfigureItems` only marks the items, and the update happens when you apply."
+      ]
+    },
+    {
+      "prompt": "What's the correct hierarchy of a compositional layout?",
+      "options": [
+        "Section → item → group → layout",
+        "Group → item → section → layout",
+        "Item → section → group → layout",
+        "Item → group → section → layout"
+      ],
+      "answer": 3,
+      "explanation": "Items live in groups, groups make up a section, and sections compose the layout.",
+      "whyWrong": [
+        "The section contains the groups, not the other way around: you start from the bottom, with items, the smallest elements.",
+        "A group is a container of items, so the item comes before the group, not after.",
+        "An item doesn't go directly into a section: it has to live in a group, which in turn forms the section.",
+        null
+      ]
+    },
+    {
+      "prompt": "Which statement about `prefetchRowsAt` is correct?",
+      "options": [
+        "It's called for every row before `cellForRowAt`",
+        "It replaces `cellForRowAt` for upcoming rows",
+        "It always runs on a background thread",
+        "It isn't guaranteed: `cellForRowAt` must load the data on its own"
+      ],
+      "answer": 3,
+      "explanation": "Prefetching is an optimization the system can skip, for example during very fast scrolling.",
+      "whyWrong": [
+        "Prefetching is neither guaranteed nor systematic: the system can skip it, for example during very fast scrolling.",
+        "It doesn't replace anything: `cellForRowAt` is still required and must work even if the prefetch never happened.",
+        "`prefetchRowsAt` is called on the **main thread**; it's up to you to move heavy work to the background.",
+        null
+      ]
+    },
+    {
+      "prompt": "What's appropriate to do in `prepareForReuse()`?",
+      "options": [
+        "Configure the cell with the new row's data",
+        "Reset transient state and cancel async tasks",
+        "Remove all subviews and recreate them",
+        "Call `reloadData()` on the table"
+      ],
+      "answer": 1,
+      "explanation": "The new row's data belongs in `cellForRowAt`; `prepareForReuse` is for cleaning up whatever the previous row left behind.",
+      "whyWrong": [
+        "Configuring with the new data belongs in `cellForRowAt`, where you know the `IndexPath`: in `prepareForReuse` you don't yet know which row is coming.",
+        null,
+        "Recreating subviews on every reuse defeats the purpose of reuse: resetting state is enough, no need to rebuild the hierarchy.",
+        "Calling `reloadData()` from a cell would restart reuse for every cell: you risk loops and a huge amount of work on every scroll."
+      ]
+    },
+    {
+      "prompt": "A self-sizing cell expands its text after a tap, but its height doesn't change. How do you force a recalculation without reloading the cell?",
+      "options": [
+        "Call `cell.setNeedsDisplay()`",
+        "Call `tableView.performBatchUpdates(nil)`",
+        "Call `tableView.layoutIfNeeded()`",
+        "Set `rowHeight` to 0"
+      ],
+      "answer": 1,
+      "explanation": "An empty batch update (or `beginUpdates`/`endUpdates`) recalculates heights with animation, without dequeuing again.",
+      "whyWrong": [
+        "`setNeedsDisplay()` only redraws the cell's content: the table doesn't recalculate row heights.",
+        null,
+        "`layoutIfNeeded()` lays out the table's subviews again, but doesn't make it query row heights again.",
+        "With `rowHeight` set to 0 the rows collapse: self-sizing cells need `UITableView.automaticDimension`, not 0."
+      ]
+    }
+  ]
+}

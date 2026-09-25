@@ -233,9 +233,9 @@ struct RankCard: View {
                 XPBar(progress: state.rankProgress, tier: rank.tier)
                 Group {
                     if let next = rank.next, let missing = state.xpToNextRank {
-                        Text("Ancora \(missing.formatted(.number.locale(.app))) XP per diventare **\(next.name)**")
+                        Text("\(missing.formatted(.number.locale(.app))) more XP to reach **\(next.name)**")
                     } else {
-                        Text("Grado massimo raggiunto. Rispetto.")
+                        Text("Top rank reached. Respect.")
                     }
                 }
                 .font(.caption)

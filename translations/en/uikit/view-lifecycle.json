@@ -1,0 +1,208 @@
+{
+  "title": "View Lifecycle",
+  "summary": "From loadView to viewDidDisappear, all the way to the app and scene lifecycle.",
+  "lesson": [
+    {
+      "heading": "The full sequence",
+      "body": "When a view controller is shown for the first time, UIKit calls, in order: `loadView`, `viewDidLoad`, `viewWillAppear`, `viewIsAppearing`, `viewWillLayoutSubviews`/`viewDidLayoutSubviews` (possibly several times), and finally `viewDidAppear`. On the way out come `viewWillDisappear` and `viewDidDisappear`.\n\n**viewDidLoad is called only once** per view load: it's the place for one-time setup (subviews, constraints, bindings). The other appearance methods can be called many times.",
+      "code": "override func viewDidLoad() {\n    super.viewDidLoad()\n    setupSubviews()      // only once\n}\n\noverride func viewWillAppear(_ animated: Bool) {\n    super.viewWillAppear(animated)\n    refreshData()        // every time it appears\n}"
+    },
+    {
+      "heading": "loadView and lazy loading",
+      "body": "A view controller's view is **lazy**: it's created only on the first access to `view`, which triggers `loadView` and then `viewDidLoad`. You override `loadView` only to create the root view in code: in that case you assign `self.view` and do **not** call `super`.\n\nNever call `loadView` directly: use `loadViewIfNeeded()`, and check the state with `isViewLoaded`. Before the view loads, `@IBOutlet`s are still `nil`.",
+      "code": "override func loadView() {\n    let root = ProfileView()\n    root.delegate = self\n    view = root          // no super.loadView()\n}"
+    },
+    {
+      "heading": "Layout and geometry",
+      "body": "In `viewDidLoad` the view doesn't have its final size yet: `bounds` may reflect the nib or the default screen size. Size-dependent code belongs in `viewDidLayoutSubviews` (which must be idempotent, since it's called often) or, better yet, expressed with constraints.\n\nSince iOS 17 (back-deployed to iOS 13) there's `viewIsAppearing`: called once per appearance, after `viewWillAppear`, when the view is already in the hierarchy with an up-to-date trait collection and geometry."
+    },
+    {
+      "heading": "Modal presentations and containment",
+      "body": "With the default `.pageSheet` style (iOS 13+), the presenter stays visible beneath the sheet, so it **doesn't receive** `viewWillDisappear`/`viewDidDisappear` when the sheet opens, or `viewWillAppear` when it closes. With `.fullScreen` it does: this is a classic source of refresh bugs.\n\nFor child view controllers, the correct sequence is `addChild`, `addSubview`, and `didMove(toParent:)`; to remove them, `willMove(toParent: nil)`, `removeFromSuperview`, and `removeFromParent`. That way appearance events are forwarded correctly.",
+      "code": "addChild(child)\nview.addSubview(child.view)\nchild.didMove(toParent: self)"
+    },
+    {
+      "heading": "App and scene lifecycle",
+      "body": "Since iOS 13, with scenes, the `AppDelegate` handles process-level events (`didFinishLaunchingWithOptions`, scene configuration, push tokens), while the `SceneDelegate` handles the UI: `scene(_:willConnectTo:options:)` creates the `UIWindow`, followed by `sceneWillEnterForeground`, `sceneDidBecomeActive`, `sceneWillResignActive`, and `sceneDidEnterBackground`.\n\nThe app states are **not running, inactive, active, background, suspended**. With scenes enabled, the `AppDelegate`'s foreground/background methods are no longer called."
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"What's the difference between viewDidLoad and viewWillAppear?\"** Short answer: `viewDidLoad` happens once, when the view is loaded into memory, and it's for setup; `viewWillAppear` happens every time the view appears, and it's for refreshing data or UI. Add that the final geometry only arrives with layout (`viewDidLayoutSubviews` or `viewIsAppearing`), and bring up the `.pageSheet` case, which shows real-world experience."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Which method is called **only once** per load of a view controller's view?",
+      "options": [
+        "`viewWillAppear`",
+        "`viewDidLoad`",
+        "`viewDidLayoutSubviews`",
+        "`viewDidAppear`"
+      ],
+      "answer": 1,
+      "explanation": "`viewDidLoad` follows `loadView` and happens once per load; the others can repeat on every appearance or layout pass.",
+      "whyWrong": [
+        "`viewWillAppear` sounds like initialization, but it's called **on every appearance**, for example every time you come back to this VC with a pop.",
+        null,
+        "Careful: `viewDidLayoutSubviews` fires on **every layout pass** (rotation, size change, `setNeedsLayout`), so it can repeat many times.",
+        "`viewDidAppear` arrives every time the view appears, not just once: if the screen gets covered and then uncovered, it's called again."
+      ]
+    },
+    {
+      "prompt": "In what order are the logs printed the first time this view controller is presented?",
+      "code": "override func loadView() { print(\"A\"); super.loadView() }\noverride func viewDidLoad() { print(\"B\") }\noverride func viewWillAppear(_ a: Bool) { print(\"C\") }\noverride func viewDidLayoutSubviews() { print(\"D\") }\noverride func viewDidAppear(_ a: Bool) { print(\"E\") }",
+      "options": [
+        "B, A, C, D, E",
+        "A, B, D, C, E",
+        "A, B, C, E, D",
+        "A, B, C, D, E"
+      ],
+      "answer": 3,
+      "explanation": "The view is first created (`loadView`), then configured (`viewDidLoad`); layout happens between `viewWillAppear` and `viewDidAppear`.",
+      "whyWrong": [
+        "`viewDidLoad` can't come before `loadView`: it's `loadView` that creates the view, and only then does UIKit call `viewDidLoad` to configure it.",
+        "Layout doesn't happen before `viewWillAppear`: the view is inserted into the hierarchy after that callback, and only then does `viewDidLayoutSubviews` arrive.",
+        "This puts D after E, but the first layout pass is required before the view becomes visible: `viewDidLayoutSubviews` comes before `viewDidAppear`.",
+        null
+      ]
+    },
+    {
+      "prompt": "Why can reading `view.bounds.width` in `viewDidLoad` give the wrong value?",
+      "options": [
+        "`bounds` is always zero before `viewDidAppear`",
+        "`viewDidLoad` runs on a background thread",
+        "The view hasn't been created yet",
+        "Layout hasn't happened yet: the size isn't final"
+      ],
+      "answer": 3,
+      "explanation": "In `viewDidLoad` the view exists but has the nib's or the default size; you get the real geometry after the layout pass.",
+      "whyWrong": [
+        "It's not necessarily zero: in `viewDidLoad`, `bounds` already has a size, the nib's or the screen's; it's just **not the final one yet**.",
+        "`viewDidLoad` runs on the **main thread**, like every UIKit callback; the problem is layout timing, not threading.",
+        "The view already exists: `viewDidLoad` comes right after `loadView`. The value is wrong because layout hasn't happened yet.",
+        null
+      ]
+    },
+    {
+      "prompt": "What happens if you run this code before presenting `vc`, when `titleLabel` is an `@IBOutlet` from a storyboard?",
+      "code": "let vc = storyboard.instantiateViewController(\n    identifier: \"Detail\") as! DetailViewController\nvc.titleLabel.text = \"Hello\"\npresent(vc, animated: true)",
+      "options": [
+        "It works: `instantiateViewController` connects the outlets",
+        "The text is silently ignored",
+        "Crash: the outlet is still `nil` because the view isn't loaded",
+        "The text is applied in `viewDidAppear`"
+      ],
+      "answer": 2,
+      "explanation": "Outlets are connected only when the view loads: it's better to pass the data in a property and apply it in `viewDidLoad`.",
+      "whyWrong": [
+        "It's tempting to think so, but `instantiateViewController` only creates the VC: outlets are connected when the view loads, so here they're still `nil`.",
+        "An `@IBOutlet` is implicitly unwrapped (`UILabel!`): accessing it while it's `nil` isn't ignored, it causes a **crash**.",
+        null,
+        "UIKit doesn't defer the assignment: the line runs immediately, finds the outlet `nil`, and the app crashes before it even reaches `present`."
+      ]
+    },
+    {
+      "prompt": "VC A presents B with the default style on iOS 17. Which statement is true for A?",
+      "options": [
+        "It receives `viewWillDisappear` but not `viewDidDisappear`",
+        "It receives both, just like with a push",
+        "It receives neither `viewWillDisappear` nor `viewDidDisappear`",
+        "It receives `viewDidDisappear` only if B is animated"
+      ],
+      "answer": 2,
+      "explanation": "The `.automatic` style resolves to `.pageSheet` and A stays visible: no disappear callbacks, and no `viewWillAppear` on dismissal.",
+      "whyWrong": [
+        "There's no middle ground: with `.pageSheet`, A stays visible beneath the sheet, so UIKit sends **neither** of the two disappear callbacks.",
+        "A push fully replaces A's view, a sheet doesn't: with `.automatic` → `.pageSheet`, A stays in the hierarchy and receives no callbacks.",
+        null,
+        "Animation has nothing to do with it: what matters is the presentation style. With `.pageSheet`, A stays visible and `viewDidDisappear` doesn't arrive either way."
+      ]
+    },
+    {
+      "prompt": "In a scene-based app (iOS 13+), where do you typically create the `UIWindow` in code?",
+      "options": [
+        "In `application(_:didFinishLaunchingWithOptions:)`",
+        "In the root view controller's `viewDidLoad`",
+        "In `sceneDidBecomeActive(_:)`",
+        "In the `SceneDelegate`'s `scene(_:willConnectTo:options:)`"
+      ],
+      "answer": 3,
+      "explanation": "With scenes, every window belongs to a `UIWindowScene`, created when the scene connects.",
+      "whyWrong": [
+        "That was the right place before iOS 13; with scenes, the `AppDelegate` no longer manages windows, which belong to a `UIWindowScene`.",
+        "The root VC lives **inside** the window: it can't create it, because a window has to exist already in order to show it.",
+        "`sceneDidBecomeActive` can be called many times (every return to the foreground): creating the window there would recreate it every time.",
+        null
+      ]
+    },
+    {
+      "prompt": "What's missing from this containment code?",
+      "code": "let child = MapViewController()\naddChild(child)\nview.addSubview(child.view)\nchild.view.frame = view.bounds",
+      "options": [
+        "The call to `child.didMove(toParent: self)`",
+        "The call to `child.willMove(toParent: self)`",
+        "The call to `child.loadView()`",
+        "Nothing, the code is complete"
+      ],
+      "answer": 0,
+      "explanation": "`addChild` already calls `willMove(toParent:)`, but `didMove(toParent:)` has to be called manually after adding the view.",
+      "whyWrong": [
+        null,
+        "Not needed: `addChild(_:)` already calls `willMove(toParent:)` automatically. What you have to do by hand is `didMove(toParent:)`.",
+        "`loadView()` should never be called directly: accessing `child.view` is already enough to load the child's view.",
+        "It looks complete, but without `didMove(toParent: self)` the child is never told that the containment transition has finished."
+      ]
+    },
+    {
+      "prompt": "When is `viewIsAppearing(_:)` called?",
+      "options": [
+        "Before `viewWillAppear`, only once",
+        "After `viewDidAppear`, on every layout pass",
+        "Between `viewWillAppear` and `viewDidAppear`, once geometry is ready",
+        "Only when the trait collection changes"
+      ],
+      "answer": 2,
+      "explanation": "Introduced in iOS 17 and available back to iOS 13, it's the ideal spot for updates that depend on size and traits, once per appearance.",
+      "whyWrong": [
+        "It arrives **after** `viewWillAppear` and on every appearance, not just once: it exists precisely so that geometry is already in place.",
+        "It doesn't follow `viewDidAppear` and doesn't repeat on every layout pass: it's called once per appearance, before the transition finishes.",
+        null,
+        "Trait changes have their own APIs (`registerForTraitChanges`); `viewIsAppearing` is tied to the view appearing."
+      ]
+    },
+    {
+      "prompt": "The user presses Home while the app is active (scene-based app). In what order do the callbacks arrive?",
+      "options": [
+        "`sceneDidEnterBackground`, then `sceneWillResignActive`",
+        "`sceneWillResignActive`, then `sceneDidEnterBackground`",
+        "Only `applicationDidEnterBackground`",
+        "`sceneDidDisconnect`, then `sceneDidEnterBackground`"
+      ],
+      "answer": 1,
+      "explanation": "The scene first goes from active to inactive and then moves to the background; `sceneDidDisconnect` happens only if the system discards the scene.",
+      "whyWrong": [
+        "Wrong order: the scene first has to stop being active (`sceneWillResignActive`) and only then moves to the background.",
+        null,
+        "In a scene-based app, state callbacks go to the `SceneDelegate`: `applicationDidEnterBackground` isn't the only one, and it often goes unused.",
+        "Pressing Home doesn't disconnect the scene: `sceneDidDisconnect` happens only if the system discards it to free up resources."
+      ]
+    },
+    {
+      "prompt": "What's the correct way to override `loadView` to use a custom view?",
+      "options": [
+        "Call `super.loadView()` and then `view.addSubview(custom)`",
+        "Call `loadView()` from `viewDidLoad`",
+        "Assign `view` in `init` and leave the override empty",
+        "Assign `view = CustomView()` without calling `super`"
+      ],
+      "answer": 3,
+      "explanation": "`super.loadView()` looks for a nib or creates an empty `UIView`: wasted work if you're going to replace it anyway.",
+      "whyWrong": [
+        "It works, but `super.loadView()` creates an empty `UIView` (or loads a nib) just so you can put your view inside it: wasted work and an extra view.",
+        "`loadView()` should never be called by hand, and in `viewDidLoad` the view already exists: UIKit calls `loadView` when it needs to.",
+        "Assigning `view` in `init` forces loading too early, and an empty `loadView` leaves `view` as `nil` if you haven't already set it.",
+        null
+      ]
+    }
+  ]
+}

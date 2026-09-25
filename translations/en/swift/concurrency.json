@@ -1,0 +1,210 @@
+{
+  "title": "Concurrency",
+  "summary": "From GCD to async/await: Task, actors, @MainActor, Sendable, and structured concurrency.",
+  "lesson": [
+    {
+      "heading": "GCD vs async/await",
+      "body": "With **GCD** you dispatch blocks to serial or concurrent queues and handle results with callbacks. It's easy to end up with nested callbacks, completions that never get called, and thread explosion.\n\nWith **async/await** an `async` function can suspend at an `await` without blocking the thread, which goes back to the cooperative thread pool to do other work. The code stays linear, errors use `throws`, and the compiler checks isolation and data races.",
+      "code": "func loadUser() async throws -> User {\n    let (data, _) = try await URLSession.shared.data(from: url)\n    return try JSONDecoder().decode(User.self, from: data)\n}"
+    },
+    {
+      "heading": "Tasks and structured concurrency",
+      "body": "`async let` and `TaskGroup` create **child tasks** bound to the parent task: the parent waits for its children, cancellation propagates, and no work outlives the scope. `Task { }` creates an unstructured task that inherits the actor, priority, and task-local values; `Task.detached` inherits nothing.\n\nCancellation is **cooperative**: `cancel()` only sets a flag, and your code has to check `Task.isCancelled` or call `try Task.checkCancellation()`.",
+      "code": "async let profile = fetchProfile()\nasync let posts = fetchPosts()\nlet page = try await Page(profile: profile, posts: posts)"
+    },
+    {
+      "heading": "Actors",
+      "body": "An `actor` is a reference type that protects its mutable state by serializing access to it: from the outside, every call requires `await`. It eliminates data races on its internal state without manual locks.\n\nWatch out for **reentrancy**: while an actor method is suspended at an `await`, other calls can run on the actor, so any assumptions made before the `await` must be rechecked after it.",
+      "code": "actor ImageCache {\n    private var store: [URL: UIImage] = [:]\n    func image(for url: URL) -> UIImage? { store[url] }\n    func insert(_ img: UIImage, for url: URL) { store[url] = img }\n}"
+    },
+    {
+      "heading": "@MainActor",
+      "body": "`@MainActor` is a **global actor** that represents the main thread. When you annotate a class, method, or property with it, the compiler guarantees it's only accessed from the main actor. It's the right way to update the UI, replacing `DispatchQueue.main.async`.\n\nFrom nonisolated code you hop to the main actor with `await` or with `await MainActor.run { }`. In Swift 6.2 you can also make `MainActor` the default isolation for an entire module.",
+      "code": "@MainActor\nfinal class ProfileViewModel: ObservableObject {\n    @Published var name = \"\"\n    func load() async { name = try await api.name() }\n}"
+    },
+    {
+      "heading": "Sendable and Swift 6",
+      "body": "`Sendable` marks types that can safely cross isolation boundaries. Non-public structs and enums whose members are all Sendable conform implicitly; a class is Sendable if it's `final` and has only Sendable `let` properties. Actors are always Sendable.\n\nIn the **Swift 6 language mode**, data race checking is a compile error, no longer a warning. `@unchecked Sendable` is a manual promise (for example, for classes protected by a lock) and should be used with care.",
+      "code": "struct Point: Sendable { let x: Double; let y: Double }\nfinal class Config: Sendable { let baseURL: URL }"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"Why move from GCD to async/await, and what are actors?\"** Short answer: async/await makes asynchronous code linear, doesn't block threads, and with structured concurrency it handles cancellation and lifetimes; actors protect mutable state, and compiler-checked Sendable prevents data races.\n\nMention actor reentrancy and cooperative cancellation: those are the two points that set a senior candidate apart."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Does an `await` block the thread the function is running on?",
+      "options": [
+        "Yes, just like `DispatchQueue.sync`",
+        "Yes, but only on the main thread",
+        "It depends on the task's priority",
+        "No, the task suspends and the thread stays free"
+      ],
+      "answer": 3,
+      "explanation": "The task is suspended, and the cooperative pool's thread runs other work until the task resumes.",
+      "whyWrong": [
+        "`sync` blocks the thread while it waits; `await` only suspends the task and leaves the thread free for other work.",
+        "Even on the main actor, `await` doesn't block: the task suspends and the main thread keeps handling events and UI.",
+        "Priority affects execution order, not blocking: at any priority, `await` suspends the task without blocking the thread.",
+        null
+      ]
+    },
+    {
+      "prompt": "What happens when you compile this in an async context?",
+      "code": "actor Counter {\n    var value = 0\n    func inc() { value += 1 }\n}\nlet c = Counter()\nc.inc()",
+      "options": [
+        "It compiles and increments synchronously",
+        "It crashes with a data race",
+        "Error: calling `inc()` from outside requires `await`",
+        "It compiles only in Swift 5 mode"
+      ],
+      "answer": 2,
+      "explanation": "An actor's methods are isolated: from the outside they're asynchronous calls that require `await`.",
+      "whyWrong": [
+        "The actor protects its state from outside access: the call has to wait its turn, so it's asynchronous and requires `await`.",
+        "The problem is caught at compile time, not at runtime: preventing data races is exactly what actor isolation is for.",
+        null,
+        "Even in Swift 5 mode, calling an isolated method from outside without `await` is an error: the rule has existed as long as actors have."
+      ]
+    },
+    {
+      "prompt": "What does annotating a class with `@MainActor` imply?",
+      "options": [
+        "It can only be instantiated once",
+        "Its methods automatically become async",
+        "It can only be used from SwiftUI",
+        "Its properties and methods are isolated to the main actor"
+      ],
+      "answer": 3,
+      "explanation": "The compiler guarantees the class's state is only read and written from the main thread.",
+      "whyWrong": [
+        "`@MainActor` is about isolation, not the number of instances: you can create as many as you like. You get a singleton with a `static let`.",
+        "Synchronous methods stay synchronous; they only require `await` when called from a context that isn't isolated to the main actor.",
+        "`@MainActor` is a language feature you can use anywhere: UIKit, AppKit, or non-UI code, not just SwiftUI.",
+        null
+      ]
+    },
+    {
+      "prompt": "How are `fetchA()` and `fetchB()` executed?",
+      "code": "async let a = fetchA()\nasync let b = fetchB()\nlet r = await (a, b)",
+      "options": [
+        "Sequentially, A first and then B",
+        "On a detached thread",
+        "Only at the `await`, sequentially",
+        "In parallel, as child tasks"
+      ],
+      "answer": 3,
+      "explanation": "`async let` starts a child task immediately; `await` waits for both results.",
+      "whyWrong": [
+        "It looks sequential because the lines follow each other, but `async let` starts the child task right away without waiting: A and B start together.",
+        "They aren't detached: they're structured child tasks, bound to the current task, and they inherit its priority and cancellation.",
+        "The work starts at the `async let` declaration, not at the `await`: the `await` just waits for results that are already in flight.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does `Task.detached` NOT inherit, compared to `Task { }`?",
+      "options": [
+        "The ability to throw errors",
+        "Access to global variables",
+        "The actor, priority, and task-local values",
+        "The ability to be cancelled"
+      ],
+      "answer": 2,
+      "explanation": "`Task { }` inherits the caller's context; a detached task starts with no isolation and no task-local values.",
+      "whyWrong": [
+        "A detached task can throw too: the closure just needs to be throwing, and you get the error back with `try await task.value`.",
+        "Global variables are accessible from any task, detached or not: the difference is about the context inherited from the caller.",
+        null,
+        "A detached task is cancelled with `cancel()` like any other; it just doesn't receive cancellation propagated from a parent task."
+      ]
+    },
+    {
+      "prompt": "What does `task.cancel()` do?",
+      "options": [
+        "Sets the cancellation flag, which the task must check",
+        "Immediately interrupts the task's thread",
+        "Throws an error in the caller",
+        "Removes the task from the queue without running it"
+      ],
+      "answer": 0,
+      "explanation": "Cancellation is cooperative: you need `Task.isCancelled` or `Task.checkCancellation()`.",
+      "whyWrong": [
+        null,
+        "Swift never forcibly interrupts a thread: cancellation is cooperative, and the task has to check for it itself.",
+        "`cancel()` doesn't throw anything in the caller. It's the task that may choose to throw `CancellationError` via `Task.checkCancellation()`.",
+        "The task isn't removed: if it hasn't started yet, it will still run, with the cancellation flag already set."
+      ]
+    },
+    {
+      "prompt": "Which of these types is implicitly `Sendable`?",
+      "options": [
+        "`struct P { let x: Int; let name: String }`",
+        "`final class A { var x = 0 }`",
+        "`class B { let x = 0 }`, not final",
+        "`struct Q { let box: NSMutableArray }`"
+      ],
+      "answer": 0,
+      "explanation": "A non-public struct with only Sendable members gets implicit conformance; the others have shared mutable state.",
+      "whyWrong": [
+        null,
+        "Even though it's `final`, it has a mutable `var`: multiple tasks could modify it at the same time, so without synchronization it isn't Sendable.",
+        "Classes never get Sendable implicitly, and a non-`final` class could have subclasses with mutable state.",
+        "A struct is Sendable only if all its members are: `NSMutableArray` is a mutable, non-Sendable class, so `Q` isn't Sendable either."
+      ]
+    },
+    {
+      "prompt": "What happens when you run `DispatchQueue.main.sync { }` from the main thread?",
+      "options": [
+        "The block runs immediately",
+        "The block is deferred to the next run loop cycle",
+        "Deadlock",
+        "A compile-time warning, then it runs"
+      ],
+      "answer": 2,
+      "explanation": "`sync` waits for the block to finish on the main queue, but the main queue is busy with the caller itself.",
+      "whyWrong": [
+        "It sounds reasonable since you're already on the main thread, but `sync` enqueues the block behind the current work and waits for it: the block can never start.",
+        "That's how `async` behaves. `sync` blocks the caller until the block finishes, but the block is waiting for the caller: deadlock.",
+        null,
+        "The compiler doesn't know which queue the code will run on, so it can't warn you: the problem only shows up at runtime, as a deadlock."
+      ]
+    },
+    {
+      "prompt": "Why can this method drive the balance below zero?",
+      "code": "actor Bank {\n    var balance = 100\n    func withdraw(_ x: Int) async {\n        guard balance >= x else { return }\n        await log()\n        balance -= x\n    }\n}",
+      "options": [
+        "Actors don't protect `var` properties",
+        "Other calls to the actor can run during the `await`",
+        "`guard` doesn't work inside an actor",
+        "`balance` is copied on every call"
+      ],
+      "answer": 1,
+      "explanation": "That's reentrancy: the check happens before the suspension and the subtraction after it; you need to recheck the state after the `await`.",
+      "whyWrong": [
+        "The actor does protect its `var`s from concurrent access, but only between one suspension point and the next: the problem is reentrancy during the `await`.",
+        null,
+        "`guard` works normally: the check is correct at the moment it runs, but the state may have changed after the `await`.",
+        "The actor's state is shared across all calls, not copied: that's exactly why another call can modify it during the `await`."
+      ]
+    },
+    {
+      "prompt": "In what order do results arrive in `for await r in group`?",
+      "options": [
+        "In the order the tasks were added",
+        "In the order the child tasks complete",
+        "In a random but deterministic order",
+        "All at once when the group finishes"
+      ],
+      "answer": 1,
+      "explanation": "The TaskGroup returns each result as soon as its child finishes; to keep the original order you need an index.",
+      "whyWrong": [
+        "Child tasks run in parallel and the group delivers them as soon as they finish: to preserve the original order you have to carry an index along.",
+        null,
+        "The order depends on completion times, so it isn't deterministic: it can change from one run to the next.",
+        "`for await` consumes a stream: each result arrives as soon as its child finishes, without waiting for the whole group to end."
+      ]
+    }
+  ]
+}

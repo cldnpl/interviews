@@ -1,0 +1,207 @@
+{
+  "title": "Isolates and Concurrency",
+  "summary": "The isolate model, SendPort and ReceivePort, compute, background work, and the limits of unshared memory",
+  "lesson": [
+    {
+      "heading": "The isolate model",
+      "body": "Dart doesn't have threads that share memory: it has **isolates**. Each isolate has its own heap, its own event loop, and its own garbage collector, and it can't touch another isolate's memory. The only way for them to talk is to **pass messages**.\n\nThat leads to the point worth making first in an interview: since nothing shares memory, Dart **has no locks, mutexes, or data races**. The trade-off is that you can't mutate an object \"from another thread\" either: you have to send it.\n\nA Flutter app starts on a single isolate, the **main isolate**, which is the one that builds the widgets. `async`/`await` doesn't leave it: that's concurrency on the same event loop, not parallelism. A loop that hogs the CPU for 300 ms blocks frames even if the function is `async`."
+    },
+    {
+      "heading": "SendPort and ReceivePort",
+      "body": "`Isolate.spawn` starts a new isolate from an entry-point function, which must be **top-level or static** (not a closure that captures variables: the new isolate doesn't have that state), and passes it **a single initial message**.\n\nChannels come in pairs: the **ReceivePort** is the listening end, and its `sendPort` is the writing end. Whoever opens the port keeps the ReceivePort and hands out the SendPort. To get a reply, the parent sends its own SendPort inside the initial message: that's the *handshake* you see in almost all isolate code.\n\nAs long as a ReceivePort stays open, the isolate stays alive: close it with `close()`, or it will sit there eating memory.",
+      "code": "Future<int> countInIsolate(String text) async {\n  final answer = ReceivePort();\n  await Isolate.spawn(_worker, [answer.sendPort, text]);\n  final result = await answer.first as int;\n  answer.close();\n  return result;\n}\n\n// top-level: the child doesn't inherit the parent's state\nvoid _worker(List<Object> message) {\n  final send = message[0] as SendPort;\n  final text = message[1] as String;\n  send.send(text.split(' ').length);\n}"
+    },
+    {
+      "heading": "compute and Isolate.run",
+      "body": "For a single heavy job you don't need the whole handshake: `compute(fn, arg)` (from `package:flutter/foundation.dart`) spins up a throwaway isolate, runs the function, and returns the result. Since Dart 2.19 there's the pure-Dart equivalent `Isolate.run`, which also accepts a closure.\n\nThey're the right choice for **CPU-bound** work: parsing a large JSON payload, decoding or resizing images, cryptography, sorting huge lists. They're not for **I/O**: an HTTP call or a file query is already asynchronous and doesn't block the isolate, so moving it to another isolate only adds cost.\n\nBecause `compute` has a cost too: spawning the isolate and **copying** the argument and result takes a few milliseconds. Below ~10 ms of work, it's often better to stay on the main isolate; if the work is continuous, keep a long-lived worker isolate instead of creating one per request.",
+      "code": "// slow: parsing runs on the UI isolate\nfinal items = (jsonDecode(raw) as List).map(Item.fromJson).toList();\n\n// parsing runs elsewhere, frames keep coming\nfinal items = await compute(parseItems, raw);\n\nList<Item> parseItems(String raw) =>\n    (jsonDecode(raw) as List).map(Item.fromJson).toList();"
+    },
+    {
+      "heading": "Background work",
+      "body": "\"Background\" means two different things in Flutter, and mixing them up is a classic interview mistake.\n\nA secondary isolate runs **off the UI thread but inside the app's process**: when the OS suspends the app, the isolates stop with it. For work that has to keep going after the app is closed, you need the native APIs: `BGTaskScheduler`/background modes on iOS, `WorkManager` or a foreground service on Android, typically through `workmanager` or the FCM background handler.\n\nA secondary isolate also **doesn't have the Flutter bindings**: platform channels are tied to the root isolate. If you need a plugin there, pass a `RootIsolateToken` and register the messenger with `BackgroundIsolateBinaryMessenger.ensureInitialized`.",
+      "code": "final token = RootIsolateToken.instance!;\nawait Isolate.run(() async {\n  BackgroundIsolateBinaryMessenger.ensureInitialized(token);\n  final dir = await getTemporaryDirectory(); // now the plugin responds\n  return dir.path;\n});"
+    },
+    {
+      "heading": "What can't cross between isolates",
+      "body": "`send` makes a **deep copy** of the message. The exceptions are immutable objects (`String`, numbers, `bool`, `null`, constants), which are passed by reference, and top-level or static functions, which can be sent as references.\n\nYou can't send: closures that capture mutable state, objects holding a native resource (sockets, database handles, FFI `Pointer`s), and of course nothing tied to the UI — `BuildContext`, widgets, `State`. If you try, you get a runtime error.\n\nFor large data, the copy is the main cost: `TransferableTypedData` **transfers** a block of bytes without copying it (the sender loses it), and `Isolate.exit(port, result)` returns the result while shutting down the isolate, again without a copy.",
+      "code": "// the child exits and hands over the list without copying it\nvoid _worker(SendPort out) {\n  final result = heavyParse();\n  Isolate.exit(out, result);\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"Dart is single-threaded, so how do you do heavy work without blocking the UI?\"** Answer: it depends. If it's I/O, I do nothing special: it's already asynchronous and the event loop stays free. If it's CPU-bound, I move it to another isolate with `compute` or `Isolate.run`, because `async` on its own moves nothing: it still runs on the same thread.\n\nThen add the limits, which is what sets a senior answer apart: no shared memory, so only messages and no locks; messages are copied, so watch out for large payloads (`TransferableTypedData`, `Isolate.exit`); no plugins without a `RootIsolateToken`; and no guarantee of execution while the app is suspended — only the operating system can give you that."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Why doesn't Dart need locks or mutexes between isolates?",
+      "options": [
+        "Because the runtime puts an implicit lock on every object",
+        "Because isolates take turns and never run at the same time",
+        "Because each isolate has its own memory and communicates only through messages",
+        "Because only the main isolate can write to memory"
+      ],
+      "answer": 2,
+      "explanation": "An isolate can't access another isolate's heap: with no shared memory there are no data races, so there's nothing to synchronize. The price is that every exchange goes through a message.",
+      "whyWrong": [
+        "There's no implicit lock: the problem simply doesn't arise, because memory isn't shared.",
+        "Isolates really do run in parallel on different cores; it's each individual isolate that's single-threaded.",
+        null,
+        "Every isolate writes freely to its own heap; it just can't see anyone else's."
+      ]
+    },
+    {
+      "prompt": "What does `compute(fn, arg)` do?",
+      "options": [
+        "Runs `fn` in a separate isolate and returns the result",
+        "Queues `fn` on the main isolate's event loop",
+        "Runs `fn` on a native platform thread",
+        "Caches the result of `fn` for later calls"
+      ],
+      "answer": 0,
+      "explanation": "`compute` spins up a throwaway isolate, sends it the argument, runs the function, and brings the result back as a `Future`. Since Dart 2.19, `Isolate.run` does the same without depending on Flutter.",
+      "whyWrong": [
+        null,
+        "That's what `Future` or `scheduleMicrotask` does: it stays on the same isolate and still blocks the UI if the work is heavy.",
+        "The work runs in a Dart isolate, not in native code: for that you'd need platform channels.",
+        "`compute` doesn't cache: every call spawns a new isolate and runs the function again."
+      ]
+    },
+    {
+      "prompt": "This function is already `async`: is that enough to get rid of jank while parsing?",
+      "code": "Future<List<Item>> load(String raw) async {\n  final list = jsonDecode(raw) as List; // 8 MB payload\n  return list.map(Item.fromJson).toList();\n}",
+      "options": [
+        "Yes, `async` moves the body to another thread",
+        "Yes, because `jsonDecode` is already asynchronous",
+        "No, you need `await` before `jsonDecode`",
+        "No: the parsing still runs on the UI isolate"
+      ],
+      "answer": 3,
+      "explanation": "`async` only changes how the function returns its value, not where the code runs: `jsonDecode` and the `map` tie up the main isolate's event loop and frames get dropped. It needs to be moved with `compute` or `Isolate.run`.",
+      "whyWrong": [
+        "`async` creates neither threads nor isolates: the body runs on the same event loop until it hits an `await`.",
+        "`jsonDecode` is synchronous and occupies the CPU for the entire parse.",
+        "You can't await a synchronous function, and an `await` wouldn't move the work elsewhere anyway.",
+        null
+      ]
+    },
+    {
+      "prompt": "What constraint applies to the entry-point function passed to `Isolate.spawn`?",
+      "options": [
+        "It must be `async`",
+        "It must be top-level or static",
+        "It must return `void`",
+        "It must be in the same file as the caller"
+      ],
+      "answer": 1,
+      "explanation": "The new isolate doesn't inherit the parent's state, so it can only receive a reference to a top-level or static function: a closure that captures variables can't be sent.",
+      "whyWrong": [
+        "It can be synchronous or asynchronous: that's not the constraint.",
+        null,
+        "The return type doesn't matter; the result travels via `SendPort` or `Isolate.exit` either way.",
+        "The file is irrelevant: what matters is that the function captures no state, i.e. that it's top-level or static."
+      ]
+    },
+    {
+      "prompt": "How does the child isolate reply to the parent?",
+      "options": [
+        "By returning a value from the entry-point function",
+        "Through a shared global variable",
+        "The parent sends it its own `SendPort` in the initial message",
+        "With `Isolate.current.send`"
+      ],
+      "answer": 2,
+      "explanation": "The `ReceivePort` stays with the listener and its `sendPort` is handed to the other side: the parent opens the port and passes the `SendPort` in the initial message, so the child knows where to write.",
+      "whyWrong": [
+        "The entry-point function's return value is ignored: nobody is there to collect it.",
+        "Global variables aren't shared: each isolate has its own copy in its own heap.",
+        null,
+        "`Isolate.current` doesn't expose any channel to the parent: the channel has to be passed explicitly."
+      ]
+    },
+    {
+      "prompt": "Should you move an HTTP call into an isolate so it doesn't block the UI?",
+      "options": [
+        "Yes, networking always blocks the thread",
+        "No: I/O is already asynchronous, the isolate only adds cost",
+        "Yes, but only on Android",
+        "Yes, otherwise the `Future` never completes"
+      ],
+      "answer": 1,
+      "explanation": "While waiting on the network, the event loop is free and frames keep coming: you don't need an isolate. It only makes sense for the CPU-bound work that follows, like parsing a very large response.",
+      "whyWrong": [
+        "I/O in Dart is non-blocking: the request goes out and control returns to the event loop immediately.",
+        null,
+        "The behavior is the same on both platforms: async I/O doesn't block on either iOS or Android.",
+        "The `Future` completes normally on the main isolate when the response arrives."
+      ]
+    },
+    {
+      "prompt": "Which of these objects can you **not** send to another isolate?",
+      "options": [
+        "A `List<String>`",
+        "A `SendPort`",
+        "A closure that captures a local variable",
+        "A top-level function"
+      ],
+      "answer": 2,
+      "explanation": "Messages are deep-copied (immutable objects pass by reference) and top-level or static functions travel as references, but a closure carries state the other isolate doesn't have: it can't be sent.",
+      "whyWrong": [
+        "A list of strings is copied without any trouble: `String`s are immutable and pass by reference.",
+        "A `SendPort` is designed precisely to be sent: that's how you build reply channels.",
+        null,
+        "Top-level and static functions can be sent: that's why `Isolate.spawn` requires them."
+      ]
+    },
+    {
+      "prompt": "You call a plugin (e.g. `path_provider`) inside a secondary isolate and get a bindings error. Why?",
+      "options": [
+        "Plugins don't work in release mode",
+        "Secondary isolates can't do I/O",
+        "You need to call `WidgetsFlutterBinding.ensureInitialized` in the child",
+        "Platform channels are tied to the root isolate"
+      ],
+      "answer": 3,
+      "explanation": "The `BinaryMessenger` that carries messages to native code lives on the root isolate. To use it elsewhere, you pass a `RootIsolateToken` and call `BackgroundIsolateBinaryMessenger.ensureInitialized(token)` inside the isolate.",
+      "whyWrong": [
+        "Plugins work fine in release: the problem is the isolate, not the build mode.",
+        "Plain I/O (files, sockets) works anywhere; it's the channel to native code that isn't available.",
+        "That binding applies to the root isolate and doesn't register the messenger in the child: you need `BackgroundIsolateBinaryMessenger` with the token.",
+        null
+      ]
+    },
+    {
+      "prompt": "You need to return a very large result from an isolate without paying for the copy. What do you use?",
+      "options": [
+        "`Isolate.exit(port, result)`",
+        "`port.send(result)` inside a `try`",
+        "A `static` variable read by the parent",
+        "`Isolate.kill` after saving the result"
+      ],
+      "answer": 0,
+      "explanation": "`Isolate.exit` terminates the isolate and hands over the result without copying it: the child's heap is going away anyway, so the VM can transfer the memory. For raw bytes there's `TransferableTypedData`.",
+      "whyWrong": [
+        null,
+        "`send` deep-copies the message: that's exactly the cost you want to avoid.",
+        "Static variables aren't shared between isolates: the parent would read its own copy.",
+        "`Isolate.kill` shuts down the isolate but delivers nothing: the result would be lost."
+      ]
+    },
+    {
+      "prompt": "Does an isolate keep working when the user sends the app to the background and leaves it there?",
+      "options": [
+        "Yes, isolates are processes separate from the system",
+        "Yes on Android, no on iOS",
+        "No: once the app is suspended, the isolate stops too",
+        "Yes, as long as the `ReceivePort` stays open"
+      ],
+      "answer": 2,
+      "explanation": "Isolates live inside the app's process: when the OS suspends it, they stop with it. For guaranteed work after the app is closed, you need the native APIs (BGTaskScheduler, WorkManager, a foreground service).",
+      "whyWrong": [
+        "They're threads inside the same process, not separate processes: they follow the app's lifecycle.",
+        "Android also suspends the process and can kill it: you need WorkManager or a foreground service.",
+        null,
+        "An open port keeps the isolate alive while the app is running, but it doesn't stop the OS from suspending the app."
+      ]
+    }
+  ]
+}

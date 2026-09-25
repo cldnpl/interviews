@@ -1,0 +1,212 @@
+{
+  "title": "Dart Basics",
+  "summary": "Null safety, final/const, late, parameters, mixins, extensions and what's new in Dart 3",
+  "lesson": [
+    {
+      "heading": "Sound null safety",
+      "body": "In Dart, types are **non-nullable by default**: a `String` can never be `null`, a `String?` can. Null safety is **sound**: if the compiler says a value isn't null, it will never be null at runtime.\n\nThe key operators are `?.` (conditional access), `??` (fallback value), `??=` (assign if null) and `!` (null assertion, throws if the value is null). Using `!` a lot is a code smell: prefer promoting the type with an `if (x != null)` check.",
+      "code": "String? name;\nfinal len = name?.length ?? 0;\nname ??= 'Anonymous';\nif (name != null) {\n  print(name.length); // promoted to String\n}"
+    },
+    {
+      "heading": "final vs const",
+      "body": "A `final` is assigned **only once**, but its value can be computed at runtime. A `const` is a **compile-time constant**: its value must be known at compile time and it's deeply immutable.\n\n`const` values are **canonicalized**: two equal `const` expressions produce the same instance (`identical` returns true). In Flutter, `const` constructors let you reuse widget instances and skip work during rebuilds.",
+      "code": "final now = DateTime.now(); // ok\n// const now = DateTime.now(); // error\nconst pad = EdgeInsets.all(8);\nfinal list = [1, 2];\nlist.add(3); // ok: final doesn't mean immutable"
+    },
+    {
+      "heading": "late and parameters",
+      "body": "`late` tells the compiler: this non-nullable variable will be initialized **before it's used**. If you read it earlier, you get a `LateInitializationError` at runtime. `late` with an initializer makes initialization **lazy**.\n\nParameters can be required positional, **named** inside `{}` (optional by default, mandatory with `required`), or **optional positional** inside `[]`, optionally with a default value.",
+      "code": "late final String token;\nlate final config = loadConfig(); // lazy\n\nvoid f(int a, {required int b, int c = 0}) {}\nvoid g(int a, [int? b]) {}\n\nf(1, b: 2);\ng(1);"
+    },
+    {
+      "heading": "Mixins and extensions",
+      "body": "A **mixin** is a reusable set of members applied with `with`, without multiple inheritance. With `on` you restrict the mixin to subclasses of a type and can use that type's members (e.g. `SingleTickerProviderStateMixin` can only be applied to a `State`).\n\n**Extensions** add methods to existing types. Resolution is **static**: what matters is the variable's static type, not its runtime type, so they don't work on `dynamic`.",
+      "code": "mixin Logger on Object {\n  void log(String m) => print('[$runtimeType] $m');\n}\n\nextension StringX on String {\n  String get capitalized =>\n      isEmpty ? this : this[0].toUpperCase() + substring(1);\n}"
+    },
+    {
+      "heading": "Dart 3: records, patterns, sealed",
+      "body": "**Records** are immutable anonymous tuples with **structural equality**: `(1, 'a') == (1, 'a')` is true. They're handy for returning multiple values without creating a class.\n\n**Patterns** enable destructuring and `switch` expressions with `when` guards. A **sealed** class has all its subtypes in the same library, so the compiler checks that the `switch` is **exhaustive**. There are also the class modifiers `base`, `interface`, `final` and `mixin class`.",
+      "code": "sealed class Result {}\nclass Ok extends Result { Ok(this.v); final int v; }\nclass Err extends Result { Err(this.msg); final String msg; }\n\nString show(Result r) => switch (r) {\n  Ok(:final v) => 'ok $v',\n  Err(:final msg) => 'error $msg',\n};"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"What's the difference between final and const, and why does const matter in Flutter?\"** Short answer: `final` is assigned once at runtime; `const` is known at compile time, deeply immutable and canonicalized. In Flutter, a `const` widget is the same instance on every build, so the framework can skip updating it.\n\nOn null safety, use the word **sound**, mention type promotion, and explain why overusing `!` is risky. If they ask about Dart 3, bring an example of `sealed` + an exhaustive `switch` to model UI states."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What's the difference between `final` and `const`?",
+      "options": [
+        "None, they're synonyms",
+        "A `const` can be reassigned once",
+        "`final` is evaluated at runtime, `const` at compile time",
+        "`final` only applies to class fields"
+      ],
+      "answer": 2,
+      "explanation": "`final` prevents reassignment but accepts values computed at runtime; `const` requires a value known at compile time and is deeply immutable.",
+      "whyWrong": [
+        "They look similar because both forbid reassignment, but `const` requires a value known at compile time and makes the object deeply immutable; `final` accepts runtime values.",
+        "Careful: a `const` variable can never be reassigned, not even once. Its value is fixed at compile time.",
+        null,
+        "`final` isn't limited to fields: you also use it for local and top-level variables. Everywhere, it just means single assignment."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "int? a;\nint b = a ?? 5;\na ??= 10;\nprint('$a $b');",
+      "options": [
+        "10 5",
+        "null 5",
+        "10 10",
+        "Compilation error"
+      ],
+      "answer": 0,
+      "explanation": "`b` gets the fallback 5 because `a` is null; then `??=` assigns 10 to `a` because it was still null. `b` doesn't change.",
+      "whyWrong": [
+        null,
+        "You're forgetting the effect of `a ??= 10`: since `a` is still null, the operator assigns it 10, so the output starts with 10.",
+        "`b` was computed before `??=` and is already 5: an `int` doesn't track later changes to `a`, so it doesn't become 10.",
+        "The code is valid: `a ?? 5` produces a non-nullable `int`, so null safety allows assigning it to `int b`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "const a = [1, 2];\nconst b = [1, 2];\nfinal c = [1, 2];\nprint(identical(a, b));\nprint(identical(a, c));",
+      "options": [
+        "false false",
+        "true true",
+        "false true",
+        "true false"
+      ],
+      "answer": 3,
+      "explanation": "Identical `const` lists are canonicalized into the same instance; `c` is a new list created at runtime, so it isn't identical to `a`.",
+      "whyWrong": [
+        "Two `const` lists with the same contents are canonicalized into the same instance, so `identical(a, b)` is `true`, not `false`.",
+        "The first line is right, but `c` is a list created at runtime with `final`: it's a new object, so it isn't identical to the `const` `a`.",
+        "You swapped the results: it's the two `const` lists that share an instance (true), while the `final` list is distinct (false).",
+        null
+      ]
+    },
+    {
+      "prompt": "What happens when you run this code?",
+      "code": "late final int x;\n\nvoid main() {\n  print(x);\n}",
+      "options": [
+        "It prints 0",
+        "It throws LateInitializationError at runtime",
+        "It prints null",
+        "Compilation error"
+      ],
+      "answer": 1,
+      "explanation": "`late` moves the check to runtime: reading a late variable that hasn't been assigned yet throws `LateInitializationError`. There's no default value.",
+      "whyWrong": [
+        "Dart doesn't initialize `int`s to 0 the way Java or C does: a non-nullable variable with no value is simply not assigned yet.",
+        null,
+        "`x` is an `int`, not an `int?`: it can't hold null. Reading it before assignment throws an error instead of returning null.",
+        "It's precisely because of `late` that the compiler accepts the declaration without an initializer and defers the check to runtime."
+      ]
+    },
+    {
+      "prompt": "Given `void f(int a, {int b = 1, required int c})`, which call is valid?",
+      "options": [
+        "f(1, 2, 3)",
+        "f(a: 1, c: 3)",
+        "f(1, c: 3)",
+        "f(1, b: 2)"
+      ],
+      "answer": 2,
+      "explanation": "`a` is required positional, `c` is named and `required`, and `b` has a default. Only `f(1, c: 3)` follows all the rules.",
+      "whyWrong": [
+        "`b` and `c` are named parameters: you can't pass them positionally, so `f(1, 2, 3)` doesn't compile.",
+        "`a` is positional, not named: writing `a: 1` is a compilation error even though the name matches.",
+        null,
+        "`c` is `required`: omitting it is a compilation error, even if you pass `b` correctly."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "extension on Object {\n  String hi() => 'obj';\n}\nextension on String {\n  String hi() => 'str';\n}\n\nvoid main() {\n  Object s = 'x';\n  print(s.hi());\n}",
+      "options": [
+        "obj",
+        "str",
+        "Error: ambiguous extensions",
+        "NoSuchMethodError at runtime"
+      ],
+      "answer": 0,
+      "explanation": "Extensions are resolved on the **static** type: `s` is declared as `Object`, so only the extension on Object applies, even though at runtime it's a String.",
+      "whyWrong": [
+        null,
+        "You're expecting dynamic dispatch on the runtime type, but extensions are resolved statically: `s` is declared as `Object`, so `on String` doesn't apply.",
+        "Ambiguity would only arise if both extensions applied to the static type; with `Object`, only the first one applies.",
+        "There's no runtime lookup: the call is bound to the extension on `Object` at compile time, so the method can't be missing."
+      ]
+    },
+    {
+      "prompt": "What does a `sealed` class guarantee in Dart 3?",
+      "options": [
+        "It prevents instantiating the subclasses",
+        "It makes the class immutable",
+        "It allows extension only from other packages",
+        "Subtypes known within the library: exhaustive switches"
+      ],
+      "answer": 3,
+      "explanation": "A sealed class is implicitly abstract and can only be extended within the same library, so the compiler knows every subtype and checks that switches are exhaustive.",
+      "whyWrong": [
+        "Subclasses of a `sealed` class are instantiated normally; it's the sealed class itself that is implicitly abstract.",
+        "`sealed` is about the type hierarchy, not immutability: the fields can stay mutable.",
+        "It's the opposite: a `sealed` class can only be extended or implemented within the same library, never from other packages.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does `print((1, 'a') == (1, 'a'));` print?",
+      "options": [
+        "false",
+        "true",
+        "Compilation error",
+        "It depends on the default hashCode"
+      ],
+      "answer": 1,
+      "explanation": "Records have structural equality: two records with the same shape and equal fields are `==`, unlike instances of regular classes.",
+      "whyWrong": [
+        "That would be true for two instances of a class that doesn't override `==`; records, on the other hand, have structural equality.",
+        null,
+        "Records like `(1, 'a')` are valid syntax since Dart 3 and can be compared with `==` without issues.",
+        "Record equality doesn't depend on a default hashCode: it compares shape and fields, and `hashCode` is consistent with it."
+      ]
+    },
+    {
+      "prompt": "What does `on` mean in `mixin Logger on Widget`?",
+      "options": [
+        "The mixin extends Widget",
+        "The mixin can be applied to any class",
+        "It can only be applied to subtypes of Widget",
+        "The mixin overrides all of Widget's methods"
+      ],
+      "answer": 2,
+      "explanation": "`on` is a constraint: the mixin can only be used by classes that are subtypes of Widget, and inside it you can call Widget's members.",
+      "whyWrong": [
+        "`on` doesn't create an inheritance relationship: the mixin doesn't extend Widget, it only requires that the class using it does.",
+        "It's the exact opposite: without `on` the mixin could be applied anywhere; with `on Widget` you restrict it to subtypes of Widget.",
+        null,
+        "The `on` constraint doesn't override anything: it lets the mixin call Widget's members, including via `super`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "final p = (3, 0);\nfinal s = switch (p) {\n  (0, 0) => 'origin',\n  (var x, 0) when x > 0 => 'x axis+',\n  (_, 0) => 'x axis',\n  _ => 'other',\n};\nprint(s);",
+      "options": [
+        "origin",
+        "x axis",
+        "other",
+        "x axis+"
+      ],
+      "answer": 3,
+      "explanation": "The first case doesn't match; the second binds `x = 3` and the guard `x > 0` is true. The switch returns the first case that matches.",
+      "whyWrong": [
+        "The pattern `(0, 0)` requires the first field to be 0, but `p.$1` is 3: the case doesn't match.",
+        "`(_, 0)` would also match, but the switch stops at the first matching case, and `(var x, 0) when x > 0` comes first.",
+        "The `_` wildcard is only evaluated if no earlier case matches, and here the second one already does.",
+        null
+      ]
+    }
+  ]
+}

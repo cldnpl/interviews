@@ -2,8 +2,14 @@ import SwiftUI
 
 @main
 struct InterviewsApp: App {
-    @State private var state = AppState()
+    @State private var state: AppState
     @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        // Prima di tutto il resto: stringhe e contenuti si leggono già nella lingua giusta.
+        AppLanguage.bootstrap()
+        _state = State(initialValue: AppState())
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -18,17 +24,23 @@ struct InterviewsApp: App {
 
 struct RootView: View {
     @Environment(AppState.self) private var state
+    /// Sta qui, sopra l'`.id` della lingua: cambiando lingua dal Profilo si resta sul Profilo.
+    @State private var tab = AppTab.today
 
     var body: some View {
         Group {
             if state.hasOnboarded {
-                MainTabView()
+                MainTabView(selection: $tab)
                     .transition(.opacity)
             } else {
                 OnboardingView()
                     .transition(.opacity)
             }
         }
+        // Il locale dell'ambiente decide la lingua di ogni Text; l'id ricostruisce le view,
+        // che così rileggono anche i contenuti e le stringhe calcolate nella lingua nuova.
+        .environment(\.locale, state.language.locale)
+        .id(state.language)
         .animation(.easeInOut(duration: 0.35), value: state.hasOnboarded)
         .tint(state.activeTrack.theme.primary)
         // Il design è pensato su fondo bianco: arancio e bianco per Swift, e così via.
@@ -36,17 +48,24 @@ struct RootView: View {
     }
 }
 
+enum AppTab: Hashable {
+    case today, review, profile
+}
+
 struct MainTabView: View {
-    @Environment(AppState.self) private var state
+    @Binding var selection: AppTab
 
     var body: some View {
-        TabView {
+        TabView(selection: $selection) {
             HomeView()
-                .tabItem { Label("Oggi", systemImage: "flame.fill") }
+                .tabItem { Label("Today", systemImage: "flame.fill") }
+                .tag(AppTab.today)
             ReviewView()
-                .tabItem { Label("Ripasso", systemImage: "book.fill") }
+                .tabItem { Label("Review", systemImage: "book.fill") }
+                .tag(AppTab.review)
             ProfileView()
-                .tabItem { Label("Profilo", systemImage: "person.crop.circle.fill") }
+                .tabItem { Label("Profile", systemImage: "person.crop.circle.fill") }
+                .tag(AppTab.profile)
         }
     }
 }

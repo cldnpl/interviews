@@ -1,0 +1,210 @@
+{
+  "title": "Flow",
+  "summary": "Cold and hot Flows, StateFlow, SharedFlow, operators and lifecycle-aware collection.",
+  "lesson": [
+    {
+      "heading": "Cold Flows",
+      "body": "A `Flow` is an asynchronous stream of values built on coroutines. It's **cold**: the `flow { }` block does nothing until someone calls `collect`, and every collector reruns the producer from scratch.\n\n`collect` is a suspend function, so collection respects structured concurrency: if the scope is cancelled, collection stops.",
+      "code": "fun ticker(): Flow<Int> = flow {\n    var i = 0\n    while (true) {\n        emit(i++)\n        delay(1000)\n    }\n}"
+    },
+    {
+      "heading": "Operators",
+      "body": "Intermediate operators (`map`, `filter`, `onEach`, `distinctUntilChanged`, `debounce`) return new Flows without running anything. `combine` merges the latest value of several flows, `zip` pairs them one to one, and `flatMapLatest` cancels the previous inner flow on every new value (perfect for search).\n\n`flowOn` changes the context of the **upstream** operators, while the collector stays in its own context. `catch` intercepts upstream exceptions.",
+      "code": "val results = query\n    .debounce(300)\n    .distinctUntilChanged()\n    .flatMapLatest { q -> repo.search(q) }\n    .catch { emit(emptyList()) }\n    .flowOn(Dispatchers.Default)"
+    },
+    {
+      "heading": "StateFlow",
+      "body": "`StateFlow` is a **hot** flow that always holds a current value (`value`) and requires an initial one. New collectors immediately receive the latest state.\n\nIt's **conflated** and ignores equal assignments (compared with `equals`), which makes it ideal for UI state. In the ViewModel you expose a read-only `StateFlow` and update the private `MutableStateFlow` with `update { }`, which is atomic.",
+      "code": "private val _state = MutableStateFlow(UiState())\nval state: StateFlow<UiState> = _state.asStateFlow()\n\nfun onQuery(q: String) {\n    _state.update { it.copy(query = q) }\n}"
+    },
+    {
+      "heading": "SharedFlow and stateIn",
+      "body": "`SharedFlow` is hot, has no initial value, and is configurable with `replay` and `extraBufferCapacity`: you use it to broadcast events to multiple collectors. A `StateFlow` is effectively a SharedFlow with replay 1 and distinctUntilChanged.\n\nTo turn a cold flow into a hot one, use `stateIn` or `shareIn`. The recommended pattern is `stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial)`: the upstream stops 5 seconds after the last collector leaves, so it survives rotation without wasting resources in the background.",
+      "code": "val uiState: StateFlow<List<Item>> = repo.items()\n    .map { it.sortedBy(Item::name) }\n    .stateIn(\n        viewModelScope,\n        SharingStarted.WhileSubscribed(5_000),\n        emptyList()\n    )"
+    },
+    {
+      "heading": "Collecting on Android, and LiveData",
+      "body": "In Compose, use `collectAsStateWithLifecycle()`, which stops collecting when the lifecycle drops below `STARTED`. With Views, use `repeatOnLifecycle(Lifecycle.State.STARTED)` inside `lifecycleScope.launch`; `launchWhenStarted` is deprecated.\n\n`LiveData` is lifecycle-aware on its own, doesn't require an initial value, and re-emits equal values too, but it has few operators and is tied to Android. StateFlow is pure Kotlin, testable without a framework, and rich in operators: today it's the default choice.",
+      "code": "lifecycleScope.launch {\n    repeatOnLifecycle(Lifecycle.State.STARTED) {\n        viewModel.state.collect { render(it) }\n    }\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"What's the difference between Flow, StateFlow and SharedFlow?\"**. Short answer: Flow is cold and runs the producer for each collector; StateFlow is hot, always has a value, and is meant for state; SharedFlow is hot, has no initial value and a configurable replay, and suits events.\n\nMention `stateIn` with `WhileSubscribed(5_000)`, lifecycle-aware collection, and why StateFlow has replaced LiveData in new codebases."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "When is \"start\" printed?",
+      "code": "val f = flow {\n    println(\"start\")\n    emit(1)\n}",
+      "options": [
+        "When f is created",
+        "On every collect",
+        "Only on the first collect",
+        "Never"
+      ],
+      "answer": 1,
+      "explanation": "The Flow is cold: the block runs from scratch for each collector, not at creation.",
+      "whyWrong": [
+        "A Flow is cold: `flow { }` only defines the block, which runs when someone calls `collect`.",
+        null,
+        "There's no caching: every `collect` reruns the block from scratch, so \"start\" is printed each time.",
+        "It does get printed, but only when the flow is collected: every `collect` runs the block."
+      ]
+    },
+    {
+      "prompt": "What happens when you assign a `MutableStateFlow` a value equal (equals) to the current one?",
+      "options": [
+        "The value is re-emitted",
+        "An exception is thrown",
+        "No emission: equal values are ignored",
+        "The value is queued in the buffer"
+      ],
+      "answer": 2,
+      "explanation": "StateFlow applies an equals-based distinctUntilChanged: collectors receive nothing. LiveData, on the other hand, would re-emit.",
+      "whyWrong": [
+        "That's how LiveData behaves; StateFlow compares with `equals` and doesn't emit if the value hasn't changed.",
+        "Assigning an equal value is perfectly legal: it simply produces no emission.",
+        null,
+        "StateFlow has no buffer of values: it only keeps the current value, and an equal one is discarded."
+      ]
+    },
+    {
+      "prompt": "Which one requires an initial value?",
+      "options": [
+        "SharedFlow",
+        "Both",
+        "Neither",
+        "StateFlow"
+      ],
+      "answer": 3,
+      "explanation": "StateFlow always has a `value`, so it must be initialized; MutableSharedFlow() has no initial value.",
+      "whyWrong": [
+        "`MutableSharedFlow()` is created without an initial value: it may never have emitted anything.",
+        "Only StateFlow always has a `value` and therefore requires an initial one; SharedFlow doesn't.",
+        "StateFlow can't exist without a value: `MutableStateFlow(initial)` requires it right in the constructor.",
+        null
+      ]
+    },
+    {
+      "prompt": "Which part of the chain does `flowOn(Dispatchers.IO)` affect?",
+      "options": [
+        "The upstream operators",
+        "Only the downstream operators",
+        "The collector's context",
+        "The whole chain"
+      ],
+      "answer": 0,
+      "explanation": "flowOn only changes the upstream context; collect stays in the context of the calling coroutine.",
+      "whyWrong": [
+        null,
+        "It's the opposite: `flowOn` affects the operators that come before it (upstream), not the ones after it.",
+        "The collector stays in the context of the coroutine that calls `collect`: `flowOn` doesn't move it, which is what context preservation guarantees.",
+        "`flowOn` doesn't change the whole chain: it only touches the upstream, up to any previous `flowOn`."
+      ]
+    },
+    {
+      "prompt": "Why use `SharingStarted.WhileSubscribed(5_000)` with `stateIn`?",
+      "options": [
+        "It keeps the upstream alive 5 s after the last collector (rotation)",
+        "It delays the first emission by 5 seconds",
+        "It's the timeout for the first value",
+        "It replays the last 5000 values"
+      ],
+      "answer": 0,
+      "explanation": "A rotation takes less than 5 s, so the upstream doesn't restart; if the app stays in the background longer, it stops and saves resources.",
+      "whyWrong": [
+        null,
+        "The parameter isn't an initial delay: it's `stopTimeoutMillis`, i.e. how long to wait after the last subscriber before stopping the upstream.",
+        "There's no timeout on the first value: `stateIn` already has an initial value, and the 5000 ms say when to stop the upstream with no subscribers.",
+        "No replay is configured here: `stateIn` produces a StateFlow that only keeps the latest value, and 5_000 is in milliseconds."
+      ]
+    },
+    {
+      "prompt": "What does `collectAsStateWithLifecycle()` add over `collectAsState()`?",
+      "options": [
+        "It's faster",
+        "It stops collecting below the STARTED state",
+        "It only works with LiveData",
+        "It converts the Flow to LiveData"
+      ],
+      "answer": 1,
+      "explanation": "It respects the lifecycle: when the app is in the background it stops collecting, avoiding wasted work.",
+      "whyWrong": [
+        "It's not about speed: the difference is that it stops collecting when the lifecycle drops below `STARTED`.",
+        null,
+        "It works with Flows, not LiveData: for LiveData there's `observeAsState`.",
+        "It doesn't convert anything to LiveData: it returns a Compose `State<T>`, collecting only while the lifecycle is at least `STARTED`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val r = flowOf(1, 2, 3)\n    .map { it * 10 }\n    .filter { it > 10 }\n    .toList()\nprintln(r)",
+      "options": [
+        "[10, 20, 30]",
+        "[2, 3]",
+        "[30]",
+        "[20, 30]"
+      ],
+      "answer": 3,
+      "explanation": "map produces 10, 20, 30; filter keeps those greater than 10. `toList()` is a suspending terminal operator.",
+      "whyWrong": [
+        "That's the result of `map` alone: then `filter { it > 10 }` drops the 10.",
+        "The filter works on the values already multiplied by 10, not the originals: 20 and 30 remain.",
+        "The filter is `> 10`, not `> 20`: 20 passes and stays in the list.",
+        null
+      ]
+    },
+    {
+      "prompt": "For a search that must cancel the previous request on every new input, which operator do you use?",
+      "options": [
+        "flatMapConcat",
+        "flatMapMerge",
+        "flatMapLatest",
+        "zip"
+      ],
+      "answer": 2,
+      "explanation": "flatMapLatest cancels the previous inner flow as soon as a new value arrives; concat and merge run them all to completion.",
+      "whyWrong": [
+        "`flatMapConcat` waits for each inner flow to finish before moving to the next: old searches aren't cancelled.",
+        "`flatMapMerge` runs the inner flows concurrently without cancelling them: stale results could arrive after newer ones.",
+        null,
+        "`zip` pairs up the elements of two flows: it doesn't turn each input into a request or cancel the previous ones."
+      ]
+    },
+    {
+      "prompt": "What does a new collector receive immediately?",
+      "code": "val shared = MutableSharedFlow<Int>(replay = 1)\nshared.emit(1)\nshared.emit(2)\n// new collector",
+      "options": [
+        "Nothing",
+        "1 and 2",
+        "Only 1",
+        "Only 2"
+      ],
+      "answer": 3,
+      "explanation": "With replay = 1 the cache keeps only the last emitted value, which is replayed to new collectors.",
+      "whyWrong": [
+        "Without replay the new collector would receive nothing, but here `replay = 1` keeps the last value for late subscribers.",
+        "The replay cache holds a single element: when 2 arrives, 1 is dropped.",
+        "The cache keeps the latest value, not the first: after `emit(2)`, 1 has been replaced.",
+        null
+      ]
+    },
+    {
+      "prompt": "Which difference between LiveData and StateFlow is correct?",
+      "options": [
+        "LiveData is cold, StateFlow is hot",
+        "StateFlow is lifecycle-aware on its own",
+        "StateFlow requires an initial value, LiveData doesn't",
+        "LiveData ignores equal values"
+      ],
+      "answer": 2,
+      "explanation": "StateFlow must be initialized and ignores duplicates; LiveData is lifecycle-aware but re-emits equal values. For StateFlow, lifecycle awareness has to be added at collection time.",
+      "whyWrong": [
+        "Both are hot: LiveData holds the current value and notifies observers, without rerunning anything for each one.",
+        "It's LiveData that is lifecycle-aware: for StateFlow, awareness is added at collection time with `repeatOnLifecycle` or `collectAsStateWithLifecycle`.",
+        null,
+        "It's StateFlow that ignores equal values; LiveData re-emits even a value identical to the current one."
+      ]
+    }
+  ]
+}

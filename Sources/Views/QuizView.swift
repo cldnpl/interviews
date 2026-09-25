@@ -69,7 +69,7 @@ struct QuizView: View {
                 .scrollIndicators(.hidden)
                 .safeAreaInset(edge: .bottom) {
                     if selected != nil {
-                        Button(index + 1 < session.items.count ? "Continua" : "Vedi il risultato") { next() }
+                        Button(index + 1 < session.items.count ? "Continue" : "See your result") { next() }
                             .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)
@@ -133,7 +133,7 @@ struct QuizView: View {
         let right = selected == item.question.answer
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label(right ? "Esatto!" : "Non proprio", systemImage: right ? "checkmark.seal.fill" : "lightbulb.fill")
+                Label(right ? "Correct!" : "Not quite", systemImage: right ? "checkmark.seal.fill" : "lightbulb.fill")
                     .font(.headline)
                     .foregroundStyle(right ? Color.correct : Color.flame)
                 Spacer()
@@ -313,7 +313,7 @@ struct QuizResultView: View {
                     Text("\(state.currentStreak)")
                         .font(.system(size: 64, weight: .heavy, design: .rounded).monospacedDigit())
                         .contentTransition(.numericText(value: Double(state.currentStreak)))
-                    Text(state.currentStreak > streakBefore ? "Streak allungato! Ci vediamo domani." : "Giorni di fila")
+                    Text(state.currentStreak > streakBefore ? "Streak extended! See you tomorrow." : "Days in a row")
                         .font(.headline)
                         .foregroundStyle(.secondary)
                 }
@@ -324,7 +324,7 @@ struct QuizResultView: View {
                 VStack(spacing: 2) {
                     Text("\(correct)/\(total)")
                         .font(.system(size: 38, weight: .bold, design: .rounded))
-                    Text("giuste").font(.subheadline).foregroundStyle(.secondary)
+                    Text("correct").font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             .frame(width: isDaily ? 150 : 190, height: isDaily ? 150 : 190)
@@ -342,7 +342,7 @@ struct QuizResultView: View {
                     Button {
                         showCorrections = true
                     } label: {
-                        Label(mistakes.count == 1 ? "Rivedi la correzione" : "Rivedi le \(mistakes.count) correzioni",
+                        Label(mistakes.count == 1 ? "Review the correction" : "Review the \(mistakes.count) corrections",
                               systemImage: "text.badge.checkmark")
                             .font(.headline)
                             .foregroundStyle(theme.primary)
@@ -351,7 +351,7 @@ struct QuizResultView: View {
                             .background(theme.soft, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
                 }
-                Button("Fine", action: onDone)
+                Button("Finish", action: onDone)
                     .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
             }
             .padding(.horizontal, 20)
@@ -373,7 +373,7 @@ struct QuizResultView: View {
                     .scaleEffect(appeared ? 1 : 0.3)
                     .rotationEffect(.degrees(appeared ? 0 : -30))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Nuovo grado!")
+                    Text("New rank!")
                         .font(.caption.weight(.heavy))
                         .textCase(.uppercase)
                         .foregroundStyle(state.rank.tier.color)
@@ -392,7 +392,7 @@ struct QuizResultView: View {
         } else {
             VStack(spacing: 10) {
                 HStack {
-                    Text(xpGained > 0 ? "+\(xpGained) XP" : "Nessun XP questa volta")
+                    Text(xpGained > 0 ? "+\(xpGained) XP" : "No XP this time")
                         .font(.headline)
                         .foregroundStyle(xpGained > 0 ? state.rank.tier.color : .secondary)
                     Spacer()
@@ -410,10 +410,10 @@ struct QuizResultView: View {
 
     private var message: String {
         switch ratio {
-        case 1: "Perfetto. Il colloquio è tuo 🎉"
-        case 0.8...: "Ottimo lavoro, quasi senza sbavature."
-        case 0.5...: "Buona base. Un ripasso e ci sei."
-        default: "Nessun problema: le lezioni sono lì apposta."
+        case 1: String(localized: "Perfect. That interview is yours 🎉", bundle: .app)
+        case 0.8...: String(localized: "Great work, almost flawless.", bundle: .app)
+        case 0.5...: String(localized: "Solid base. One review and you're there.", bundle: .app)
+        default: String(localized: "No problem: that's exactly what the lessons are for.", bundle: .app)
         }
     }
 }

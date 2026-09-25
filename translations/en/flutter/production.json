@@ -1,0 +1,205 @@
+{
+  "title": "Apps in Production",
+  "summary": "Crash analytics, logging, feature flags and A/B tests, deep links, push notifications, offline support, and startup time",
+  "lesson": [
+    {
+      "heading": "Crash analytics and logging",
+      "body": "To actually see every error, you need **two hooks**, not one: `FlutterError.onError` catches framework errors (exceptions in `build`, layout, gestures), and `PlatformDispatcher.instance.onError` catches unhandled asynchronous errors that make it all the way up to the root zone. Register both before `runApp`.\n\nAs for logging, `print` in production is noise that ends up in the system console: use a logger with levels (or `dart:developer`), send the important logs to your crash service as **breadcrumbs**, and attach a **pseudonymous** user ID, so a crash turns into a story you can follow.\n\nNon-negotiable rule: no personal data in logs or crash reports: emails, tokens, card numbers, private content. A log ends up in a third-party service and stays there.",
+      "code": "void main() {\n  WidgetsFlutterBinding.ensureInitialized();\n\n  FlutterError.onError = (details) {\n    FlutterError.presentError(details);\n    Crashlytics.instance.recordFlutterError(details);\n  };\n  PlatformDispatcher.instance.onError = (error, stack) {\n    Crashlytics.instance.recordError(error, stack, fatal: true);\n    return true; // handled\n  };\n\n  runApp(const App());\n}"
+    },
+    {
+      "heading": "What to monitor",
+      "body": "Only a handful of metrics matter in production: **crash-free users** and crash-free sessions (the former is the only one the business understands), ANRs on Android, cold **startup time**, slow and frozen frames, the error rate of network calls, and the funnel metrics that tell you whether the feature is actually being used.\n\nA network error on a flaky connection is **expected**: if you report it as a crash, you pollute the dashboard and people stop looking at it. Separate what's a bug from what's just the real world, and set alerts only on regressions that need someone to act.\n\nLook at every release by version: the right question isn't \"how many crashes do we have?\", it's \"is this version doing worse than the previous one?\""
+    },
+    {
+      "heading": "Feature flags, remote config, and A/B tests",
+      "body": "A remotely fetched **feature flag** lets you turn off a feature without shipping a new release and going through review: it's the *kill switch*, the safety net for every release, and it pairs with gradual percentage rollouts.\n\nWatch out for first launch: `fetchAndActivate` is asynchronous, and the first session starts with the **default values compiled into the app**. So the defaults have to make sense on their own, and you can't rely on the flag for anything needed right away. Also plan for what happens if the config never arrives (the user is offline).\n\nAn **A/B test** is a flag plus a metric decided **up front**, a stable per-user assignment (whoever is in B stays in B), and a minimum duration. Without those three things, it's just a rollout someone will eyeball.",
+      "code": "await remoteConfig.setDefaults({'new_checkout': false});\nunawaited(remoteConfig.fetchAndActivate()); // the first session uses the defaults\n\nif (remoteConfig.getBool('new_checkout')) { /* ... */ }"
+    },
+    {
+      "heading": "Deep links and push notifications",
+      "body": "Real **deep links** (Universal Links on iOS, App Links on Android) require a file on your domain (`apple-app-site-association` and `assetlinks.json`), plus Associated Domains on iOS and an intent-filter with `autoVerify` on Android: it's the domain declaring that it belongs to the app. A custom scheme (`myapp://`) is only a fallback, because anyone can register it. With `go_router`, the route is the same one the app uses, so the link also has to be able to rebuild the navigation stack and handle the \"user not signed in\" case.\n\n**Push notifications** go through APNs on iOS and FCM on Android (and through FCM to APNs if you unify them). The token is per installation and it **changes** (reinstall, restore, rotation): resync it with the backend on every launch and on `onTokenRefresh`. On iOS you have to ask for permission, and it's worth asking at the moment the user understands what it's for.\n\nA *notification message* is displayed by the system even when the app is closed; a *data message* is yours to handle, and the background handler has to be a **top-level** function annotated with `@pragma('vm:entry-point')`, because it's invoked on a fresh isolate.",
+      "code": "@pragma('vm:entry-point')\nFuture<void> _onBackgroundMessage(RemoteMessage message) async {\n  await Firebase.initializeApp(); // separate isolate: must be initialized\n  await LocalStore.enqueue(message.data);\n}\n\nFirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);"
+    },
+    {
+      "heading": "Offline support and startup",
+      "body": "A mobile app is offline often, not as an exception. The setup that holds up is **cache-first**: the source of truth for the UI is the local database (Drift, Isar, sqflite), and the network updates it. User actions go into a **queue of pending operations** that gets replayed on reconnect, with an explicit conflict-resolution rule; and the user always sees the real state of the data, including \"out of date.\"\n\nOn **startup time**: `main` should do the bare minimum. Heavy initialization (SDKs, migrations, precaching) should move after the first frame or become lazy; the native splash screen covers the gap, and `--trace-startup` plus your performance service's traces tell you where the time goes. Package size is driven by icon tree shaking, the right assets, and *deferred components*.\n\nIn the background, the system is in charge: `WorkManager` and `BGTaskScheduler` guarantee that work will happen *eventually*, never *when*, so don't design anything that depends on precise timing."
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"You shipped yesterday and crashes went up. What do you do?\"** A good answer is a sequence: I check crash-free rate by version to confirm it's really the new release, halt the staged rollout, turn off the suspect feature with the remote flag (without waiting for review), reproduce it with breadcrumbs and a symbolicated stack trace, then fix it and resume the rollout.\n\nThe broader point is that a release doesn't end when it ships: you watch it, you can switch it off, and you reopen it gradually. If you mention kill switches, percentage rollouts, crash symbolication, and per-version metrics, you've shown that you know production, not just code."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What is a remotely fetched feature flag for?",
+      "options": [
+        "Reducing the app's size",
+        "Turning a feature on or off without a new release",
+        "Speeding up startup",
+        "Translating the app into multiple languages"
+      ],
+      "answer": 1,
+      "explanation": "It's the kill switch: if a feature causes problems, you turn it off remotely without waiting for a build and store review. It's also used for progressive rollouts and experiments.",
+      "whyWrong": [
+        "The feature's code stays in the app even when the flag is off.",
+        null,
+        "If anything, it adds an extra read at startup: it isn't an optimization.",
+        "Languages are handled by localization, not by flags."
+      ]
+    },
+    {
+      "prompt": "Why isn't `print` a good logging system in production?",
+      "options": [
+        "Because it's automatically stripped in release",
+        "Because it has no levels, doesn't reach any service, and can expose data",
+        "Because it blocks the event loop",
+        "Because it only works on Android"
+      ],
+      "answer": 1,
+      "explanation": "In production, logs are how you reconstruct what happened to a user you can't ask: you need levels, delivery to a service, and care around personal data. `print` gives you none of that and ends up in the system console.",
+      "whyWrong": [
+        "`print` stays in release builds too: that's one of the reasons it's a problem.",
+        null,
+        "The cost is negligible, and that's not the main flaw.",
+        "It works on every platform: the problem is what happens to the output."
+      ]
+    },
+    {
+      "prompt": "Which hooks do you need to capture errors in a Flutter app?",
+      "options": [
+        "Just `try`/`catch` at critical points",
+        "Just `FlutterError.onError`",
+        "`FlutterError.onError` plus `PlatformDispatcher.instance.onError`",
+        "A custom `ErrorWidget.builder`"
+      ],
+      "answer": 2,
+      "explanation": "The first intercepts framework errors (build, layout, gestures), the second intercepts unhandled asynchronous errors that bubble up to the root zone. With only one of them, you miss half your crashes.",
+      "whyWrong": [
+        "`try`/`catch` only covers the spots you anticipated: real crashes come from the ones you didn't.",
+        "On its own, it doesn't catch asynchronous exceptions outside the framework.",
+        null,
+        "`ErrorWidget.builder` changes what's shown on screen when a widget fails, but it doesn't record anything."
+      ]
+    },
+    {
+      "prompt": "On first launch, before `fetchAndActivate` has completed, what value does a remote config flag have?",
+      "options": [
+        "The default value set in the app",
+        "`null`, until the response arrives",
+        "The last value seen by other users",
+        "The call is synchronous: the value is already the remote one"
+      ],
+      "answer": 0,
+      "explanation": "The fetch is asynchronous: the first session runs with the defaults compiled into the app. That's why defaults have to make sense on their own, and why you can't make anything needed immediately depend on a flag.",
+      "whyWrong": [
+        null,
+        "The APIs return the typed default, not `null`: that's exactly what they're for.",
+        "Config isn't shared across devices: each installation starts from its own defaults.",
+        "Fetching goes over the network and is unavoidably asynchronous."
+      ]
+    },
+    {
+      "prompt": "What does it take for a Universal Link (iOS) or App Link (Android) to open the app instead of the browser?",
+      "options": [
+        "Registering a custom `myapp://` scheme",
+        "Just an intent-filter in the manifest",
+        "An association file published on the domain plus configuration in the app",
+        "Declaring the domain in the store listing"
+      ],
+      "answer": 2,
+      "explanation": "You need `apple-app-site-association` and `assetlinks.json` served from your domain, plus Associated Domains on iOS and an intent-filter with `autoVerify` on Android: it's the website that certifies that the app is allowed to open its links.",
+      "whyWrong": [
+        "A custom scheme is an unverified fallback: any app can register the same scheme.",
+        "Without `autoVerify` and `assetlinks.json`, Android doesn't verify the domain and shows the chooser or opens the browser.",
+        null,
+        "The stores aren't involved: verification happens between the domain and the app, through the association files."
+      ]
+    },
+    {
+      "prompt": "A device's push token can change. How do you handle it?",
+      "options": [
+        "Save it once, on first install",
+        "Read it again on every launch and listen to `onTokenRefresh`, resyncing the backend",
+        "No need to store it: the push service figures it out",
+        "Regenerate it yourself every time you send a notification"
+      ],
+      "answer": 1,
+      "explanation": "Reinstalls, restores, and rotations change the token: if the backend keeps the old one, notifications go nowhere. Update it at launch and on the refresh event, and clear it on logout.",
+      "whyWrong": [
+        "A token saved once goes stale, and the user silently stops receiving notifications.",
+        null,
+        "The backend has to know the token to address the message: nobody works it out on their own.",
+        "You can't regenerate the token on demand: the system issues it, and you track its changes."
+      ]
+    },
+    {
+      "prompt": "Why does the background push handler have to be top-level and annotated with `@pragma('vm:entry-point')`?",
+      "options": [
+        "It's a style convention of the plugin",
+        "Because it's invoked on a fresh isolate and tree shaking must not remove it",
+        "Because it has to be `const`",
+        "Because otherwise it won't compile in debug"
+      ],
+      "answer": 1,
+      "explanation": "When the app is closed, the system starts a dedicated isolate and enters it through that function: it must be reachable without any context (top-level or static), and the annotation stops the AOT compiler from removing it as apparently never called.",
+      "whyWrong": [
+        "It's not about style: without those two constraints, the handler simply doesn't run in release.",
+        null,
+        "A function can't be `const`, and that has nothing to do with the entry point.",
+        "In debug it often works anyway: the problem shows up in release, where tree shaking is active."
+      ]
+    },
+    {
+      "prompt": "What's the most robust setup for an app that has to work offline?",
+      "options": [
+        "Call the network and show an error when it's unavailable",
+        "Keep an in-memory cache of the latest responses",
+        "Local database as the source of truth, the network updating it, and a queue of pending actions",
+        "Lock the UI until the connection comes back"
+      ],
+      "answer": 2,
+      "explanation": "With local data as the source of truth, the UI always has something to show, the network becomes an update, and user actions are queued to be replayed on reconnect, with an explicit conflict-resolution rule.",
+      "whyWrong": [
+        "That's the behavior that makes an app useless on the subway: no data, no actions.",
+        "An in-memory cache disappears when the app closes and doesn't cover offline writes.",
+        null,
+        "Locking the UI is the worst option: the user can't even read what's already been downloaded."
+      ]
+    },
+    {
+      "prompt": "Cold start is slow. Where do you begin?",
+      "options": [
+        "Measure with `--trace-startup` and move heavy initialization after the first frame",
+        "Add a longer splash screen",
+        "Preload all assets in `main`",
+        "Switch every SDK to synchronous initialization"
+      ],
+      "answer": 0,
+      "explanation": "Measure first: `--trace-startup` and your performance service's traces show how much time goes into `main`, the SDKs, and the first frame. Then make lazy, or defer, everything that isn't needed to draw the first screen.",
+      "whyWrong": [
+        null,
+        "A splash screen hides the problem from the user, but startup stays slow, and making it longer worsens the perception.",
+        "Preloading everything in `main` is often the cause of slow startup, not the cure.",
+        "Synchronous initialization blocks the first frame: that's exactly the wrong direction."
+      ]
+    },
+    {
+      "prompt": "After a release, crash-free drops from 99.5% to 96%. First move?",
+      "options": [
+        "Immediately prepare a hotfix and upload it to the store",
+        "Halt the rollout and remotely switch off the suspect feature",
+        "Wait a few days to collect more data",
+        "Ask users to reinstall the app"
+      ],
+      "answer": 1,
+      "explanation": "First stop the bleeding with the levers that act immediately (pausing the percentage rollout and the kill switch), which don't go through review; then investigate with symbolicated stack traces and breadcrumbs, fix, and resume the rollout gradually.",
+      "whyWrong": [
+        "You do need the hotfix, but it lands after review: in the meantime users keep crashing.",
+        null,
+        "You already have enough data: waiting only exposes more users to the problem.",
+        "Reinstalling changes nothing if the bug is in the new version's code."
+      ]
+    }
+  ]
+}

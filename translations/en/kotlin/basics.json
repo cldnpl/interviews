@@ -1,0 +1,213 @@
+{
+  "title": "Language Basics",
+  "summary": "val and var, types, when, loops, and functions: the minimum vocabulary to read any Kotlin code.",
+  "lesson": [
+    {
+      "heading": "val and var",
+      "body": "`val` declares a **read-only** reference: you assign it once and never reassign it. `var` declares a reassignable reference. The type goes after the name, following a colon, but you almost always omit it because Kotlin **infers** it from the initial value.\n\nOne misconception to clear up right away: `val` means a constant *reference*, not an immutable *object*. A `val` pointing to a `MutableList` can't be pointed elsewhere, but the list can keep changing. For immutable contents you need immutable types, like `List` instead of `MutableList`.",
+      "code": "val pi = 3.14          // Double by inference\nvar counter = 0        // Int\ncounter += 1\n\n// pi = 3.15           // error: a val can't be reassigned\n\nval list = mutableListOf(1)\nlist.add(2)            // legal: changes the contents, not the reference\n// list = mutableListOf()  // error: this would change the reference"
+    },
+    {
+      "heading": "Types and conversions",
+      "body": "The numeric types are `Byte`, `Short`, `Int`, `Long`, `Float`, `Double`; then there's `Boolean` and `String`. Kotlin has **no visible primitives**: you always write `Int` with a capital letter, and the compiler decides on its own whether to use a JVM `int` or an `Integer` depending on context.\n\nAs in Swift, there are **no implicit conversions** between numeric types: an `Int` doesn't become a `Long` on its own, you have to ask with `toLong()`. And integer division truncates: `7 / 2` is `3`.\n\nStrings support **templates**: `$name` inserts a variable, `${expression}` inserts the result of an expression.",
+      "code": "val a = 3              // Int\nval b = 2.5            // Double\n\n// val c = a + b       // works here, but...\nval n: Int = 3\nval l: Long = n.toLong()   // ...converting between integer types must be explicit\n\nprintln(7 / 2)         // 3   (integer division)\nprintln(7 / 2.0)       // 3.5\n\nval name = \"Ada\"\nprintln(\"Hello $name, you have ${2 + 3} messages\")"
+    },
+    {
+      "heading": "if and when are expressions",
+      "body": "In Kotlin, `if` and `when` aren't just statements: they **return a value**, so you can assign them. That's why there's no Java-style ternary operator `cond ? a : b` — you write a one-line `if` instead.\n\n`when` is the souped-up cousin of switch: it matches values, ranges with `in`, types with `is`, and in its argument-less form it works like an if-else chain. The key rule: **when `when` is used as an expression, it must be exhaustive**, so you need an `else` unless the cases already cover everything (as with an `enum` or a `sealed class`). Used as a plain statement, the `else` is optional.",
+      "code": "val max = if (a > b) a else b      // if as an expression\n\nval label = when (grade) {         // when as an expression: else required\n    in 0..5  -> \"failing\"\n    6, 7     -> \"passing\"\n    else     -> \"excellent\"\n}\n\nwhen {                             // no argument: a chain of conditions\n    grade < 6 -> println(\"below\")\n    else      -> println(\"above\")\n}"
+    },
+    {
+      "heading": "Loops and ranges",
+      "body": "`for (x in sequence)` iterates over anything that exposes an `iterator()`: a range, a list, the characters of a string.\n\nRanges come in three forms worth remembering, because that's where off-by-one errors come from: `1..3` is **inclusive** (1, 2, 3), `1 until 3` excludes the upper bound (1, 2), `3 downTo 1` counts down. You can combine them with `step`.\n\nThere are also `while` and `do-while`, and `repeat(n) { }` when you don't need the index.",
+      "code": "for (i in 1..3) print(i)        // 123\nfor (i in 1 until 3) print(i)   // 12\nfor (i in 3 downTo 1) print(i)  // 321\nfor (i in 0..10 step 5) print(i) // 0510\n\nfor ((index, value) in list.withIndex()) {\n    println(\"$index: $value\")\n}\n\nrepeat(3) { println(\"hi\") }"
+    },
+    {
+      "heading": "Functions",
+      "body": "You declare a function with `fun`; parameters must have a type, and the return type goes after the colon. If it returns nothing, the type is `Unit` and you omit it.\n\nTwo conveniences you'll see everywhere in Kotlin: **default parameter values**, which eliminate most overloads, and **named arguments** at the call site, which let you skip defaults in the middle and make calls with lots of booleans readable.\n\nA function made of a single expression can use the shorthand form with `=`, without braces and without `return`.",
+      "code": "fun sum(a: Int, b: Int): Int = a + b         // expression body\n\nfun greet(name: String = \"world\", shout: Boolean = false): String {\n    val text = \"Hello $name\"\n    return if (shout) text.uppercase() else text\n}\n\ngreet()                         // \"Hello world\"\ngreet(\"Ada\")                    // \"Hello Ada\"\ngreet(shout = true)             // \"HELLO WORLD\"  (skips the first default)\n\nfun log(msg: String) {          // no return value: implicit Unit\n    println(msg)\n}"
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What happens when you compile this code?",
+      "code": "val x = 10\nx = 20\nprintln(x)",
+      "options": [
+        "Compilation error",
+        "Prints 20",
+        "Prints 10",
+        "Prints 10 with a warning"
+      ],
+      "answer": 0,
+      "explanation": "`val` declares a read-only reference: it's assigned only once. Reassigning it is an error the compiler rejects. To be able to change it, you'd declare it `var`.",
+      "whyWrong": [
+        null,
+        "That would happen with `var x = 10`: declared with `val`, the line `x = 20` doesn't compile, so nothing ever gets printed.",
+        "Nothing gets printed, because the program doesn't compile: `val` doesn't ignore the reassignment, it rejects it.",
+        "It's not a warning but an error: the code doesn't produce an executable."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val a = 7\nval b = 2\nprintln(a / b)",
+      "options": [
+        "3",
+        "3.5",
+        "4",
+        "Compilation error"
+      ],
+      "answer": 0,
+      "explanation": "Both operands are `Int`, so it's integer division and the decimal part is truncated, not rounded. To get 3.5 you need at least one floating-point operand: `a / 2.0` or `a.toDouble() / b`.",
+      "whyWrong": [
+        null,
+        "3.5 is the result of floating-point division: here both types are `Int`, and `Int / Int` produces an `Int`.",
+        "Integer division **truncates** toward zero, it doesn't round: 3.5 becomes 3, never 4.",
+        "The code compiles just fine: dividing two `Int`s is legal. The trap is in the type of the result."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val a = 2\nval b = 3\nprintln(\"$a + $b = ${a + b}\")",
+      "options": [
+        "2 + 3 = 5",
+        "$a + $b = ${a + b}",
+        "2 + 3 = 2 + 3",
+        "Compilation error"
+      ],
+      "answer": 0,
+      "explanation": "`$name` inserts a variable's value, `${...}` evaluates a whole expression and inserts its result. The `+` signs outside the braces are plain text; the one inside is a real addition.",
+      "whyWrong": [
+        null,
+        "That's the literal text: to actually print it you'd need a raw string with the `$` escaped, or the `\\$` escape. In a regular string, `$` always starts a template.",
+        "Inside `${...}` goes an **expression**, which is evaluated before it lands in the text: `a + b` becomes `5`.",
+        "The code is valid: templates accept both a bare name and an expression in braces."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "for (i in 1..3) print(i)\nprint(\" \")\nfor (i in 1 until 3) print(i)",
+      "options": [
+        "123 12",
+        "12 123",
+        "123 123",
+        "1234 123"
+      ],
+      "answer": 0,
+      "explanation": "`1..3` is an **inclusive** range: it includes 3. `1 until 3` excludes the upper bound and stops at 2. This is the pair that causes the most off-by-one errors when coming from other languages.",
+      "whyWrong": [
+        null,
+        "It's backwards: `..` is the one that includes the bound, `until` is the one that excludes it.",
+        "The two ranges don't produce the same sequence: if they did, `until` would have no reason to exist.",
+        "`1..3` stops at 3, not 4: the upper bound you write is the last value produced, not the first one excluded."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val a = 5\nval b = 9\nval max = if (a > b) a else b\nprintln(max)",
+      "options": [
+        "9",
+        "5",
+        "true",
+        "Error: in Kotlin, if doesn't return a value"
+      ],
+      "answer": 0,
+      "explanation": "In Kotlin, `if` is an **expression** and returns the value of the branch that runs: here `a > b` is false, so it evaluates to `b`, which is 9. That's why Kotlin has no ternary operator.",
+      "whyWrong": [
+        null,
+        "5 would be the value of the `then` branch, which doesn't run here: `5 > 9` is false, so the `else` branch is taken.",
+        "The `if` doesn't return the condition but the value of the chosen branch: the type of `max` is `Int`, not `Boolean`.",
+        "It's exactly the opposite: in Kotlin, `if` and `when` are expressions and can be assigned. That's why the ternary operator doesn't exist."
+      ]
+    },
+    {
+      "prompt": "What happens when you compile this code?",
+      "code": "val n = 3\nval label = when (n) {\n    1 -> \"one\"\n    2 -> \"two\"\n}\nprintln(label)",
+      "options": [
+        "Compilation error: the else branch is missing",
+        "Prints an empty line",
+        "Prints null",
+        "Throws an exception at runtime"
+      ],
+      "answer": 0,
+      "explanation": "A `when` used as an **expression** must be exhaustive: the compiler demands an `else`, unless the cases already cover every possible value (as with an `enum` or a `sealed class`). Used as a plain statement, without assigning its result, the `else` would be optional.",
+      "whyWrong": [
+        null,
+        "Nothing gets printed: the error happens at compile time, so the program never starts.",
+        "`label` is of type `String`, not `String?`: Kotlin doesn't fill uncovered cases with `null`, it would rather reject the code.",
+        "Kotlin moves the check to compile time precisely to avoid runtime exceptions: the code never gets to run."
+      ]
+    },
+    {
+      "prompt": "Given this function, what does the call print?",
+      "code": "fun greet(name: String = \"world\", shout: Boolean = false): String =\n    if (shout) \"Hello $name\".uppercase() else \"Hello $name\"\n\nprintln(greet(shout = true))",
+      "options": [
+        "HELLO WORLD",
+        "Hello world",
+        "Hello true",
+        "Error: you can't skip the first parameter"
+      ],
+      "answer": 0,
+      "explanation": "**Named arguments** let you skip parameters that have a default and set only the ones you need: `name` stays `\"world\"` and `shout` becomes `true`, so the string is uppercased.",
+      "whyWrong": [
+        null,
+        "That would be the result with `shout` set to `false`, i.e. calling `greet()`. Here `shout = true` picks the branch that applies `uppercase()`.",
+        "`shout` doesn't end up in the text: it's a flag that decides which of the two `if` branches is returned.",
+        "Skipping a parameter in the middle is exactly what named arguments let you do, as long as the skipped one has a default."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val list = mutableListOf(1)\nlist.add(2)\nprintln(list)",
+      "options": [
+        "[1, 2]",
+        "[1]",
+        "Error: list is a val, it can't be modified",
+        "[2]"
+      ],
+      "answer": 0,
+      "explanation": "`val` makes the **reference** constant, not the object: the variable can't point to another list, but the list can keep changing. Writing `list = mutableListOf()` would have been an error. For immutable contents you need the `List` type, not `MutableList`.",
+      "whyWrong": [
+        null,
+        "The `add` definitely runs: `val` doesn't freeze the object's contents, only the reference to it.",
+        "Confusing `val` with immutability is the classic mistake: the distinction between reference and object is exactly what separates `val` from `List`.",
+        "`add` appends to the end without removing anything: the initial 1 stays where it is."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "println(Int.MAX_VALUE + 1)",
+      "options": [
+        "-2147483648",
+        "2147483648",
+        "Throws ArithmeticException",
+        "Compilation error"
+      ],
+      "answer": 0,
+      "explanation": "`Int` is 32-bit and ranges from -2147483648 to 2147483647. As on the JVM, the addition **silently overflows** and wraps around to the minimum. To avoid it, use `Long`, or the `addExact` functions, which throw.",
+      "whyWrong": [
+        null,
+        "2147483648 can't be represented in an `Int`: you'd need a `Long`, which you get by writing `Int.MAX_VALUE.toLong() + 1`.",
+        "Integer overflow in Kotlin is silent, exactly as in Java: no exception, the value just wraps around.",
+        "The code compiles: adding 1 to an `Int` is legal, and the compiler has no way of knowing that this particular value will overflow."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val a = \"kotlin\"\nval b = buildString { append(\"kot\"); append(\"lin\") }\nprintln(a == b)\nprintln(a === b)",
+      "options": [
+        "true, then false",
+        "true, then true",
+        "false, then false",
+        "false, then true"
+      ],
+      "answer": 0,
+      "explanation": "In Kotlin, `==` is **structural** equality and calls `equals()`: the two strings have the same characters, so it's `true`. `===` is **referential** equality and compares addresses: the string built at runtime is a different object from the interned literal, so it's `false`.",
+      "whyWrong": [
+        null,
+        "`===` would be `true` only if both variables pointed to the same object. The `\"kotlin\"` literal lives in the string pool, while the one from `buildString` is built at runtime.",
+        "`==` is `true`: in Kotlin, `==` doesn't compare references like Java's `==` on objects, it calls `equals()`. Reference comparison is `===`.",
+        "It's the reverse of reality: `==` looks at the contents (equal) and `===` at identity (different)."
+      ]
+    }
+  ]
+}

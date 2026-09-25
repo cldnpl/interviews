@@ -13,12 +13,12 @@ struct ProfileView: View {
                 Section {
                     HStack(spacing: 12) {
                         StatBox(value: "\(state.currentStreak)", label: "Streak", color: .flame)
-                        StatBox(value: "\(state.bestStreak)", label: "Record", color: .flame)
-                        StatBox(value: "\(state.accuracy)%", label: "Precisione", color: state.activeTrack.theme.primary)
+                        StatBox(value: "\(state.bestStreak)", label: "Best", color: .flame)
+                        StatBox(value: "\(state.accuracy)%", label: "Accuracy", color: state.activeTrack.theme.primary)
                     }
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
-                    Text("\(state.totalAnswered) domande risposte in totale")
+                    Text("\(state.totalAnswered) questions answered in total")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .listRowBackground(Color.clear)
@@ -43,7 +43,7 @@ struct ProfileView: View {
                                 .foregroundStyle(reached ? .primary : .secondary)
                             Spacer()
                             if current {
-                                Text("Sei qui")
+                                Text("You're here")
                                     .font(.caption.weight(.bold))
                                     .foregroundStyle(.white)
                                     .padding(.horizontal, 8)
@@ -57,9 +57,9 @@ struct ProfileView: View {
                         }
                     }
                 } header: {
-                    Text("Gradi")
+                    Text("Ranks")
                 } footer: {
-                    Text("Ogni risposta giusta vale 10, 20 o 30 XP in base alla difficoltà, piena solo la prima volta. Il quiz del giorno aggiunge un bonus, più alto se lo streak è lungo. Salendo di grado le domande si fanno più difficili.")
+                    Text("Every correct answer is worth 10, 20 or 30 XP depending on difficulty, in full only the first time. The daily quiz adds a bonus, larger when your streak is long. As your rank goes up the questions get harder.")
                 }
 
                 Section {
@@ -87,13 +87,36 @@ struct ProfileView: View {
                         .disabled(state.tracks == [track])
                     }
                 } header: {
-                    Text("I tuoi percorsi")
+                    Text("Your tracks")
                 } footer: {
-                    Text("Ogni percorso ha i suoi argomenti, in ordine dalle fondamenta ai temi da senior. Le domande del giorno mescolano i percorsi attivi, pescando solo dagli argomenti che il tuo grado ha già raggiunto. Almeno un percorso deve restare acceso.")
+                    Text("Each track has its own topics, in order from the fundamentals to senior material. The daily questions mix the active tracks, drawing only from the topics your rank has already reached. At least one track must stay on.")
                 }
 
                 Section {
-                    Toggle("Promemoria giornaliero", isOn: Binding(
+                    Picker("Language", selection: Binding(
+                        get: { state.language },
+                        set: { language in
+                            state.language = language
+                            // Anche i promemoria già in coda vanno riscritti nella lingua nuova.
+                            Task { await Reminders.reschedule(for: state) }
+                        }
+                    )) {
+                        ForEach(AppLanguage.allCases) { language in
+                            // Ogni lingua col suo nome, come in Impostazioni: chi non capisce
+                            // la lingua attuale deve comunque riconoscere la propria.
+                            Text(verbatim: language.nativeName).tag(language)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                } header: {
+                    Text("Language")
+                } footer: {
+                    Text("Lessons, questions and reminders switch too. Your progress stays as it is.")
+                }
+
+                Section {
+                    Toggle("Daily reminder", isOn: Binding(
                         get: { state.reminderEnabled },
                         set: { on in
                             Task {
@@ -109,29 +132,31 @@ struct ProfileView: View {
                         }
                     ))
                     if state.reminderEnabled {
-                        DatePicker("Ora", selection: Binding(
+                        DatePicker("Time", selection: Binding(
                             get: { state.reminderTime },
                             set: { state.reminderTime = $0; Task { await Reminders.reschedule(for: state) } }
                         ), displayedComponents: .hourAndMinute)
                     }
                 } header: {
-                    Text("Notifiche")
+                    Text("Notifications")
                 } footer: {
                     Text(notificationsDenied
-                         ? "Le notifiche sono disattivate nelle Impostazioni di iOS: attivale lì per Interviews."
-                         : "Suona solo nei giorni in cui non hai ancora fatto il quiz.")
+                         ? "Notifications are turned off in iOS Settings: turn them on there for Interviews."
+                         : "It only rings on days you haven't done the quiz yet.")
                 }
 
                 Section {
-                    Button("Azzera i progressi", role: .destructive) { confirmReset = true }
+                    Button("Reset progress", role: .destructive) { confirmReset = true }
                     #if DEBUG
-                    Button("Rifai l'onboarding") { state.restartOnboarding() }
+                    Button("Redo onboarding") { state.restartOnboarding() }
                     #endif
                 }
+
+                AboutSection()
             }
-            .navigationTitle("Profilo")
-            .confirmationDialog("Azzerare streak, statistiche ed errori?", isPresented: $confirmReset, titleVisibility: .visible) {
-                Button("Azzera", role: .destructive) {
+            .navigationTitle("Profile")
+            .confirmationDialog("Reset streak, stats and mistakes?", isPresented: $confirmReset, titleVisibility: .visible) {
+                Button("Reset", role: .destructive) {
                     state.resetProgress()
                     Task { await Reminders.reschedule(for: state) }
                 }

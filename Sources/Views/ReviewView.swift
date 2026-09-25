@@ -24,11 +24,11 @@ struct ReviewView: View {
                         }
                         .frame(width: 64, height: 64)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Lezioni di \(track.name)")
+                            Text("\(track.name) lessons")
                                 .font(.headline)
                             Text(read == topics.count && !topics.isEmpty
-                                 ? "Le hai lette tutte. Ora mettiti alla prova coi quiz."
-                                 : "In ordine, dalle fondamenta ai temi da senior.")
+                                 ? "You've read them all. Now test yourself with the quizzes."
+                                 : "In order, from the fundamentals to senior topics.")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -57,7 +57,7 @@ struct ReviewView: View {
                 .padding(.bottom, 30)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Ripasso")
+            .navigationTitle("Review")
         }
     }
 }
@@ -139,7 +139,7 @@ struct LessonView: View {
                                           items: ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier),
                                           title: topic.title)
                 } label: {
-                    Label("Mettiti alla prova", systemImage: "bolt.fill")
+                    Label("Test yourself", systemImage: "bolt.fill")
                 }
                 .buttonStyle(PrimaryButtonStyle(gradient: track.theme.linear))
                 .padding(.top, 6)

@@ -1,0 +1,207 @@
+{
+  "title": "Native Integration",
+  "summary": "MethodChannel and EventChannel, Swift and Kotlin, Pigeon, federated plugins, PlatformView, and dart:ffi",
+  "lesson": [
+    {
+      "heading": "How Dart and native code talk",
+      "body": "Underneath every channel is the **BinaryMessenger**: Dart and the platform exchange byte buffers over a channel identified by name (use your own prefix, `com.app/battery`, to avoid colliding with plugins). Serialization is handled by a **codec**, the `StandardMessageCodec`, which understands numbers, strings, lists, maps, and bytes, but not your own objects.\n\nThere are three kinds of channel: **MethodChannel** for request/response calls, **EventChannel** for a `Stream` of events coming from native code, and **BasicMessageChannel** for free-form messages in both directions.\n\nTwo properties to remember: communication is **always asynchronous** (even if native code replies immediately, you get a `Future` in Dart), and native handlers run on the **platform's main thread**, so heavy work has to be moved to a background thread on that side, or you'll block the UI on the native end."
+    },
+    {
+      "heading": "From Dart to Swift and Kotlin",
+      "body": "On the Dart side, you call `invokeMethod` and handle `PlatformException` (an error returned by native code) and `MissingPluginException` (no handler registered, typical when the method exists on only one platform).\n\nOn the native side, you register a handler on the engine's `binaryMessenger` and reply with `result(...)`. Always end with the default case: `FlutterMethodNotImplemented` on iOS, `result.notImplemented()` on Android.",
+      "code": "// Dart\nconst channel = MethodChannel('com.app/device');\nfinal level = await channel.invokeMethod<int>('batteryLevel');\n\n// Swift — AppDelegate\nlet channel = FlutterMethodChannel(name: \"com.app/device\",\n                                   binaryMessenger: controller.binaryMessenger)\nchannel.setMethodCallHandler { call, result in\n  switch call.method {\n  case \"batteryLevel\": result(Int(UIDevice.current.batteryLevel * 100))\n  default: result(FlutterMethodNotImplemented)\n  }\n}\n\n// Kotlin — MainActivity\nMethodChannel(flutterEngine.dartExecutor.binaryMessenger, \"com.app/device\")\n  .setMethodCallHandler { call, result ->\n    when (call.method) {\n      \"batteryLevel\" -> result.success(batteryLevel())\n      else -> result.notImplemented()\n    }\n  }"
+    },
+    {
+      "heading": "From native code to Dart",
+      "body": "For a continuous flow of native events (sensors, connectivity, location), use an **EventChannel**: native code implements a `StreamHandler` with `onListen`/`onCancel` and writes to the `EventSink`; in Dart you get a `Stream` to listen to (and to cancel in `dispose`, otherwise the native listener stays active).\n\nIf instead native code needs to *ask* Dart for something, you can flip the roles: `invokeMethod` from native code on the same channel, and `setMethodCallHandler` on the Dart side.",
+      "code": "// Dart\nconst events = EventChannel('com.app/connectivity');\nfinal sub = events.receiveBroadcastStream()\n    .listen((status) => debugPrint('status: $status'));\n\n// Kotlin\nEventChannel(messenger, \"com.app/connectivity\").setStreamHandler(\n  object : EventChannel.StreamHandler {\n    override fun onListen(args: Any?, sink: EventChannel.EventSink) {\n      register { status -> sink.success(status) }\n    }\n    override fun onCancel(args: Any?) { unregister() }\n  }\n)"
+    },
+    {
+      "heading": "Pigeon and plugin structure",
+      "body": "Writing channels by hand means strings and casts: misspell a method name and you find out at runtime. **Pigeon** starts from a Dart definition file and **generates** the code for both sides (Dart, Swift, Kotlin) with typed APIs and messages. It's the recommended approach for any non-trivial integration.\n\nA publishable plugin is **federated**: an *app-facing* package with the public API, a `platform_interface` package that defines the contract (usually with `PlatformInterface` and a token to prevent careless `implements`), and one package per platform, declared in the `pubspec` under `flutter: plugin: platforms:`. That way someone can add support for a new platform without touching your package.",
+      "code": "// pigeons/device.dart — definition only\n@HostApi()\nabstract class DeviceApi {\n  int batteryLevel();\n  @async String deviceName();\n}\n\n@FlutterApi() // native code calls Dart\nabstract class DeviceEvents {\n  void onCharging(bool charging);\n}"
+    },
+    {
+      "heading": "PlatformView and FFI",
+      "body": "**PlatformView** (`UiKitView`, `AndroidView`) embeds a native view in the Flutter tree: maps, WebViews, camera previews. It's the most expensive option, because the native content has to be composited with the Flutter scene: on Android, *hybrid composition* involves cross-thread synchronization and a measurable performance hit, so use it only when you really need it. For raw pixel data, a **Texture** fed by native code is often the better choice.\n\n**dart:ffi** is the other route: it calls C/C++ functions directly, with no codec and no asynchrony, so it's the fastest, ideal for SQLite, cryptography, codecs, inference. In exchange, you manage memory by hand (`malloc`/`calloc` and `free`, or an `Arena`), and a *long* call blocks the isolate because it's synchronous: if it's heavy, move it to an isolate. `ffigen` generates the bindings from C headers.",
+      "code": "final dylib = DynamicLibrary.open('libcrypto.so');\nfinal hash = dylib.lookupFunction<\n    Pointer<Uint8> Function(Pointer<Uint8>, Int32),\n    Pointer<Uint8> Function(Pointer<Uint8>, int)>('sha256');\n\nusing((arena) {\n  final input = arena<Uint8>(data.length); // freed on exit\n  // ...\n});"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"You need to use a native SDK that has no plugin. How do you go about it?\"** Answer: I expose the minimal surface I need through a channel, generated with Pigeon so I get types instead of strings; I keep the native handlers light by moving work to a background thread on that side; I wrap everything behind a domain interface so the UI doesn't know a channel exists; and if the piece is reusable, I package it as a federated plugin.\n\nBe ready to justify your choice among the three routes: **channels/Pigeon** for system APIs (asynchronous, serialized, simple), **FFI** for C libraries when latency matters (synchronous, zero serialization, memory is your responsibility), and **PlatformView** only when you need to display a native view, knowing it's the most expensive."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Are calls on a `MethodChannel` synchronous or asynchronous?",
+      "options": [
+        "Synchronous: the result comes back immediately",
+        "Always asynchronous",
+        "Synchronous on iOS, asynchronous on Android",
+        "It depends on the codec"
+      ],
+      "answer": 1,
+      "explanation": "Messages go through the BinaryMessenger and come back on the event loop: in Dart you always get a `Future`, even when native code replies immediately.",
+      "whyWrong": [
+        "There's no synchronous flavor of MethodChannel: for synchronous calls you need `dart:ffi`.",
+        null,
+        "The behavior is identical on both platforms.",
+        "The codec determines how data is serialized, not whether the call is asynchronous."
+      ]
+    },
+    {
+      "prompt": "You need to show a native map (MapKit / Google Maps SDK) inside a Flutter screen. What do you use?",
+      "options": [
+        "A PlatformView (`UiKitView` / `AndroidView`)",
+        "A `MethodChannel` that returns the pixels",
+        "`dart:ffi`",
+        "A `CustomPainter`"
+      ],
+      "answer": 0,
+      "explanation": "A PlatformView embeds a real native view in the widget tree. It's the right approach, keeping in mind that it's also the most expensive in terms of compositing.",
+      "whyWrong": [
+        null,
+        "A MethodChannel exchanges serialized messages: it isn't designed to carry an interactive UI.",
+        "FFI calls C functions: it knows nothing about native views or their lifecycle.",
+        "A `CustomPainter` draws with Flutter's canvas: it can't host a platform view."
+      ]
+    },
+    {
+      "prompt": "What is Pigeon for?",
+      "options": [
+        "Speeding up channels with a custom binary codec",
+        "Generating typed code for both sides of the channel",
+        "Running Swift code inside Dart",
+        "Automatically converting an Android plugin into an iOS one"
+      ],
+      "answer": 1,
+      "explanation": "From a Dart definition file, Pigeon generates the Dart interface and the Swift/Kotlin one: no more method names as strings or hand-written casts, and errors show up at compile time.",
+      "whyWrong": [
+        "The gain is type safety, not speed: the transport is still the standard one.",
+        null,
+        "The Swift code still runs natively: Pigeon only generates the bridge between the two sides.",
+        "You still have to write the native implementations: Pigeon generates the signatures, not the logic."
+      ]
+    },
+    {
+      "prompt": "What happens if the native side replies with an error and you don't catch anything in Dart?",
+      "code": "final level = await channel.invokeMethod<int>('batteryLevel');",
+      "options": [
+        "`level` becomes `null`",
+        "The call is retried automatically",
+        "An unhandled `PlatformException` is thrown",
+        "The app quits silently"
+      ],
+      "answer": 2,
+      "explanation": "A `result(FlutterError(...))` or `result.error(...)` arrives in Dart as a `PlatformException`; if the method isn't registered on that platform, you get a `MissingPluginException` instead. Both need to be handled.",
+      "whyWrong": [
+        "You only get `null` if native code replies successfully with no value: an error throws an exception.",
+        "There's no automatic retry: the retry policy is up to you.",
+        null,
+        "The error isn't silent: it propagates as an asynchronous exception and ends up in the error handler."
+      ]
+    },
+    {
+      "prompt": "Which thread does a `MethodChannel`'s native handler run on?",
+      "options": [
+        "The platform's main thread",
+        "A background thread chosen by Flutter",
+        "The raster thread",
+        "The same Dart isolate that made the call"
+      ],
+      "answer": 0,
+      "explanation": "Handlers are invoked on the native main thread: if you put heavy work in them, you block the UI on the platform side, so move it to a background queue or thread and call `result` when it's done.",
+      "whyWrong": [
+        null,
+        "Flutter doesn't move the handler to a background thread: you do that yourself when needed.",
+        "The raster thread rasterizes frames and doesn't run channel handlers.",
+        "Native code doesn't run in a Dart isolate: they're two separate worlds connected by the messenger."
+      ]
+    },
+    {
+      "prompt": "Native code needs to send Dart continuous accelerometer updates. Which channel?",
+      "options": [
+        "A `MethodChannel` polled every 16 ms",
+        "`EventChannel`",
+        "`BasicMessageChannel` with a JSON codec",
+        "An invisible PlatformView"
+      ],
+      "answer": 1,
+      "explanation": "`EventChannel` is built for streams: native code implements a `StreamHandler` and writes to the `EventSink`, and in Dart you listen to a `Stream` (and cancel the subscription in `dispose`).",
+      "whyWrong": [
+        "Polling wastes calls and drops events: native push is more accurate and more efficient.",
+        null,
+        "It would work, but you'd have to handle subscribing and unsubscribing by hand, which EventChannel already models.",
+        "PlatformViews are for displaying native views, not for carrying data."
+      ]
+    },
+    {
+      "prompt": "Main advantage of `dart:ffi` over a platform channel?",
+      "options": [
+        "It also works on the web",
+        "It manages memory automatically",
+        "Synchronous calls with no serialization",
+        "It doesn't require any native code"
+      ],
+      "answer": 2,
+      "explanation": "FFI calls the C function directly: no codec, no hop through the event loop. In exchange, the call is synchronous and blocks the isolate, and you manage the memory yourself.",
+      "whyWrong": [
+        "There's no FFI on the web: there you need JavaScript interop.",
+        "It's the opposite: with FFI you allocate and free by hand (`calloc`/`free` or an `Arena`).",
+        null,
+        "You still need a native C/C++ library to load: FFI is how you call it."
+      ]
+    },
+    {
+      "prompt": "In a federated plugin, what is the `platform_interface` package for?",
+      "options": [
+        "Holding the iOS and Android implementations",
+        "Defining the contract every platform implementation must honor",
+        "Publishing the plugin to pub.dev",
+        "Registering the plugin with the engine"
+      ],
+      "answer": 1,
+      "explanation": "The platform_interface declares the API each platform implements (usually by extending `PlatformInterface` with a verification token), so a third party can add a platform without modifying the main package.",
+      "whyWrong": [
+        "The implementations live in separate per-platform packages, not in the interface.",
+        null,
+        "Publishing is independent of the federated structure.",
+        "Registration happens through the `pubspec` and the engine's generated code."
+      ]
+    },
+    {
+      "prompt": "Why can a long list of PlatformViews degrade performance?",
+      "options": [
+        "Because Flutter rebuilds them from scratch every frame",
+        "Because they always use software rendering",
+        "Because each native view spins up an isolate",
+        "Because compositing native views with the Flutter scene costs synchronization and extra layers"
+      ],
+      "answer": 3,
+      "explanation": "Native views don't live in Flutter's layer tree: they have to be composited with it (on Android, via hybrid composition), which costs cross-thread synchronization and intermediate textures. For purely visual content, a `Texture` is often the better choice.",
+      "whyWrong": [
+        "The native view is reused: the problem is compositing, not constant rebuilding.",
+        "Rendering stays hardware-accelerated; the cost is in combining the two worlds.",
+        "Isolates have nothing to do with it: PlatformViews are native objects, not Dart code.",
+        null
+      ]
+    },
+    {
+      "prompt": "With `dart:ffi` you allocate a buffer with `calloc<Uint8>(n)`. Who frees it?",
+      "options": [
+        "Dart's garbage collector, once the `Pointer` is no longer reachable",
+        "You do, with `calloc.free` or by using an `Arena`",
+        "The C library, when the function returns",
+        "Nobody: native memory is released when the isolate shuts down"
+      ],
+      "answer": 1,
+      "explanation": "Native memory lives outside the Dart heap and the GC can't see it: you have to free it by hand with `calloc.free(ptr)`, or with `using((arena) { ... })`, which frees everything when the block exits.",
+      "whyWrong": [
+        "The GC collects the `Pointer` object, not the block of native memory it points to: that stays allocated.",
+        null,
+        "The C library only frees what it allocated itself: you allocated that buffer.",
+        "The memory stays in use for the entire life of the process: it's a leak, plain and simple."
+      ]
+    }
+  ]
+}

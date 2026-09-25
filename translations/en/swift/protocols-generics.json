@@ -1,0 +1,212 @@
+{
+  "title": "Protocols & Generics",
+  "summary": "Protocol-oriented programming, associated types, some/any, and extensions.",
+  "lesson": [
+    {
+      "heading": "Protocol-oriented programming",
+      "body": "In Swift, protocols define contracts that structs, enums, classes, and actors can adopt. **Protocol extensions** let you provide default implementations, giving you code reuse without inheritance, and therefore for value types too.\n\nThe idea is to favor composing small protocols over deep class hierarchies. `protocol P: AnyObject`, on the other hand, restricts adoption to classes only, which you need for `weak` delegates, for example.",
+      "code": "protocol Describable { var name: String { get } }\nextension Describable {\n    func describe() -> String { \"I'm \\(name)\" }\n}\nstruct Dog: Describable { let name = \"Fido\" }"
+    },
+    {
+      "heading": "Dispatch in protocol extensions",
+      "body": "A method declared as a protocol **requirement** uses dynamic dispatch through the witness table: calling it on `any P` runs the concrete type's implementation.\n\nA method defined **only** in the extension is instead resolved statically based on the declared type: if the concrete type has a method with the same name, calling it through `any P` still runs the extension's version. It's one of the most common trick questions.",
+      "code": "protocol P { func a() }\nextension P {\n    func a() { print(\"P.a\") }  // requirement default\n    func b() { print(\"P.b\") }  // not a requirement\n}"
+    },
+    {
+      "heading": "Generics and constraints",
+      "body": "Generic functions and types work on a placeholder `T` constrained with `T: Protocol` or `where` clauses. The compiler can **specialize** the code for each concrete type, giving you the performance of hand-written code.\n\nWith **conditional conformance**, a generic type adopts a protocol only if its parameters satisfy a constraint: for example, `Array` is `Equatable` when `Element: Equatable`.",
+      "code": "func largest<T: Comparable>(_ xs: [T]) -> T? {\n    xs.max()\n}\nextension Array: Describable where Element: Describable { ... }"
+    },
+    {
+      "heading": "Associated types",
+      "body": "An `associatedtype` is a placeholder inside a protocol, pinned down by each conforming type (for example `Collection.Element`). Protocols with associated types or `Self` requirements can't be used as a concrete type without `any`, and even with `any` some operations (like `==` between two `any Equatable`) aren't available.\n\nSince Swift 5.7 there are **primary associated types**: you can write `some Collection<Int>` or `any Sequence<String>`.",
+      "code": "protocol Store {\n    associatedtype Item\n    func save(_ item: Item)\n}\nfunc sum(_ xs: some Collection<Int>) -> Int { xs.reduce(0, +) }"
+    },
+    {
+      "heading": "some vs any",
+      "body": "`some P` is an **opaque type**: it stands for a single concrete type chosen by the implementation and hidden from the caller, but known to the compiler; it enables static dispatch and optimizations. Every `return` must return the same concrete type.\n\n`any P` is an **existential**: a box that can hold any conforming type, even a different one over time, at the cost of possible allocations and dynamic dispatch. Since Swift 6, `any` is required when you use a protocol as a type.",
+      "code": "func makeShape() -> some Shape { Circle() }\nvar shapes: [any Shape] = [Circle(), Square()]"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"What's the difference between `some` and `any`?\"**. Short answer: `some` is a fixed but hidden concrete type, resolved at compile time; `any` is a heterogeneous container with dynamic dispatch. I default to `some` or generics and reach for `any` only when I need heterogeneity.\n\nAlso be ready for the static-dispatch trap in extensions, and for how associated types prevent you from using a protocol as a plain type."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Where do you provide a default implementation for a protocol method?",
+      "options": [
+        "In the protocol declaration itself",
+        "In an abstract base class",
+        "With the `@default` attribute",
+        "In a protocol extension"
+      ],
+      "answer": 3,
+      "explanation": "Protocol extensions can implement requirements, which conforming types can then override.",
+      "whyWrong": [
+        "The protocol body can only declare requirements, not implement them: the default goes in an `extension`.",
+        "Swift has no abstract classes, and a base class would limit adoption to subclasses; protocol extensions work for structs and enums too.",
+        "`@default` doesn't exist in Swift: the mechanism is a protocol extension that implements the method.",
+        null
+      ]
+    },
+    {
+      "prompt": "Which type can NOT conform to `protocol Delegate: AnyObject`?",
+      "options": [
+        "A `final` class",
+        "A struct",
+        "A subclass of `NSObject`",
+        "A generic class"
+      ],
+      "answer": 1,
+      "explanation": "The `AnyObject` constraint restricts adoption to class reference types, so the delegate can be `weak`.",
+      "whyWrong": [
+        "`final` only prevents subclassing: it's still a class, so it satisfies the `AnyObject` constraint.",
+        null,
+        "A subclass of `NSObject` is a class in every sense, so it can adopt a protocol constrained to `AnyObject`.",
+        "Generic parameters don't matter: a generic class is still a reference type and can conform to `Delegate`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "protocol Greeter { func hi() }\nextension Greeter { func hi() { print(\"P\") } }\nstruct S: Greeter { func hi() { print(\"S\") } }\nlet g: any Greeter = S()\ng.hi()",
+      "options": [
+        "P",
+        "Compile error",
+        "S",
+        "Nothing"
+      ],
+      "answer": 2,
+      "explanation": "`hi()` is a protocol requirement, so the call through `any Greeter` goes through the witness table and reaches `S`'s implementation.",
+      "whyWrong": [
+        "It would print P if `hi()` existed only in the extension. Since it's a requirement, the call goes through the witness table and uses `S`'s implementation.",
+        "`S` implements `hi()`, and even without it there'd be the extension's default: the conformance is complete and the code compiles.",
+        null,
+        "The call really happens: `S`'s witness table points to its `hi()`, which prints S."
+      ]
+    },
+    {
+      "prompt": "What does the return type `some View` communicate?",
+      "options": [
+        "Any type conforming to View, different on every call",
+        "A single concrete type, chosen by the implementation and hidden",
+        "A boxed existential like `any View`",
+        "An Optional that can be nil"
+      ],
+      "answer": 1,
+      "explanation": "An opaque type has a fixed identity known to the compiler: the caller only sees the protocol.",
+      "whyWrong": [
+        "That describes `any View`. With `some View` there's exactly one concrete type for that function, the same on every call.",
+        null,
+        "An opaque type isn't boxed: the compiler knows the concrete type and can optimize, whereas `any View` uses an existential container with dynamic dispatch.",
+        "`some` here has nothing to do with `Optional.some`: it denotes an opaque type. An optional opaque type would be written `(some View)?`."
+      ]
+    },
+    {
+      "prompt": "What is an `associatedtype` in a protocol for?",
+      "options": [
+        "To declare a generic parameter of the function",
+        "To make the protocol adoptable only by classes",
+        "To create a global typealias",
+        "To declare a placeholder type pinned down by the conforming type"
+      ],
+      "answer": 3,
+      "explanation": "Each conforming type picks the concrete type, explicitly or through inference (e.g. `Collection`'s `Element`).",
+      "whyWrong": [
+        "Generic function parameters are written `<T>` and chosen by the caller; an `associatedtype` is pinned down by the conforming type instead.",
+        "To restrict adoption to classes you use `: AnyObject`. `associatedtype` introduces a placeholder type, not a constraint on what kind of type adopts it.",
+        "It isn't global: it lives inside the protocol, and each conforming type binds it to its own concrete type, through inference or a local `typealias`.",
+        null
+      ]
+    },
+    {
+      "prompt": "How do you declare that `Array` adopts `Printable` only if its elements do?",
+      "options": [
+        "`extension Array: Printable where Element: Printable`",
+        "`extension Array<Printable>: Printable`",
+        "`extension Array: Printable if Element: Printable`",
+        "`extension Printable where Self == Array`"
+      ],
+      "answer": 0,
+      "explanation": "This is conditional conformance (SE-0143): the `where` clause on the extension constrains the conformance.",
+      "whyWrong": [
+        null,
+        "`Array<Printable>` would mean an array of existentials, not a constraint on the elements: conditional conformance is expressed with `where`.",
+        "Swift doesn't use `if` in type declarations: the condition is written with the `where Element: Printable` clause.",
+        "Extending the protocol adds implementations to types that already conform, but it doesn't declare any conformance of `Array` to `Printable`."
+      ]
+    },
+    {
+      "prompt": "What happens when you compile this function (without a result builder)?",
+      "code": "func make(flag: Bool) -> some Shape {\n    if flag { return Circle() }\n    else { return Square() }\n}",
+      "options": [
+        "It compiles and returns `any Shape`",
+        "Error: the returns have different concrete types",
+        "It compiles, and the type is decided at runtime",
+        "It compiles only if `Shape` is a class"
+      ],
+      "answer": 1,
+      "explanation": "An opaque result type must correspond to a single concrete type across all return paths.",
+      "whyWrong": [
+        "The compiler doesn't fall back to `any Shape` on its own: `some` promises a single concrete type, and `Circle` and `Square` are two different types.",
+        null,
+        "Opaque types are resolved at compile time: the concrete type must be known and unique, not picked at runtime.",
+        "Even with classes, an opaque type requires the same concrete type in every return. Here you need `any Shape` or a type eraser."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "protocol Greeter {}\nextension Greeter { func hi() { print(\"P\") } }\nstruct S: Greeter { func hi() { print(\"S\") } }\nlet g: any Greeter = S()\ng.hi()",
+      "options": [
+        "P",
+        "S",
+        "Compile error",
+        "Nothing"
+      ],
+      "answer": 0,
+      "explanation": "`hi()` isn't a requirement; it lives only in the extension, so dispatch is static on the declared type `any Greeter`.",
+      "whyWrong": [
+        null,
+        "It would be S if `hi()` were declared in the protocol. Here it lives only in the extension, so dispatch is static and uses the extension's implementation.",
+        "The code compiles: `any Greeter` sees `hi()` thanks to the extension, and `S`'s method is just an extra method, not an override.",
+        "The call does run: the compiler resolves it statically to the extension's implementation, which prints P."
+      ]
+    },
+    {
+      "prompt": "Why doesn't this function compile?",
+      "code": "func same(_ a: any Equatable, _ b: any Equatable) -> Bool {\n    a == b\n}",
+      "options": [
+        "`Equatable` can't be used with `any`",
+        "The signature is missing `throws`",
+        "`==` requires both operands to have the same `Self` type",
+        "Existentials don't support static methods"
+      ],
+      "answer": 2,
+      "explanation": "`Equatable` has a `Self` requirement: two `any Equatable` values could hold different concrete types, so `==` isn't available.",
+      "whyWrong": [
+        "Since Swift 5.7, `any Equatable` is a valid type (SE-0309). The only problem is that `==` requires two operands of the same `Self` type.",
+        "Neither `==` nor the function throws, so `throws` is irrelevant: the error comes from the `Self` requirement of `==`.",
+        null,
+        "The static nature of `==` isn't the point: the two arguments need the same `Self` type, and two separate existentials don't guarantee that."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "func maxOf<T: Comparable>(_ a: T, _ b: T) -> T {\n    a > b ? a : b\n}\nprint(maxOf(3, 2.5))",
+      "options": [
+        "3.0",
+        "3",
+        "2.5",
+        "Compile error"
+      ],
+      "answer": 0,
+      "explanation": "`T` must be a single type: `2.5` forces `Double`, so the literal `3` becomes a `Double` too and `3.0` is printed.",
+      "whyWrong": [
+        null,
+        "On its own `3` would be an `Int`, but `T` is a single type and `2.5` forces `Double`: the literal `3` becomes a `Double` and `3.0` is printed.",
+        "`maxOf` returns the larger value, and 3 > 2.5: the right value is 3, printed as `3.0` because it's a `Double`.",
+        "It looks like an `Int`/`Double` mix, but these are literals: Swift finds a single `T` compatible with both, `Double`, and the code compiles."
+      ]
+    }
+  ]
+}

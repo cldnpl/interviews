@@ -17,16 +17,16 @@ struct TopicView: View {
                 TopicHero(track: track, topic: topic)
 
                 HStack(spacing: 12) {
-                    StatBox(value: "\(stat.bestScore)%", label: "Record", color: theme.primary)
-                    StatBox(value: "\(stat.completedRuns)", label: "Quiz fatti", color: theme.primary)
-                    StatBox(value: state.isLessonRead(track, topic.id) ? "Sì" : "No", label: "Lezione letta", color: theme.primary)
+                    StatBox(value: "\(stat.bestScore)%", label: "Best", color: theme.primary)
+                    StatBox(value: "\(stat.completedRuns)", label: "Quizzes taken", color: theme.primary)
+                    StatBox(value: state.isLessonRead(track, topic.id) ? String(localized: "Yes", bundle: .app) : String(localized: "No", bundle: .app), label: "Lesson read", color: theme.primary)
                 }
 
                 NavigationLink {
                     LessonView(track: track, topic: topic)
                 } label: {
-                    ActionRow(icon: "book.fill", title: "Studia la lezione",
-                              subtitle: "\(topic.lesson.count) schede, circa \(max(2, topic.lesson.count)) minuti", theme: theme)
+                    ActionRow(icon: "book.fill", title: "Study the lesson",
+                              subtitle: "\(topic.lesson.count) cards, about \(max(2, topic.lesson.count)) minutes", theme: theme)
                 }
                 .buttonStyle(.plain)
 
@@ -35,8 +35,8 @@ struct TopicView: View {
                                           items: ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier),
                                           title: topic.title)
                 } label: {
-                    ActionRow(icon: "bolt.fill", title: "Fai il quiz",
-                              subtitle: "\(ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier).count) domande per il livello \(state.tier.name)", theme: theme)
+                    ActionRow(icon: "bolt.fill", title: "Take the quiz",
+                              subtitle: "\(ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier).count) questions for the \(state.tier.name) level", theme: theme)
                 }
                 .buttonStyle(.plain)
             }
@@ -83,7 +83,7 @@ struct TopicHero: View {
 
 struct StatBox: View {
     let value: String
-    let label: String
+    let label: LocalizedStringKey
     let color: Color
 
     var body: some View {
@@ -103,8 +103,8 @@ struct StatBox: View {
 
 struct ActionRow: View {
     let icon: String
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
     let theme: Theme
 
     var body: some View {

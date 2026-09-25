@@ -1,0 +1,208 @@
+{
+  "title": "Widgets and Lifecycle",
+  "summary": "Stateless vs Stateful, the State lifecycle, BuildContext, and const",
+  "lesson": [
+    {
+      "heading": "Everything is a widget",
+      "body": "A widget is an **immutable description** of part of the UI, not the UI itself. The `build` method returns a fresh configuration every time it's called and is meant to be **fast and side-effect free**.\n\nBecause widgets are lightweight objects, recreating them on every build is cheap: the heavy lifting (layout and paint) is done by Elements and RenderObjects, which get reused."
+    },
+    {
+      "heading": "Stateless vs Stateful",
+      "body": "A `StatelessWidget` depends only on its constructor parameters and on the InheritedWidgets it reads from the context. A `StatefulWidget` creates a `State` object that **survives rebuilds** and holds mutable data.\n\n`setState` marks the Element as **dirty** and schedules a rebuild for the next frame: it doesn't rebuild immediately and doesn't recreate the State. Keep state as low in the tree as possible so less gets rebuilt.",
+      "code": "class Counter extends StatefulWidget {\n  const Counter({super.key});\n  @override\n  State<Counter> createState() => _CounterState();\n}\n\nclass _CounterState extends State<Counter> {\n  int n = 0;\n  @override\n  Widget build(BuildContext context) =>\n      TextButton(onPressed: () => setState(() => n++), child: Text('$n'));\n}"
+    },
+    {
+      "heading": "The State lifecycle",
+      "body": "Order: `createState`, `initState` (called once; this is where you create controllers and subscriptions), `didChangeDependencies` (right after initState and whenever an InheritedWidget you depend on changes), `build`.\n\nWhen the parent rebuilds with a new configuration, `didUpdateWidget(oldWidget)` is called, then `build`. On removal: `deactivate` and finally `dispose`, where you release controllers, stream subscriptions, and listeners. After `dispose`, the `mounted` property is false.",
+      "code": "@override\nvoid initState() {\n  super.initState();\n  _ctrl = AnimationController(vsync: this, duration: kThemeAnimationDuration);\n}\n\n@override\nvoid dispose() {\n  _ctrl.dispose();\n  super.dispose();\n}"
+    },
+    {
+      "heading": "BuildContext",
+      "body": "A `BuildContext` is actually the widget's **Element**: it represents the widget's position in the tree. `Theme.of(context)` and `Navigator.of(context)` walk up the ancestors starting from that point, which is why a context \"above\" the Scaffold can't find the Scaffold.\n\nAfter an `await`, the widget may have been unmounted: check `context.mounted` (or `mounted` inside the State) before using the context. That's exactly what the `use_build_context_synchronously` lint flags.",
+      "code": "onPressed: () async {\n  await repo.save();\n  if (!context.mounted) return;\n  Navigator.of(context).pop();\n}"
+    },
+    {
+      "heading": "const constructors",
+      "body": "A widget with a `const` constructor, instantiated with `const`, is **the same instance** on every build. When Flutter compares the old and new widget and finds them identical, it skips updating the entire subtree.\n\nThat's why the linter suggests `prefer_const_constructors`: it's a free optimization. It only works if all the parameters are constants too.",
+      "code": "const Padding(\n  padding: EdgeInsets.all(16),\n  child: Text('Static title'),\n)"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"Walk me through the lifecycle of a StatefulWidget.\"** Answer with the sequence createState, initState, didChangeDependencies, build, didUpdateWidget, deactivate, dispose, and say what goes in each: controllers in initState, InheritedWidget lookups in didChangeDependencies, comparing against oldWidget in didUpdateWidget, cleanup in dispose.\n\nThrow in two pitfalls that show experience: don't call `Theme.of` in initState, and check `mounted` after an async gap."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Where do you create an `AnimationController` in a StatefulWidget?",
+      "options": [
+        "In `build()`",
+        "In the widget's constructor",
+        "In `initState()`, and release it in `dispose()`",
+        "In `didUpdateWidget()`"
+      ],
+      "answer": 2,
+      "explanation": "`initState` is called exactly once per State: it's the place for resources with a lifecycle, which you release in `dispose`. In `build` you'd create a controller on every rebuild.",
+      "whyWrong": [
+        "`build()` can be called many times: you'd create a new controller on every rebuild, losing the animation and leaking memory.",
+        "The widget is an immutable configuration that gets recreated often; plus, there's no `vsync` from the State there.",
+        null,
+        "`didUpdateWidget` only fires when the parent passes a new configuration, not on creation: it's for updating the controller, not creating it."
+      ]
+    },
+    {
+      "prompt": "What does `setState` do?",
+      "options": [
+        "Marks the Element dirty and schedules a rebuild",
+        "Immediately rebuilds the whole tree",
+        "Saves the state to disk",
+        "Recreates the State object"
+      ],
+      "answer": 0,
+      "explanation": "`setState` runs the callback and marks the Element to be rebuilt on the next frame. The State stays the same object.",
+      "whyWrong": [
+        null,
+        "The rebuild is neither immediate nor global: `setState` marks only that Element dirty, and the rebuild happens on the next frame.",
+        "`setState` has nothing to do with persistence: the state lives in memory, in the State object.",
+        "The State object survives rebuilds: `setState` reruns `build` on the same State, it doesn't create a new one."
+      ]
+    },
+    {
+      "prompt": "Why is calling `Theme.of(context)` in `initState` a problem?",
+      "options": [
+        "The Theme doesn't exist before the first frame",
+        "The context is null in initState",
+        "It's allowed, just slow",
+        "You can't depend on an InheritedWidget there: use didChangeDependencies"
+      ],
+      "answer": 3,
+      "explanation": "Registering a dependency isn't allowed yet in initState (it asserts in debug). `didChangeDependencies` is called right after and is the right place.",
+      "whyWrong": [
+        "The Theme already exists among the ancestors; the problem is that in `initState` you can't register a dependency on an InheritedWidget yet.",
+        "In `initState` the `context` exists and is valid; it's the dependency on an InheritedWidget that isn't allowed yet.",
+        "It's not about speed: in debug an assert fires, because the dependency wouldn't be tracked correctly.",
+        null
+      ]
+    },
+    {
+      "prompt": "The parent rebuilds and passes a new `title` to your StatefulWidget. What gets called before `build`?",
+      "options": [
+        "initState",
+        "didUpdateWidget",
+        "didChangeDependencies",
+        "createState"
+      ],
+      "answer": 1,
+      "explanation": "The State is reused: Flutter updates `widget` and calls `didUpdateWidget(oldWidget)`, where you can compare the old and new configuration.",
+      "whyWrong": [
+        "`initState` is called only once per State; when the parent just changes the parameters, the State is reused.",
+        null,
+        "`didChangeDependencies` fires when an InheritedWidget you depend on changes, not when the widget's parameters change.",
+        "`createState` is called only when a new Element is created: with the same type and key, the existing State is reused."
+      ]
+    },
+    {
+      "prompt": "What's wrong with this code?",
+      "code": "ElevatedButton(\n  onPressed: () async {\n    await api.save();\n    Navigator.of(context).pop();\n  },\n  child: const Text('Save'),\n)",
+      "options": [
+        "Navigator can't be used in onPressed",
+        "setState is missing after the await",
+        "It uses the context after an async gap without a check",
+        "`const` isn't allowed on Text"
+      ],
+      "answer": 2,
+      "explanation": "The widget can be unmounted during the await, leaving the context invalid. You need to check `context.mounted` before using it.",
+      "whyWrong": [
+        "Using Navigator in `onPressed` is perfectly normal; the risk is doing it after an `await` without checking `context.mounted`.",
+        "You're not changing the widget's state here, you're navigating: `setState` isn't needed and wouldn't fix the context problem.",
+        null,
+        "`const Text('Save')` is valid and actually recommended, since the content is constant."
+      ]
+    },
+    {
+      "prompt": "When is a StatelessWidget the right choice?",
+      "options": [
+        "When the widget has no children",
+        "When it makes network calls",
+        "Never: it's deprecated",
+        "When it depends only on parameters and InheritedWidgets"
+      ],
+      "answer": 3,
+      "explanation": "A StatelessWidget can still rebuild when an InheritedWidget it reads changes; it just has no mutable state of its own.",
+      "whyWrong": [
+        "The number of children doesn't matter: even a widget with many children can be stateless if it has no mutable state of its own.",
+        "A network call means loading and results that change over time: that needs state, not a StatelessWidget.",
+        "StatelessWidget isn't deprecated at all: it's the preferred choice when there's no local mutable state.",
+        null
+      ]
+    },
+    {
+      "prompt": "Why does a `const` widget save work when the parent rebuilds?",
+      "options": [
+        "It's the same instance: Flutter skips the update",
+        "It's painted on a separate layer",
+        "It has no associated Element",
+        "It's compiled to native code"
+      ],
+      "answer": 0,
+      "explanation": "If the new widget is identical to the old one, `updateChild` doesn't update the Element and its `build` doesn't run again.",
+      "whyWrong": [
+        null,
+        "`const` doesn't create separate layers: that's what `RepaintBoundary` does, for example. The benefit is skipping the Element update.",
+        "A `const` widget still has its own Element in the tree; that Element simply doesn't get updated.",
+        "`const` is about compile-time canonicalization of the Dart instance, not special compilation to native code."
+      ]
+    },
+    {
+      "prompt": "What exactly is a `BuildContext`?",
+      "options": [
+        "A global app singleton",
+        "The widget's Element in the tree",
+        "The widget's RenderObject",
+        "A copy of the State"
+      ],
+      "answer": 1,
+      "explanation": "`Element` implements `BuildContext`: the context is a reference to the widget's position in the Element tree.",
+      "whyWrong": [
+        "Every mounted widget has its own context: it isn't global, it represents that widget's position in the tree.",
+        null,
+        "The RenderObject handles layout and paint and is a separate object; it's the Element that implements `BuildContext`.",
+        "The context doesn't copy the State: it's the Element, which at most holds a reference to the State."
+      ]
+    },
+    {
+      "prompt": "What's missing from this State?",
+      "code": "class _S extends State<W> {\n  late final StreamSubscription sub;\n\n  @override\n  void initState() {\n    super.initState();\n    sub = stream.listen((_) => setState(() {}));\n  }\n  // build omitted\n}",
+      "options": [
+        "A call to `super.build()`",
+        "setState inside initState",
+        "Making `sub` nullable",
+        "`dispose()` with `sub.cancel()`"
+      ],
+      "answer": 3,
+      "explanation": "Without cancel, the subscription stays active after removal: a memory leak plus `setState() called after dispose()`.",
+      "whyWrong": [
+        "`build` in State is abstract and isn't called via `super.build()`; the real problem is the resource that's never released.",
+        "`setState` in `initState` isn't needed: the first build happens right after anyway.",
+        "`late final` is fine because `sub` is assigned in `initState`; the problem is that nobody cancels it.",
+        null
+      ]
+    },
+    {
+      "prompt": "A widget is inserted and then permanently removed. What's the correct order?",
+      "options": [
+        "initState, build, dispose, deactivate",
+        "createState, build, initState, dispose",
+        "createState, initState, didChangeDeps, build, deactivate, dispose",
+        "initState, didUpdateWidget, build, dispose"
+      ],
+      "answer": 2,
+      "explanation": "`didChangeDependencies` always follows `initState`; on removal, `deactivate` comes first and then, if the Element isn't reinserted within the same frame, `dispose`.",
+      "whyWrong": [
+        "`deactivate` always comes before `dispose`, and `createState` is missing at the start.",
+        "`initState` is called before the first `build`, not after; and `deactivate` is missing before `dispose`.",
+        null,
+        "`didUpdateWidget` isn't part of the initial mount: it only fires when the parent provides a new configuration."
+      ]
+    }
+  ]
+}

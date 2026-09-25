@@ -1,0 +1,209 @@
+{
+  "title": "Layout",
+  "summary": "Constraints, Row/Column/Expanded, Stack, overflow, LayoutBuilder, and slivers",
+  "lesson": [
+    {
+      "heading": "Constraints go down, sizes go up",
+      "body": "The golden rule: **constraints go down, sizes go up, the parent sets the position**. The parent passes the child a `BoxConstraints` (min/max width and height), the child picks a size within those limits, and the parent positions it.\n\n**Tight** constraints (min == max) force an exact size: that's why a `Container(width: 100)` at the root of the app still fills the screen. **Loose** constraints (min 0) give the child freedom.",
+      "code": "// The root receives tight constraints = screen size\nrunApp(\n  Center( // loosens the constraints\n    child: Container(width: 100, height: 100, color: Colors.red),\n  ),\n);"
+    },
+    {
+      "heading": "Row, Column, and Expanded",
+      "body": "`Row` and `Column` are `Flex` widgets: they have a **main axis** and a **cross axis**, controlled by `mainAxisAlignment` and `crossAxisAlignment`. Non-flexible children receive **unbounded** constraints on the main axis and are measured first.\n\n`Expanded` makes the child fill the remaining space (`FlexFit.tight`); `Flexible` lets it be smaller (`FlexFit.loose`). The `flex` parameter splits the space proportionally.",
+      "code": "Row(\n  children: [\n    const Icon(Icons.person),\n    Expanded(\n      child: Text(name, overflow: TextOverflow.ellipsis),\n    ),\n    const Icon(Icons.chevron_right),\n  ],\n)"
+    },
+    {
+      "heading": "Overflow errors",
+      "body": "Yellow-and-black stripes and `A RenderFlex overflowed by N pixels` mean the children exceed the available space: usually you fix it with `Expanded`/`Flexible` or by making the content scrollable.\n\nThe `Vertical viewport was given unbounded height` error comes from putting a `ListView` inside a `Column`: the Column gives infinite height and the list wants to expand forever. Fix: wrap the ListView in `Expanded`.",
+      "code": "Column(\n  children: [\n    const Header(),\n    Expanded(\n      child: ListView.builder(\n        itemCount: items.length,\n        itemBuilder: (_, i) => ItemTile(items[i]),\n      ),\n    ),\n  ],\n)"
+    },
+    {
+      "heading": "Stack and LayoutBuilder",
+      "body": "`Stack` layers its children on top of each other; `Positioned` anchors them to the edges, and `alignment` places the non-positioned ones. `clipBehavior` decides whether anything that spills out gets clipped.\n\n`LayoutBuilder` gives you the **parent's constraints**, ideal for making a single component responsive. `MediaQuery.sizeOf(context)`, on the other hand, gives the size of the whole screen and is preferable to `MediaQuery.of` because it rebuilds only when the size changes.",
+      "code": "LayoutBuilder(\n  builder: (context, constraints) {\n    return constraints.maxWidth > 600\n        ? const TwoPaneView()\n        : const SinglePaneView();\n  },\n)"
+    },
+    {
+      "heading": "Scrolling and slivers",
+      "body": "`ListView.builder` and `GridView.builder` build **only the visible items**: essential for long lists. `shrinkWrap: true`, by contrast, forces every child to be measured and defeats lazy building.\n\nTo combine collapsing headers, lists, and grids in **a single scroll view**, use `CustomScrollView` with slivers: `SliverAppBar`, `SliverList`, `SliverGrid`, `SliverToBoxAdapter`.",
+      "code": "CustomScrollView(\n  slivers: [\n    const SliverAppBar(pinned: true, expandedHeight: 200),\n    SliverList.builder(\n      itemCount: items.length,\n      itemBuilder: (_, i) => ItemTile(items[i]),\n    ),\n  ],\n)"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"Why do I get 'unbounded height' with a ListView inside a Column?\"** Explain the constraints rule: the Column passes unlimited height to non-flexible children, the ListView wants to take up the whole main axis, so the layout is undefined. Fix: `Expanded` (preferred) or a fixed height; `shrinkWrap` only for short lists.\n\nShow that you know the \"constraints go down, sizes go up, parent sets position\" rule and the difference between tight and loose: it's the key to explaining almost any layout bug."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What's the basic layout rule in Flutter?",
+      "options": [
+        "The child chooses its position and size",
+        "The parent always forces the exact size",
+        "Constraints go down, sizes go up, the parent positions",
+        "Layout is computed at compile time"
+      ],
+      "answer": 2,
+      "explanation": "The parent passes constraints, the child picks its own size within those limits, and the parent decides where to put it.",
+      "whyWrong": [
+        "The child only picks its own size within the constraints it receives; the position is always decided by the parent.",
+        "The parent imposes constraints, not necessarily an exact size: with loose constraints the child can be smaller.",
+        null,
+        "Layout happens at runtime, on every frame that needs it, because it depends on the screen and the content."
+      ]
+    },
+    {
+      "prompt": "What happens with this layout?",
+      "code": "Column(\n  children: [\n    const Text('Title'),\n    ListView(children: items),\n  ],\n)",
+      "options": [
+        "Error: viewport with unbounded height",
+        "The ListView takes up the remaining space",
+        "A 0 px yellow-and-black overflow",
+        "The ListView is visible but doesn't scroll"
+      ],
+      "answer": 0,
+      "explanation": "The Column gives unlimited height to non-flexible children and the ListView wants to expand across the whole main axis: you need `Expanded` around the ListView.",
+      "whyWrong": [
+        null,
+        "Taking up the remaining space requires `Expanded`: without it, the Column passes unlimited height and the ListView doesn't know how tall to be.",
+        "It's not a visible overflow: the ListView gets unbounded height and Flutter throws a layout error.",
+        "The ListView can't even lay out with infinite height, so it isn't shown at all: you get an error."
+      ]
+    },
+    {
+      "prompt": "How do you make a Row child take up all the remaining space?",
+      "options": [
+        "With `SizedBox.expand`",
+        "With `mainAxisSize: MainAxisSize.max`",
+        "With `Container(width: double.infinity)`",
+        "By wrapping it in `Expanded`"
+      ],
+      "answer": 3,
+      "explanation": "`Expanded` gives the child the remaining space on the main axis. An infinite width inside a Row causes a layout error instead.",
+      "whyWrong": [
+        "Inside a Row the width is unbounded: `SizedBox.expand` tries to become infinite and causes a layout error.",
+        "`mainAxisSize` controls how much space the Row itself takes up, not how it's distributed among the children.",
+        "An infinite width in a Row, which passes unbounded constraints, throws an error instead of filling the space.",
+        null
+      ]
+    },
+    {
+      "prompt": "What's the difference between `Expanded` and `Flexible`?",
+      "options": [
+        "Expanded only works in a Column",
+        "Expanded is Flexible with `FlexFit.tight`",
+        "Flexible ignores the flex parameter",
+        "Flexible forces the child to fill the space"
+      ],
+      "answer": 1,
+      "explanation": "`Expanded` extends `Flexible` and forces `fit: FlexFit.tight`; with `Flexible` (loose) the child can be smaller than the space it's given.",
+      "whyWrong": [
+        "Both work in any Flex: Row, Column, and Flex.",
+        null,
+        "Flexible absolutely respects `flex`: it uses it to split the space, just like Expanded.",
+        "It's the other way around: Expanded (tight) forces the child to fill; Flexible (loose) lets it be smaller."
+      ]
+    },
+    {
+      "prompt": "What size is the Container?",
+      "code": "void main() {\n  runApp(\n    Container(width: 100, height: 100, color: Colors.red),\n  );\n}",
+      "options": [
+        "100x100 in the top-left corner",
+        "100x100, centered",
+        "The whole screen: tight constraints",
+        "Error: MaterialApp is missing"
+      ],
+      "answer": 2,
+      "explanation": "The root receives tight constraints equal to the screen, so the Container's width and height are ignored. You need a `Center` or `Align` to loosen them.",
+      "whyWrong": [
+        "The root receives tight constraints equal to the screen: the Container's width and height can't be honored.",
+        "Centering it would require a `Center`, which loosens the constraints; without one, the Container is forced to fill the screen.",
+        null,
+        "MaterialApp isn't required: `runApp` accepts any widget, and a red Container doesn't need Material."
+      ]
+    },
+    {
+      "prompt": "When should you use `LayoutBuilder` instead of `MediaQuery`?",
+      "options": [
+        "Never, MediaQuery is always better",
+        "To read the pixel density",
+        "To handle the safe area",
+        "To adapt to the parent's constraints"
+      ],
+      "answer": 3,
+      "explanation": "LayoutBuilder gives the space actually available to that widget, not the screen size: ideal for reusable components that live in different contexts.",
+      "whyWrong": [
+        "MediaQuery gives the screen size, not the space actually available to the widget: they aren't interchangeable.",
+        "Density comes from `MediaQuery.devicePixelRatioOf`; LayoutBuilder provides constraints, not display information.",
+        "For the safe area you use `SafeArea` or `MediaQuery.paddingOf`; LayoutBuilder knows nothing about notches or system bars.",
+        null
+      ]
+    },
+    {
+      "prompt": "A Row with long text shows \"RenderFlex overflowed\". What's the idiomatic fix?",
+      "options": [
+        "Wrap the Text in Expanded or Flexible",
+        "Reduce the fontSize",
+        "Replace the Row with a Stack",
+        "Set `mainAxisSize: MainAxisSize.min`"
+      ],
+      "answer": 0,
+      "explanation": "Inside a Flexible, the Text receives a finite width and can wrap or use an ellipsis instead of overflowing.",
+      "whyWrong": [
+        null,
+        "Shrinking the font only hides the problem for that text on that screen: with longer text, the overflow comes back.",
+        "A Stack would layer the children instead of placing them side by side: you'd change the layout instead of constraining the text's width.",
+        "`MainAxisSize.min` makes the Row shrink, but the Text still gets unbounded width and keeps overflowing."
+      ]
+    },
+    {
+      "prompt": "Why is `ListView(shrinkWrap: true)` with thousands of items a bad idea?",
+      "options": [
+        "shrinkWrap disables scrolling",
+        "It has to lay out every child to measure itself",
+        "It's deprecated in Flutter 3",
+        "It causes horizontal overflow"
+      ],
+      "answer": 1,
+      "explanation": "To know its own height, a shrink-wrapped list has to measure all of its content, losing the benefits of lazy building.",
+      "whyWrong": [
+        "A shrink-wrapped list still scrolls; the problem is that it measures every child and loses lazy building.",
+        null,
+        "`shrinkWrap` isn't deprecated: it's handy for short lists and only expensive with many items.",
+        "`shrinkWrap` is about the extent along the scroll axis and doesn't cause horizontal overflow."
+      ]
+    },
+    {
+      "prompt": "You want a collapsing header + a list + a grid in a single scroll view. What do you use?",
+      "options": [
+        "A Column with a ListView and a GridView",
+        "NestedScrollView, necessarily",
+        "CustomScrollView with SliverAppBar, SliverList, SliverGrid",
+        "SingleChildScrollView with shrinkWrap"
+      ],
+      "answer": 2,
+      "explanation": "Slivers share a single viewport and stay lazy. Nesting scrollable lists in a Column creates multiple scroll views or forces you into shrinkWrap.",
+      "whyWrong": [
+        "A ListView and a GridView in a Column get unbounded height: an error, or else separate scroll views and costly shrinkWrap.",
+        "NestedScrollView is for when the header has to coordinate with separate inner scroll views; here a single viewport is enough.",
+        null,
+        "Putting everything in a SingleChildScrollView builds every item up front, losing lazy building."
+      ]
+    },
+    {
+      "prompt": "In a Stack, how do you position a child 16 px from the bottom and right edges?",
+      "options": [
+        "`Positioned(bottom: 16, right: 16, child: ...)`",
+        "Padding with EdgeInsets.only",
+        "Transform.translate",
+        "Align with bottomRight and a margin"
+      ],
+      "answer": 0,
+      "explanation": "`Positioned` anchors the child to the Stack's edges. It must be a direct child of the Stack.",
+      "whyWrong": [
+        null,
+        "Padding alone doesn't move the child to the bottom right: by default a Stack aligns non-positioned children to the top left.",
+        "`Transform.translate` only shifts the painting and requires you to know the sizes: it doesn't anchor the child to the edges.",
+        "Align has no `margin` property: you'd need an extra Padding, whereas `Positioned` does it directly."
+      ]
+    }
+  ]
+}

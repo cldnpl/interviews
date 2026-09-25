@@ -1,0 +1,206 @@
+{
+  "title": "Navigation",
+  "summary": "Navigator 1.0, named routes, Router, go_router, results, and deep links",
+  "lesson": [
+    {
+      "heading": "Navigator 1.0",
+      "body": "The `Navigator` manages a **stack of routes** imperatively: `push` adds a screen, `pop` removes it. `pushReplacement` replaces the current route (e.g. splash to home), and `pushAndRemoveUntil` clears the stack down to a condition (e.g. after login or logout).\n\n`MaterialPageRoute` and `CupertinoPageRoute` provide platform transitions, including swipe-back on iOS.",
+      "code": "Navigator.of(context).pushAndRemoveUntil(\n  MaterialPageRoute(builder: (_) => const HomePage()),\n  (route) => false, // removes everything\n);"
+    },
+    {
+      "heading": "Passing data and results",
+      "body": "You pass data to the new screen through its **constructor**. To get a result back, `push` returns a `Future<T?>` that completes when the route is closed with `pop(context, value)`.\n\nThe result is **nullable**: if the user goes back with the gesture or the system button, the Future completes with `null`. After the `await`, check `context.mounted` before using the context.",
+      "code": "final picked = await Navigator.of(context).push<Color>(\n  MaterialPageRoute(builder: (_) => const ColorPicker()),\n);\nif (picked != null && context.mounted) {\n  setState(() => color = picked);\n}\n\n// in ColorPicker\nNavigator.pop(context, Colors.teal);"
+    },
+    {
+      "heading": "Named routes",
+      "body": "With `routes` or `onGenerateRoute` on `MaterialApp`, you navigate with `pushNamed('/details', arguments: id)` and read the arguments with `ModalRoute.of(context)!.settings.arguments`.\n\nThe Flutter docs now **recommend against** named routes for most apps: deep link behavior can't be customized, and on the web they don't handle the browser's forward button. The arguments are also `Object?`, so they aren't type-safe."
+    },
+    {
+      "heading": "Navigator 2.0 and Router",
+      "body": "Navigator 2.0 (the Router API) is **declarative**: the page stack is derived from app state through a list of `Page` objects. A `RouterDelegate` builds the Navigator, and a `RouteInformationParser` converts URLs to state and back.\n\nIt was created to support web URLs, deep links, and arbitrary stack changes, but it's verbose. That's why in practice you use a package like **go_router**, maintained by the Flutter team."
+    },
+    {
+      "heading": "go_router and deep links",
+      "body": "go_router maps URLs to screens with `GoRoute(path: '/users/:id')` and reads parameters from `state.pathParameters` and `state.uri.queryParameters`. `context.go` **sets the stack** based on the URL, while `context.push` adds a route on top of the current stack.\n\n`redirect` centralizes guards (e.g. authentication), and `ShellRoute` and `StatefulShellRoute` handle persistent layouts and bottom navigation with one stack per tab. Deep links also need native configuration: App Links on Android, Universal Links on iOS (Associated Domains + an `apple-app-site-association` file).",
+      "code": "final router = GoRouter(\n  redirect: (context, state) =>\n      !auth.isLoggedIn && state.matchedLocation != '/login' ? '/login' : null,\n  routes: [\n    GoRoute(path: '/', builder: (_, __) => const HomePage()),\n    GoRoute(\n      path: '/users/:id',\n      builder: (_, s) => UserPage(id: s.pathParameters['id']!),\n    ),\n  ],\n);"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"How do you handle navigation, auth, and deep links in a Flutter app?\"** A concise answer: go_router with declarative, URL-based routing, `redirect` for the auth guard (with `refreshListenable` to react to login), `StatefulShellRoute` for tabs, and native configuration for App Links and Universal Links.\n\nIf they ask about Navigator 1.0 vs. 2.0: the first is imperative and simple, while the second makes the stack a function of state, which you need for the web and complex deep links."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "How do you get a value back from a screen that's being closed?",
+      "options": [
+        "Through a global variable",
+        "With setState in the child screen",
+        "`await Navigator.push(...)` and `pop(context, value)`",
+        "With `Navigator.replace`"
+      ],
+      "answer": 2,
+      "explanation": "`push` returns a Future that completes with the value passed to `pop`. It's the idiomatic way to get results.",
+      "whyWrong": [
+        "A global variable creates coupling and hard-to-trace bugs: `push` already returns a Future with the result.",
+        "`setState` only updates the child screen's State and passes nothing back to the previous screen.",
+        null,
+        "`Navigator.replace` swaps out a route and doesn't return any result."
+      ]
+    },
+    {
+      "prompt": "After login, \"back\" must not return to the login screen. What do you use?",
+      "options": [
+        "`pushReplacement` or `pushAndRemoveUntil`",
+        "`push`",
+        "`maybePop`",
+        "`popUntil`"
+      ],
+      "answer": 0,
+      "explanation": "Replacing the route (or clearing the stack) removes login from the history; with `push` it would stay underneath home.",
+      "whyWrong": [
+        null,
+        "With `push`, login stays in the stack under home: pressing back would take you there.",
+        "`maybePop` closes the current route if it can, but doesn't remove login from the history.",
+        "`popUntil` removes routes from the top, but doesn't put home in place of login."
+      ]
+    },
+    {
+      "prompt": "The user closes the page with the system back button. What does this print?",
+      "code": "final r = await Navigator.of(context).push<bool>(\n  MaterialPageRoute(builder: (_) => const ConfirmPage()),\n);\nprint(r);",
+      "options": [
+        "false",
+        "true",
+        "Throws an exception",
+        "null"
+      ],
+      "answer": 3,
+      "explanation": "Closing without passing a value to `pop` completes the Future with `null`: that's why the result type is `bool?`.",
+      "whyWrong": [
+        "Closing without a value doesn't produce `false`: the Future completes with `null`, which is why the type is `bool?`.",
+        "`true` only comes back if the page calls `pop(context, true)`; the system back button passes no value.",
+        "Closing with back isn't an error: the Future completes normally, just with `null`.",
+        null
+      ]
+    },
+    {
+      "prompt": "In go_router, what's the difference between `context.go` and `context.push`?",
+      "options": [
+        "There is none",
+        "go sets the stack from the URL, push adds on top",
+        "push only works on the web",
+        "go is async, push isn't"
+      ],
+      "answer": 1,
+      "explanation": "`go` navigates to a location, rebuilding the stack according to the route hierarchy; `push` stacks a new page and lets you go back.",
+      "whyWrong": [
+        "There's an important difference: `go` rebuilds the stack from the location, `push` adds a page on top.",
+        null,
+        "`push` works on every platform; on the web, at most the way the URL gets updated changes.",
+        "It's the other way around: `go` returns nothing, while `push` returns a Future with the pop result."
+      ]
+    },
+    {
+      "prompt": "With `GoRoute(path: '/users/:id')`, how do you read `42` from `/users/42`?",
+      "options": [
+        "`state.extra`",
+        "`state.uri.queryParameters['id']`",
+        "`state.pathParameters['id']`",
+        "`ModalRoute.of(context)!.settings`"
+      ],
+      "answer": 2,
+      "explanation": "`:param` segments end up in `pathParameters`; query parameters (`?id=42`) are in `uri.queryParameters`; `extra` is an arbitrary object that isn't in the URL.",
+      "whyWrong": [
+        "`extra` is an arbitrary object passed during navigation, not extracted from the URL: it doesn't contain `42`.",
+        "`queryParameters` reads the part after `?`, like `?id=42`; `:id` is a path segment.",
+        null,
+        "`ModalRoute.settings` belongs to the classic Navigator; go_router exposes the segments in `state.pathParameters`."
+      ]
+    },
+    {
+      "prompt": "Why was Navigator 2.0 (the Router API) introduced?",
+      "options": [
+        "To support Hero animations",
+        "To replace MaterialPageRoute",
+        "Because Navigator 1.0 didn't support pop",
+        "Declarative stack: web URLs and deep links"
+      ],
+      "answer": 3,
+      "explanation": "The imperative API couldn't rebuild the stack from state or from a URL. Router makes the stack a function of app state.",
+      "whyWrong": [
+        "Hero animations already worked with Navigator 1.0; the reason was declarative stack management.",
+        "MaterialPageRoute is used with the Router API too; the goal wasn't to replace routes.",
+        "Navigator 1.0 has always supported `pop`; what was missing was the ability to rebuild the stack from state or a URL.",
+        null
+      ]
+    },
+    {
+      "prompt": "Where do you implement \"if not authenticated, go to /login\" with go_router?",
+      "options": [
+        "In the `redirect` callback",
+        "In every page's `build()`",
+        "In `main()` before runApp",
+        "In `onGenerateRoute`"
+      ],
+      "answer": 0,
+      "explanation": "`redirect` is evaluated on every navigation and can return an alternative location; with `refreshListenable` it also reacts to login changes.",
+      "whyWrong": [
+        null,
+        "Checking in every `build` duplicates the logic and briefly shows the protected page; `redirect` centralizes it.",
+        "In `main`, the check runs only once and doesn't react to later logouts or deep links.",
+        "`onGenerateRoute` belongs to the classic Navigator; with go_router the right place is the `redirect` callback."
+      ]
+    },
+    {
+      "prompt": "Bottom navigation where each tab keeps its own stack:",
+      "options": [
+        "A single Navigator with pushReplacement",
+        "StatefulShellRoute or one Navigator per tab",
+        "IndexedStack without nested Navigators",
+        "Named routes with arguments"
+      ],
+      "answer": 1,
+      "explanation": "You need a nested Navigator per tab; go_router's `StatefulShellRoute` does this and preserves the state of each branch.",
+      "whyWrong": [
+        "With a single Navigator and `pushReplacement` you lose the history: every tab switch throws away the previous stack.",
+        null,
+        "IndexedStack preserves widget state, but without nested Navigators it has no per-tab stack.",
+        "Named routes use a single Navigator: arguments don't create separate stacks for the tabs."
+      ]
+    },
+    {
+      "prompt": "According to the Flutter docs, what's the main limitation of named routes (`pushNamed`)?",
+      "options": [
+        "They don't accept arguments",
+        "They were removed in Flutter 3",
+        "Limited deep link customization, no forward on the web",
+        "They don't work on iOS"
+      ],
+      "answer": 2,
+      "explanation": "The docs recommend against them for most apps because of these limitations; arguments exist, but they're untyped `Object?`.",
+      "whyWrong": [
+        "Named routes accept arguments via `arguments`; the limitation is that they're untyped `Object?`.",
+        "They weren't removed: they still exist, but the docs recommend against them for most apps.",
+        null,
+        "They work on every platform, iOS included; the limitations concern deep links and the web."
+      ]
+    },
+    {
+      "prompt": "What do you need on iOS to open the app from an https link (Universal Links)?",
+      "options": [
+        "Associated Domains + apple-app-site-association",
+        "A mandatory custom MethodChannel",
+        "Just editing AndroidManifest",
+        "Nothing, it works out of the box"
+      ],
+      "answer": 0,
+      "explanation": "iOS verifies the domain through the Associated Domains entitlement and the AASA file on the server; Flutter then passes the path to the router.",
+      "whyWrong": [
+        null,
+        "You don't need a custom MethodChannel: Flutter already receives the link and passes it to the router.",
+        "AndroidManifest configures Android App Links; on iOS you need Associated Domains and the AASA file.",
+        "iOS has to verify that the domain belongs to your app: without the entitlement and AASA, the link opens in Safari."
+      ]
+    }
+  ]
+}

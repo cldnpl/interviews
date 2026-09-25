@@ -1,0 +1,2164 @@
+{
+  "track": "uikit",
+  "topics": [
+    {
+      "id": "basics",
+      "stage": "junior",
+      "title": "Views and View Controllers",
+      "icon": "rectangle.stack",
+      "summary": "UIView, the view hierarchy, frame and bounds, UIViewController: the building blocks everything else in UIKit rests on.",
+      "lesson": [
+        {
+          "heading": "Everything is a UIView",
+          "body": "In UIKit, everything you see on screen is a `UIView` or one of its subclasses: `UILabel`, `UIButton`, `UIImageView`, `UIScrollView`, `UIStackView`. A UIView is a rectangle that knows how to draw itself, receive touches, and contain other views.\n\nThe view doesn't draw on its own, though: every UIView owns a **CALayer** (`view.layer`), and the layer is what handles the actual drawing and animation. That's where `cornerRadius`, `borderWidth`, and `shadowOpacity` live. On top of the layer, the UIView adds touch event handling and Auto Layout integration.",
+          "code": "let box = UIView()\nbox.backgroundColor = .systemBlue\nbox.layer.cornerRadius = 12      // drawing goes through the layer\n\nlet label = UILabel()            // a label is a UIView too\nlabel.text = \"Hello\""
+        },
+        {
+          "heading": "The view hierarchy",
+          "body": "Views form a **tree**: each one has a `superview` (its parent, optional) and an array of `subviews` (its children). You call `addSubview(_:)` on the parent, and it appends the child at the end; you call `removeFromSuperview()` on the child, and it detaches it from the tree.\n\nThe order of the `subviews` array is also the **drawing order**: later views draw on top. That's why the last view added is the one in front, and to change the order there's `bringSubviewToFront(_:)` and `insertSubview(_:at:)`.\n\nThe root of the tree is the `UIWindow`. If a view's `window` is `nil`, that view isn't on screen.",
+          "code": "container.addSubview(a)\ncontainer.addSubview(b)   // b draws ON TOP of a\n\ncontainer.subviews        // [a, b]\nb.superview               // container\n\ncontainer.bringSubviewToFront(a)   // now a is in front\na.removeFromSuperview()            // called on the child"
+        },
+        {
+          "heading": "frame, bounds, and center",
+          "body": "These are three ways of describing where a view is, and it's the most classic UIKit interview question.\n\n- **`frame`**: the view's position and size in the **superview's** coordinate system.\n- **`bounds`**: the same view seen from **its own** coordinate system. For a newly created view, `bounds.origin` is `(0, 0)` and the size matches the frame's.\n- **`center`**: the center of the frame, also in the superview's coordinates.\n\nThe distinction matters in two cases. With a **transform** (a rotation, for example), `bounds` stays the same while `frame` becomes the rectangle that encloses the rotated view, so it's larger: with a non-identity transform, the frame is no longer reliable. And in a `UIScrollView`, scrolling moves `bounds.origin` (that's exactly what `contentOffset` is) while the frame stays put.",
+          "code": "let v = UIView(frame: CGRect(x: 40, y: 60, width: 100, height: 50))\nv.frame     // (40, 60, 100, 50)  in the superview\nv.bounds    // ( 0,  0, 100, 50)  in itself\nv.center    // (90, 85)           in the superview\n\nv.transform = CGAffineTransform(rotationAngle: .pi / 4)\nv.bounds    // unchanged\nv.frame     // larger: the box that encloses the rotated view"
+        },
+        {
+          "heading": "UIViewController: who owns the screen",
+          "body": "A `UIViewController` manages a screen, or a portion of one. Its interface lives in the **`view`** property, the local root of the tree: everything the controller shows is a subview of it.\n\nThe `view` is **lazy**: it doesn't exist at the end of `init`, it's created the first time someone accesses the property. That's why `@IBOutlet`s are `nil` inside init and only set from `viewDidLoad` onward, and also why reading `self.view` too early can load the interface sooner than expected.\n\nControllers nest inside each other: a `UINavigationController` or a `UITabBarController` is a **container**, and the controllers it shows are its `children`.",
+          "code": "final class ProfileViewController: UIViewController {\n    private let nameLabel = UILabel()\n\n    override func viewDidLoad() {\n        super.viewDidLoad()          // always first\n        view.backgroundColor = .systemBackground\n        view.addSubview(nameLabel)   // 'view' exists from here on\n    }\n}"
+        },
+        {
+          "heading": "Building the interface: code, XIB, or Storyboard",
+          "body": "There are three approaches, and you can mix them freely.\n\n- **In code**: you create the views in `viewDidLoad` (or in `loadView` if you want to replace the root view) and constrain them by hand. Verbose but explicit, and it diffs cleanly in code review.\n- **XIB**: one file for a single view or a single controller.\n- **Storyboard**: several screens together, connected by `segue`s.\n\nWith XIBs and Storyboards, view references are declared as `@IBOutlet` and actions as `@IBAction`. The connections are resolved when the file loads: if you rename or disconnect an outlet without updating the nib, the app crashes when the screen opens with the classic *\"this class is not key value coding-compliant\"*.\n\nRule of thumb: `override func loadView()` is for **creating** the root view and must not call `super` if you assign it yourself; `viewDidLoad` is for **configuring** it and must always call `super`.",
+          "code": "final class CardViewController: UIViewController {\n    @IBOutlet private var titleLabel: UILabel!   // nil until viewDidLoad\n\n    @IBAction private func confirmTapped(_ sender: UIButton) {\n        print(\"confirmed\")\n    }\n\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        titleLabel.text = \"Ready\"   // the outlet is connected here\n    }\n}"
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-basics-1",
+          "prompt": "Which of these is NOT a subclass of UIView?",
+          "code": null,
+          "options": [
+            "UIViewController",
+            "UILabel",
+            "UIStackView",
+            "UIImageView"
+          ],
+          "answer": 0,
+          "explanation": "`UIViewController` isn't a view: it's a controller, and it inherits from `UIResponder`. It owns a view in its `view` property, but it isn't one. Labels, stack views, and image views, on the other hand, are all subclasses of `UIView`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "`UILabel` is a full-fledged UIView: you add it to the hierarchy with `addSubview`, it has a frame, and it draws text.",
+            "`UIStackView` is a special UIView (it draws nothing of its own and lays out its arrangedSubviews), but it's still a subclass of UIView.",
+            "`UIImageView` is the UIView specialized in drawing a `UIImage`: it has a frame, bounds, and a superview like any other."
+          ]
+        },
+        {
+          "id": "uikit-basics-2",
+          "prompt": "Which view is in front after this code?",
+          "code": "let a = UIView()\nlet b = UIView()\ncontainer.addSubview(a)\ncontainer.addSubview(b)",
+          "options": [
+            "b, because it was added last",
+            "a, because it was added first",
+            "It depends on their zPosition, which is the same here",
+            "Neither: they overlap halfway"
+          ],
+          "answer": 0,
+          "explanation": "`addSubview` appends to the end of the `subviews` array, and that array is also the drawing order: later views draw on top. So `b` covers `a`. To swap them, use `bringSubviewToFront(a)` or `insertSubview(a, aboveSubview: b)`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "It's the other way around: the first one added ends up at the bottom of the stack. The `subviews` array is drawn from first to last, so the last one wins.",
+            "`zPosition` exists on the layer and can override the order, but it hasn't been touched here: with equal zPosition, the order in `subviews` decides.",
+            "The overlap is clean, not partial: `b` is drawn entirely on top of `a` wherever the two frames intersect."
+          ]
+        },
+        {
+          "id": "uikit-basics-3",
+          "prompt": "What is `v.bounds.origin`?",
+          "code": "let v = UIView(frame: CGRect(x: 40, y: 60, width: 100, height: 50))",
+          "options": [
+            "(0, 0)",
+            "(40, 60)",
+            "(90, 85)",
+            "(100, 50)"
+          ],
+          "answer": 0,
+          "explanation": "`bounds` describes the view in **its own** coordinate system, which always starts at zero for a newly created view. It's the `frame` that is `(40, 60, 100, 50)`, because it positions the view inside the superview.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "(40, 60) is the origin of the **frame**, meaning the position in the superview. Bounds looks at the view from the inside and starts at zero.",
+            "(90, 85) is the `center`, the midpoint of the frame: 40 + 100/2 and 60 + 50/2. It's not an origin.",
+            "(100, 50) is the **size**, which lives in `bounds.size` (and `frame.size`), not in `bounds.origin`."
+          ]
+        },
+        {
+          "id": "uikit-basics-4",
+          "prompt": "How do you remove a view from the hierarchy?",
+          "code": null,
+          "options": [
+            "By calling `removeFromSuperview()` on the view to remove",
+            "By calling `removeSubview(_:)` on the superview",
+            "By setting its `superview` to `nil`",
+            "By setting its `frame` to `nil`"
+          ],
+          "answer": 0,
+          "explanation": "`removeFromSuperview()` is called on the **child**, unlike `addSubview(_:)`, which is called on the parent. It's the only one of the four that actually exists.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "`removeSubview(_:)` doesn't exist in UIKit: the asymmetry with `addSubview(_:)` often trips people up, but removal goes through the child.",
+            "`superview` is a **read-only** property: you change the hierarchy with methods, not by assigning the parent by hand.",
+            "`frame` is a `CGRect`, not an optional: it can't be `nil`. And zeroing it out would just make the view invisible while leaving it in the tree."
+          ]
+        },
+        {
+          "id": "uikit-basics-5",
+          "prompt": "Where does the interface managed by a UIViewController live?",
+          "code": null,
+          "options": [
+            "In its `view` property, the root of all the others",
+            "Directly in the `UIWindow`, with nothing in between",
+            "In the controller's `subviews` array",
+            "In the controller's `layer` property"
+          ],
+          "answer": 0,
+          "explanation": "Every `UIViewController` owns a root view in its `view` property: everything the screen shows is a subview of it. The controller isn't a view and has neither `subviews` nor a `layer`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "The window is the root of the whole app, not of a single screen: between the window and the content there's always the controller's `view`.",
+            "`subviews` is a property of `UIView`, not `UIViewController`. The screen's subviews are in `controller.view.subviews`.",
+            "`layer` belongs to `UIView`. From the controller you get there through the view: `controller.view.layer`."
+          ]
+        },
+        {
+          "id": "uikit-basics-6",
+          "prompt": "You rotate a view 45 degrees with a transform. What happens to frame and bounds?",
+          "code": "v.transform = CGAffineTransform(rotationAngle: .pi / 4)",
+          "options": [
+            "Bounds stays the same, frame becomes the box that encloses the rotated view",
+            "Both change the same way",
+            "Frame stays the same, bounds grows",
+            "Neither changes: the transform only affects drawing"
+          ],
+          "answer": 0,
+          "explanation": "`bounds` is the view as seen from itself, and rotation doesn't touch it. `frame`, instead, is the **axis-aligned** rectangle that encloses the view in the superview, so it grows when the view rotates. Hence the rule: with a non-identity transform, the frame is no longer a value you can do math with.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Only the frame changes: bounds describes the view in its own coordinate system, which rotates along with it and therefore stays the same.",
+            "It's exactly the opposite: bounds is the one immune to rotation, frame is the one that grows to enclose the rotated view.",
+            "The transform really does change the reported geometry: reading `v.frame` after a rotation returns the new enclosing box, not the old one."
+          ]
+        },
+        {
+          "id": "uikit-basics-7",
+          "prompt": "When is a UIViewController's `view` created?",
+          "code": null,
+          "options": [
+            "The first time the `view` property is accessed",
+            "At the end of `init`",
+            "When the controller is deallocated",
+            "Only if the controller comes from a Storyboard"
+          ],
+          "answer": 0,
+          "explanation": "The `view` is loaded **lazily**: `loadView()` and then `viewDidLoad()` fire on the first access to the property. That's why `@IBOutlet`s are `nil` in init, and why touching `self.view` too early forces the screen to load ahead of time.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "When `init` returns, the view doesn't exist yet: that's precisely why interface setup belongs in `viewDidLoad` and not in the initializer.",
+            "On deallocation the view is released, if anything, not created. Loading happens at the start of the controller's life, not the end.",
+            "Lazy loading works the same way for Storyboards, XIBs, and code: only *how* the view is built inside `loadView()` changes."
+          ]
+        },
+        {
+          "id": "uikit-basics-8",
+          "prompt": "Why is an `@IBOutlet` `nil` inside the view controller's `init`?",
+          "code": "final class CardViewController: UIViewController {\n    @IBOutlet private var titleLabel: UILabel!\n}",
+          "options": [
+            "Because outlets are connected when the view loads, which happens after init",
+            "Because outlets are always `weak` and die immediately without strong references",
+            "Because `private` prevents the nib from writing to them",
+            "Because the label hasn't been added to a superview yet"
+          ],
+          "answer": 0,
+          "explanation": "The nib or storyboard is deserialized inside `loadView()`, which fires on the first access to `view`, that is, after `init`. That's when the outlets get connected, and they're usable from `viewDidLoad` onward.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "A `weak` outlet still stays alive as long as the view is in the hierarchy, which retains it. The problem is *when*, not the strength of the reference.",
+            "`private` limits visibility in Swift but doesn't block the connection: the nib uses the Objective-C runtime's key-value coding, which is why `@IBOutlet` alone makes it reachable.",
+            "The nib's label is born already inside the file's hierarchy. But in init that file hasn't been loaded yet, so the label doesn't exist at all."
+          ]
+        },
+        {
+          "id": "uikit-basics-9",
+          "prompt": "In a UIScrollView, what changes when you scroll the content down by 100 points?",
+          "code": null,
+          "options": [
+            "`bounds.origin.y` increases by 100: that's exactly what `contentOffset` is",
+            "`frame.origin.y` decreases by 100",
+            "`center.y` increases by 100",
+            "Nothing in the scroll view's geometry: only its subviews move"
+          ],
+          "answer": 0,
+          "explanation": "A scroll view doesn't move its content: it moves the **window** it looks through, meaning its own `bounds.origin`. `contentOffset` is just another name for that point. The `frame` stays put, because the scroll view always occupies the same space in its superview.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "The frame is the scroll view's position **inside its superview**, and scrolling doesn't move it a single pixel: it stays where it is, only what it shows changes.",
+            "The `center` is derived from the frame, so it stays put too. Scrolling happens entirely in the internal coordinate system.",
+            "The geometry definitely changes: it's `bounds.origin` that moves, which is why the subviews appear to scroll even though their frames stay constant."
+          ]
+        },
+        {
+          "id": "uikit-basics-10",
+          "prompt": "What actually draws a UIView's content?",
+          "code": null,
+          "options": [
+            "Its `CALayer`: the UIView adds touches and layout on top",
+            "The UIView itself; the layer is only for animations",
+            "The `UIWindow`, which draws for every view in the tree",
+            "The `UIViewController` that owns the view"
+          ],
+          "answer": 0,
+          "explanation": "Every UIView owns a `CALayer` (`view.layer`), and Core Animation handles drawing and compositing. The UIView is a wrapper that adds touch event handling, Auto Layout, and the responder chain. That's why `cornerRadius`, `borderWidth`, and `shadowPath` live on the layer.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "The layer isn't just for animating: it's what holds the drawn content (the backing store) and composites it on screen, animations or not.",
+            "The window is the root of the tree and doesn't draw on behalf of its children: each view contributes its own layer, and Core Animation composites them.",
+            "The controller coordinates, it doesn't draw: it has neither a layer nor any graphical content of its own."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "view-lifecycle",
+      "stage": "junior",
+      "title": "View Lifecycle",
+      "icon": "arrow.triangle.2.circlepath",
+      "summary": "From loadView to viewDidDisappear, all the way to the app and scene lifecycle.",
+      "lesson": [
+        {
+          "heading": "The full sequence",
+          "body": "When a view controller is shown for the first time, UIKit calls, in order: `loadView`, `viewDidLoad`, `viewWillAppear`, `viewIsAppearing`, `viewWillLayoutSubviews`/`viewDidLayoutSubviews` (possibly several times), and finally `viewDidAppear`. On the way out come `viewWillDisappear` and `viewDidDisappear`.\n\n**viewDidLoad is called only once** per view load: it's the place for one-time setup (subviews, constraints, bindings). The other appearance methods can be called many times.",
+          "code": "override func viewDidLoad() {\n    super.viewDidLoad()\n    setupSubviews()      // only once\n}\n\noverride func viewWillAppear(_ animated: Bool) {\n    super.viewWillAppear(animated)\n    refreshData()        // every time it appears\n}"
+        },
+        {
+          "heading": "loadView and lazy loading",
+          "body": "A view controller's view is **lazy**: it's created only on the first access to `view`, which triggers `loadView` and then `viewDidLoad`. You override `loadView` only to create the root view in code: in that case you assign `self.view` and do **not** call `super`.\n\nNever call `loadView` directly: use `loadViewIfNeeded()`, and check the state with `isViewLoaded`. Before the view loads, `@IBOutlet`s are still `nil`.",
+          "code": "override func loadView() {\n    let root = ProfileView()\n    root.delegate = self\n    view = root          // no super.loadView()\n}"
+        },
+        {
+          "heading": "Layout and geometry",
+          "body": "In `viewDidLoad` the view doesn't have its final size yet: `bounds` may reflect the nib or the default screen size. Size-dependent code belongs in `viewDidLayoutSubviews` (which must be idempotent, since it's called often) or, better yet, expressed with constraints.\n\nSince iOS 17 (back-deployed to iOS 13) there's `viewIsAppearing`: called once per appearance, after `viewWillAppear`, when the view is already in the hierarchy with an up-to-date trait collection and geometry.",
+          "code": null
+        },
+        {
+          "heading": "Modal presentations and containment",
+          "body": "With the default `.pageSheet` style (iOS 13+), the presenter stays visible beneath the sheet, so it **doesn't receive** `viewWillDisappear`/`viewDidDisappear` when the sheet opens, or `viewWillAppear` when it closes. With `.fullScreen` it does: this is a classic source of refresh bugs.\n\nFor child view controllers, the correct sequence is `addChild`, `addSubview`, and `didMove(toParent:)`; to remove them, `willMove(toParent: nil)`, `removeFromSuperview`, and `removeFromParent`. That way appearance events are forwarded correctly.",
+          "code": "addChild(child)\nview.addSubview(child.view)\nchild.didMove(toParent: self)"
+        },
+        {
+          "heading": "App and scene lifecycle",
+          "body": "Since iOS 13, with scenes, the `AppDelegate` handles process-level events (`didFinishLaunchingWithOptions`, scene configuration, push tokens), while the `SceneDelegate` handles the UI: `scene(_:willConnectTo:options:)` creates the `UIWindow`, followed by `sceneWillEnterForeground`, `sceneDidBecomeActive`, `sceneWillResignActive`, and `sceneDidEnterBackground`.\n\nThe app states are **not running, inactive, active, background, suspended**. With scenes enabled, the `AppDelegate`'s foreground/background methods are no longer called.",
+          "code": null
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"What's the difference between viewDidLoad and viewWillAppear?\"** Short answer: `viewDidLoad` happens once, when the view is loaded into memory, and it's for setup; `viewWillAppear` happens every time the view appears, and it's for refreshing data or UI. Add that the final geometry only arrives with layout (`viewDidLayoutSubviews` or `viewIsAppearing`), and bring up the `.pageSheet` case, which shows real-world experience.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-view-lifecycle-1",
+          "prompt": "Which method is called **only once** per load of a view controller's view?",
+          "code": null,
+          "options": [
+            "`viewWillAppear`",
+            "`viewDidLoad`",
+            "`viewDidLayoutSubviews`",
+            "`viewDidAppear`"
+          ],
+          "answer": 1,
+          "explanation": "`viewDidLoad` follows `loadView` and happens once per load; the others can repeat on every appearance or layout pass.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`viewWillAppear` sounds like initialization, but it's called **on every appearance**, for example every time you come back to this VC with a pop.",
+            null,
+            "Careful: `viewDidLayoutSubviews` fires on **every layout pass** (rotation, size change, `setNeedsLayout`), so it can repeat many times.",
+            "`viewDidAppear` arrives every time the view appears, not just once: if the screen gets covered and then uncovered, it's called again."
+          ]
+        },
+        {
+          "id": "uikit-view-lifecycle-2",
+          "prompt": "In what order are the logs printed the first time this view controller is presented?",
+          "code": "override func loadView() { print(\"A\"); super.loadView() }\noverride func viewDidLoad() { print(\"B\") }\noverride func viewWillAppear(_ a: Bool) { print(\"C\") }\noverride func viewDidLayoutSubviews() { print(\"D\") }\noverride func viewDidAppear(_ a: Bool) { print(\"E\") }",
+          "options": [
+            "B, A, C, D, E",
+            "A, B, D, C, E",
+            "A, B, C, E, D",
+            "A, B, C, D, E"
+          ],
+          "answer": 3,
+          "explanation": "The view is first created (`loadView`), then configured (`viewDidLoad`); layout happens between `viewWillAppear` and `viewDidAppear`.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`viewDidLoad` can't come before `loadView`: it's `loadView` that creates the view, and only then does UIKit call `viewDidLoad` to configure it.",
+            "Layout doesn't happen before `viewWillAppear`: the view is inserted into the hierarchy after that callback, and only then does `viewDidLayoutSubviews` arrive.",
+            "This puts D after E, but the first layout pass is required before the view becomes visible: `viewDidLayoutSubviews` comes before `viewDidAppear`.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-view-lifecycle-3",
+          "prompt": "Why can reading `view.bounds.width` in `viewDidLoad` give the wrong value?",
+          "code": null,
+          "options": [
+            "`bounds` is always zero before `viewDidAppear`",
+            "`viewDidLoad` runs on a background thread",
+            "The view hasn't been created yet",
+            "Layout hasn't happened yet: the size isn't final"
+          ],
+          "answer": 3,
+          "explanation": "In `viewDidLoad` the view exists but has the nib's or the default size; you get the real geometry after the layout pass.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It's not necessarily zero: in `viewDidLoad`, `bounds` already has a size, the nib's or the screen's; it's just **not the final one yet**.",
+            "`viewDidLoad` runs on the **main thread**, like every UIKit callback; the problem is layout timing, not threading.",
+            "The view already exists: `viewDidLoad` comes right after `loadView`. The value is wrong because layout hasn't happened yet.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-view-lifecycle-4",
+          "prompt": "What happens if you run this code before presenting `vc`, when `titleLabel` is an `@IBOutlet` from a storyboard?",
+          "code": "let vc = storyboard.instantiateViewController(\n    identifier: \"Detail\") as! DetailViewController\nvc.titleLabel.text = \"Hello\"\npresent(vc, animated: true)",
+          "options": [
+            "It works: `instantiateViewController` connects the outlets",
+            "The text is silently ignored",
+            "Crash: the outlet is still `nil` because the view isn't loaded",
+            "The text is applied in `viewDidAppear`"
+          ],
+          "answer": 2,
+          "explanation": "Outlets are connected only when the view loads: it's better to pass the data in a property and apply it in `viewDidLoad`.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It's tempting to think so, but `instantiateViewController` only creates the VC: outlets are connected when the view loads, so here they're still `nil`.",
+            "An `@IBOutlet` is implicitly unwrapped (`UILabel!`): accessing it while it's `nil` isn't ignored, it causes a **crash**.",
+            null,
+            "UIKit doesn't defer the assignment: the line runs immediately, finds the outlet `nil`, and the app crashes before it even reaches `present`."
+          ]
+        },
+        {
+          "id": "uikit-view-lifecycle-5",
+          "prompt": "VC A presents B with the default style on iOS 17. Which statement is true for A?",
+          "code": null,
+          "options": [
+            "It receives `viewWillDisappear` but not `viewDidDisappear`",
+            "It receives both, just like with a push",
+            "It receives neither `viewWillDisappear` nor `viewDidDisappear`",
+            "It receives `viewDidDisappear` only if B is animated"
+          ],
+          "answer": 2,
+          "explanation": "The `.automatic` style resolves to `.pageSheet` and A stays visible: no disappear callbacks, and no `viewWillAppear` on dismissal.",
+          "difficulty": 3,
+          "whyWrong": [
+            "There's no middle ground: with `.pageSheet`, A stays visible beneath the sheet, so UIKit sends **neither** of the two disappear callbacks.",
+            "A push fully replaces A's view, a sheet doesn't: with `.automatic` → `.pageSheet`, A stays in the hierarchy and receives no callbacks.",
+            null,
+            "Animation has nothing to do with it: what matters is the presentation style. With `.pageSheet`, A stays visible and `viewDidDisappear` doesn't arrive either way."
+          ]
+        },
+        {
+          "id": "uikit-view-lifecycle-6",
+          "prompt": "In a scene-based app (iOS 13+), where do you typically create the `UIWindow` in code?",
+          "code": null,
+          "options": [
+            "In `application(_:didFinishLaunchingWithOptions:)`",
+            "In the root view controller's `viewDidLoad`",
+            "In `sceneDidBecomeActive(_:)`",
+            "In the `SceneDelegate`'s `scene(_:willConnectTo:options:)`"
+          ],
+          "answer": 3,
+          "explanation": "With scenes, every window belongs to a `UIWindowScene`, created when the scene connects.",
+          "difficulty": 1,
+          "whyWrong": [
+            "That was the right place before iOS 13; with scenes, the `AppDelegate` no longer manages windows, which belong to a `UIWindowScene`.",
+            "The root VC lives **inside** the window: it can't create it, because a window has to exist already in order to show it.",
+            "`sceneDidBecomeActive` can be called many times (every return to the foreground): creating the window there would recreate it every time.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-view-lifecycle-7",
+          "prompt": "What's missing from this containment code?",
+          "code": "let child = MapViewController()\naddChild(child)\nview.addSubview(child.view)\nchild.view.frame = view.bounds",
+          "options": [
+            "The call to `child.didMove(toParent: self)`",
+            "The call to `child.willMove(toParent: self)`",
+            "The call to `child.loadView()`",
+            "Nothing, the code is complete"
+          ],
+          "answer": 0,
+          "explanation": "`addChild` already calls `willMove(toParent:)`, but `didMove(toParent:)` has to be called manually after adding the view.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Not needed: `addChild(_:)` already calls `willMove(toParent:)` automatically. What you have to do by hand is `didMove(toParent:)`.",
+            "`loadView()` should never be called directly: accessing `child.view` is already enough to load the child's view.",
+            "It looks complete, but without `didMove(toParent: self)` the child is never told that the containment transition has finished."
+          ]
+        },
+        {
+          "id": "uikit-view-lifecycle-8",
+          "prompt": "When is `viewIsAppearing(_:)` called?",
+          "code": null,
+          "options": [
+            "Before `viewWillAppear`, only once",
+            "After `viewDidAppear`, on every layout pass",
+            "Between `viewWillAppear` and `viewDidAppear`, once geometry is ready",
+            "Only when the trait collection changes"
+          ],
+          "answer": 2,
+          "explanation": "Introduced in iOS 17 and available back to iOS 13, it's the ideal spot for updates that depend on size and traits, once per appearance.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It arrives **after** `viewWillAppear` and on every appearance, not just once: it exists precisely so that geometry is already in place.",
+            "It doesn't follow `viewDidAppear` and doesn't repeat on every layout pass: it's called once per appearance, before the transition finishes.",
+            null,
+            "Trait changes have their own APIs (`registerForTraitChanges`); `viewIsAppearing` is tied to the view appearing."
+          ]
+        },
+        {
+          "id": "uikit-view-lifecycle-9",
+          "prompt": "The user presses Home while the app is active (scene-based app). In what order do the callbacks arrive?",
+          "code": null,
+          "options": [
+            "`sceneDidEnterBackground`, then `sceneWillResignActive`",
+            "`sceneWillResignActive`, then `sceneDidEnterBackground`",
+            "Only `applicationDidEnterBackground`",
+            "`sceneDidDisconnect`, then `sceneDidEnterBackground`"
+          ],
+          "answer": 1,
+          "explanation": "The scene first goes from active to inactive and then moves to the background; `sceneDidDisconnect` happens only if the system discards the scene.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Wrong order: the scene first has to stop being active (`sceneWillResignActive`) and only then moves to the background.",
+            null,
+            "In a scene-based app, state callbacks go to the `SceneDelegate`: `applicationDidEnterBackground` isn't the only one, and it often goes unused.",
+            "Pressing Home doesn't disconnect the scene: `sceneDidDisconnect` happens only if the system discards it to free up resources."
+          ]
+        },
+        {
+          "id": "uikit-view-lifecycle-10",
+          "prompt": "What's the correct way to override `loadView` to use a custom view?",
+          "code": null,
+          "options": [
+            "Call `super.loadView()` and then `view.addSubview(custom)`",
+            "Call `loadView()` from `viewDidLoad`",
+            "Assign `view` in `init` and leave the override empty",
+            "Assign `view = CustomView()` without calling `super`"
+          ],
+          "answer": 3,
+          "explanation": "`super.loadView()` looks for a nib or creates an empty `UIView`: wasted work if you're going to replace it anyway.",
+          "difficulty": 3,
+          "whyWrong": [
+            "It works, but `super.loadView()` creates an empty `UIView` (or loads a nib) just so you can put your view inside it: wasted work and an extra view.",
+            "`loadView()` should never be called by hand, and in `viewDidLoad` the view already exists: UIKit calls `loadView` when it needs to.",
+            "Assigning `view` in `init` forces loading too early, and an empty `loadView` leaves `view` as `nil` if you haven't already set it.",
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "id": "auto-layout",
+      "stage": "junior",
+      "title": "Auto Layout",
+      "icon": "rectangle.3.group",
+      "summary": "Constraints, priorities, hugging, compression resistance, stack views, and the layout cycle.",
+      "lesson": [
+        {
+          "heading": "Constraints as equations",
+          "body": "Every constraint is a linear equation: `item1.attr = multiplier × item2.attr + constant`, with a `==`, `<=`, or `>=` relation. The layout must be **unambiguous** (exactly one solution) and **satisfiable** (no conflicts).\n\nFor views created in code, set `translatesAutoresizingMaskIntoConstraints = false`; otherwise UIKit generates constraints from the autoresizing mask that conflict with yours. Activate constraints in bulk with `NSLayoutConstraint.activate`.",
+          "code": "label.translatesAutoresizingMaskIntoConstraints = false\nNSLayoutConstraint.activate([\n    label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),\n    label.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),\n    label.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)\n])"
+        },
+        {
+          "heading": "Priorities",
+          "body": "Priorities range from 1 to 1000; `1000` (`.required`) must be satisfied. An optional constraint that can't be met is satisfied as closely as possible. If two required constraints conflict, Auto Layout **breaks** one of them at runtime and logs \"Unable to simultaneously satisfy constraints\" (symbolic breakpoint `UIViewAlertForUnsatisfiableConstraints`).\n\nCareful: you can't switch an already installed constraint from required to non-required (or vice versa): create it with priority 999 from the start.",
+          "code": null
+        },
+        {
+          "heading": "intrinsicContentSize, hugging, and compression resistance",
+          "body": "Controls like `UILabel`, `UIButton`, and `UIImageView` have an `intrinsicContentSize` that generates implicit constraints. **Content hugging** = resistance to growing larger than the content; **compression resistance** = resistance to shrinking smaller than it.\n\nWith two labels side by side, the one with the lower hugging priority stretches, and the one with the lower compression resistance gets truncated. In custom views, call `invalidateIntrinsicContentSize()` whenever the content changes.",
+          "code": "titleLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)\nvalueLabel.setContentCompressionResistancePriority(.required, for: .horizontal)"
+        },
+        {
+          "heading": "UIStackView",
+          "body": "`UIStackView` generates the constraints for its `arrangedSubviews` based on `axis`, `distribution`, `alignment`, and `spacing`. Setting `isHidden = true` on an arranged subview removes it from the layout, and the others take up its space (animatable).\n\nUse `addArrangedSubview`, not `addSubview`. Since iOS 14, stack views also render `backgroundColor`; before that they were a non-rendering layer.",
+          "code": null
+        },
+        {
+          "heading": "The layout cycle",
+          "body": "A layout pass has three phases: **update constraints**, **layout** (`layoutSubviews`), and **display** (`draw(_:)`). `setNeedsLayout()` marks the view as needing an update on the next run loop cycle (asynchronous, cheap); `layoutIfNeeded()` performs layout immediately if there are pending changes.\n\nTo animate a constraint, change its `constant` outside the animation and call `layoutIfNeeded()` on the superview inside the block.",
+          "code": "heightConstraint.constant = expanded ? 300 : 80\nUIView.animate(withDuration: 0.3) {\n    self.view.layoutIfNeeded()\n}"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"What's the difference between content hugging and compression resistance?\"** Short answer: both act on the `intrinsicContentSize`; hugging keeps a view from growing, compression resistance keeps it from shrinking; between two views, the higher priority wins. Then give a concrete example (two labels in a row) and bring up `setNeedsLayout` vs `layoutIfNeeded` for animations.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-auto-layout-1",
+          "prompt": "Two labels in a row fill the horizontal space. Which one stretches?",
+          "code": "left.setContentHuggingPriority(.init(251), for: .horizontal)\nright.setContentHuggingPriority(.init(250), for: .horizontal)",
+          "options": [
+            "`left`, because it has higher hugging",
+            "Both, equally",
+            "Neither: the layout is ambiguous and crashes",
+            "`right`, because it has lower hugging"
+          ],
+          "answer": 3,
+          "explanation": "Lower hugging means less resistance to growing: that's the view that absorbs the extra space.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Higher hugging is resistance to **growing**: `left` at 251 \"hugs\" its content and stays narrow, so the other one grows.",
+            "With different hugging priorities there's no tie: Auto Layout grows only the view with the lower hugging.",
+            "Different priorities exist precisely to remove ambiguity; and an ambiguous layout doesn't crash anyway, it just gives an unpredictable result.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-auto-layout-2",
+          "prompt": "You add constraints to a view created in code, but the console reports conflicts with `NSAutoresizingMaskLayoutConstraint`. What's the most likely cause?",
+          "code": null,
+          "options": [
+            "`translatesAutoresizingMaskIntoConstraints = false` is missing",
+            "You used `activate` instead of `isActive = true`",
+            "The view has no `intrinsicContentSize`",
+            "All the priorities are 1000"
+          ],
+          "answer": 0,
+          "explanation": "With the flag set to `true`, UIKit creates constraints from the frame/autoresizing mask, and they conflict with your explicit ones.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "`NSLayoutConstraint.activate` and `isActive = true` are equivalent: neither one generates autoresizing constraints.",
+            "A missing `intrinsicContentSize` can make the layout ambiguous, but it doesn't produce `NSAutoresizingMaskLayoutConstraint` constraints.",
+            "Priorities of 1000 can cause conflicts among your own constraints, but `NSAutoresizingMaskLayoutConstraint` constraints only come from leaving the flag at `true`."
+          ]
+        },
+        {
+          "id": "uikit-auto-layout-3",
+          "prompt": "What happens with this code?",
+          "code": "UIView.animate(withDuration: 0.3) {\n    self.topConstraint.constant = 200\n}",
+          "options": [
+            "The view animates correctly over 0.3 s",
+            "Crash: constraints can't be modified inside an animation",
+            "The animation starts only after `viewDidAppear`",
+            "No animation: the view jumps on the next layout pass"
+          ],
+          "answer": 3,
+          "explanation": "Changing `constant` doesn't animate anything: you need `layoutIfNeeded()` inside the block so the frames change during the animation.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It seems natural, but changing `constant` only updates the constraint model: the frames change at layout time, outside the animation block.",
+            "No crash: modifying a constraint inside `animate` is perfectly legal. It's just missing `layoutIfNeeded()` to animate the frames.",
+            "`viewDidAppear` has nothing to do with it: the animation isn't deferred, there's simply nothing to animate in the block.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-auto-layout-4",
+          "prompt": "What's the difference between `setNeedsLayout()` and `layoutIfNeeded()`?",
+          "code": null,
+          "options": [
+            "They're equivalent",
+            "The first runs immediately, the second on the next cycle",
+            "The first marks for the next cycle, the second runs immediately",
+            "The first updates constraints, the second redraws"
+          ],
+          "answer": 2,
+          "explanation": "`setNeedsLayout` is asynchronous and coalesces requests; `layoutIfNeeded` forces a synchronous layout if there are pending changes.",
+          "difficulty": 2,
+          "whyWrong": [
+            "They aren't equivalent: one just flags the view as needing layout, the other performs layout **right away**, synchronously.",
+            "The behavior is reversed: `setNeedsLayout` defers to the next cycle, `layoutIfNeeded` runs immediately.",
+            null,
+            "You're thinking of `setNeedsUpdateConstraints` and `setNeedsDisplay`: both methods in the question are about layout, not drawing."
+          ]
+        },
+        {
+          "id": "uikit-auto-layout-5",
+          "prompt": "Two labels don't fit in the row. Which one gets truncated?",
+          "code": "name.setContentCompressionResistancePriority(.init(750), for: .horizontal)\nprice.setContentCompressionResistancePriority(.init(751), for: .horizontal)",
+          "options": [
+            "`price`, it has higher compression resistance",
+            "Both, proportionally",
+            "`name`, it has lower compression resistance",
+            "Neither: it runs off the screen"
+          ],
+          "answer": 2,
+          "explanation": "Lower compression resistance means less resistance to shrinking: that label gives way and shows the ellipsis.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Higher compression resistance means `price` **resists** shrinking: it's the other label that gives way.",
+            "With different priorities there's no proportional split: only the view with the lower compression resistance gives way.",
+            null,
+            "Auto Layout tries to honor the required constraints to the edges, sacrificing the lower priority: `name` gets truncated, it doesn't run off the screen."
+          ]
+        },
+        {
+          "id": "uikit-auto-layout-6",
+          "prompt": "What happens when you run this line on an already active constraint created with required priority?",
+          "code": "widthConstraint.priority = .defaultHigh   // from 1000 to 750",
+          "options": [
+            "The priority changes and the layout updates",
+            "The change is silently ignored",
+            "An exception is raised at runtime",
+            "The constraint is deactivated"
+          ],
+          "answer": 2,
+          "explanation": "Switching an installed constraint from required to optional isn't supported: create it with 999 if you'll need to change it.",
+          "difficulty": 3,
+          "whyWrong": [
+            "The change would be legal between two optional priorities, but switching an installed constraint from required (1000) to optional isn't supported.",
+            "UIKit doesn't silently ignore it: this transition violates an internal assertion and raises an exception.",
+            null,
+            "Changing the priority doesn't deactivate the constraint (that takes `isActive = false`); what you get here is an exception."
+          ]
+        },
+        {
+          "id": "uikit-auto-layout-7",
+          "prompt": "In a `UIStackView`, you set `isHidden = true` on an arranged subview. What happens?",
+          "code": null,
+          "options": [
+            "It becomes transparent but still takes up space",
+            "It leaves the layout and the others take up its space",
+            "It's removed from `arrangedSubviews`",
+            "The layout becomes ambiguous"
+          ],
+          "answer": 1,
+          "explanation": "The stack view observes `isHidden` and recalculates the layout; the view stays in `arrangedSubviews`.",
+          "difficulty": 1,
+          "whyWrong": [
+            "That's what happens with `alpha = 0`: with `isHidden = true` the stack view removes the view from the layout and the others take up its space.",
+            null,
+            "The view stays in `arrangedSubviews`: the stack view just skips it when computing the layout, as long as `isHidden` is `true`.",
+            "No ambiguity: the stack view manages its own constraints and recalculates the arrangement without the hidden view."
+          ]
+        },
+        {
+          "id": "uikit-auto-layout-8",
+          "prompt": "A custom view computes its `intrinsicContentSize` from its text. After changing the text, the size doesn't update. What's missing?",
+          "code": null,
+          "options": [
+            "Calling `invalidateIntrinsicContentSize()`",
+            "Calling `setNeedsDisplay()`",
+            "Calling `sizeToFit()` on the superview",
+            "Setting `translatesAutoresizingMaskIntoConstraints = true`"
+          ],
+          "answer": 0,
+          "explanation": "Auto Layout caches the intrinsic size: you have to invalidate it explicitly when the content changes.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "`setNeedsDisplay()` only asks for the content to be redrawn with `draw(_:)`: it doesn't tell Auto Layout that the intrinsic size has changed.",
+            "`sizeToFit()` resizes the frame of whatever receives it, here the superview, and doesn't invalidate your view's cached intrinsic size.",
+            "Setting the flag back to `true` generates constraints from the frame that conflict with the others; the intrinsic size would still be cached anyway."
+          ]
+        },
+        {
+          "id": "uikit-auto-layout-9",
+          "prompt": "What does Auto Layout do at runtime if two required constraints conflict?",
+          "code": null,
+          "options": [
+            "It breaks one of the constraints and logs a warning to the console",
+            "It crashes immediately with an exception",
+            "It ignores all of the view's constraints",
+            "It always uses the last constraint added, without logging"
+          ],
+          "answer": 0,
+          "explanation": "The system picks a constraint to break so it can satisfy the others, and logs it; the app keeps running, but the layout may be wrong.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "No crash: the conflict is resolved by breaking a constraint and logging \"Unable to simultaneously satisfy constraints\".",
+            "The engine doesn't throw everything away: it gives up **one** constraint and tries to honor all the others.",
+            "The order in which constraints are added decides nothing, and the system always logs to the console when it breaks a constraint."
+          ]
+        },
+        {
+          "id": "uikit-auto-layout-10",
+          "prompt": "The superview is 320 pt wide. How wide will `box` be?",
+          "code": "let w = box.widthAnchor.constraint(equalToConstant: 300)\nw.priority = .defaultHigh\nNSLayoutConstraint.activate([w,\n    box.widthAnchor.constraint(\n        lessThanOrEqualTo: superview.widthAnchor, constant: -40)\n])",
+          "options": [
+            "300 pt",
+            "280 pt",
+            "320 pt",
+            "Ambiguous: it depends on the order"
+          ],
+          "answer": 1,
+          "explanation": "The required constraint caps it at 280; the optional one at 300 can't be satisfied, so it's met as closely as possible.",
+          "difficulty": 3,
+          "whyWrong": [
+            "300 pt would be honored only if the limit allowed it, but the required constraint caps it at 320 − 40 = 280 pt.",
+            null,
+            "The superview's width comes in with `constant: -40` and `lessThanOrEqualTo`: it can't reach 320.",
+            "Different priorities (750 vs. required) leave no ambiguity: the required constraint wins, and the other is satisfied as closely as possible."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "table-collection",
+      "stage": "mid",
+      "title": "Table and Collection Views",
+      "icon": "square.grid.3x3",
+      "summary": "Cell reuse, data sources, diffable, compositional layout, and prefetching.",
+      "lesson": [
+        {
+          "heading": "Data source and delegate",
+          "body": "`UITableView` and `UICollectionView` split responsibilities: the **data source** supplies the data (`numberOfRowsInSection`, `cellForRowAt`), and the **delegate** handles behavior and appearance (`didSelectRowAt`, `willDisplay`, heights).\n\nThe model must always match what the view thinks it's showing: inserting rows with `insertRows` without updating the array first crashes with `NSInternalInconsistencyException`.",
+          "code": null
+        },
+        {
+          "heading": "Cell reuse",
+          "body": "Cells are recycled: only the visible ones exist, plus a few in the reuse queue. You register a class or nib and call `dequeueReusableCell(withIdentifier:for:)`, which crashes if the identifier isn't registered.\n\nGolden rule: in `cellForRowAt`, **set all of the cell's state**, because it may arrive carrying another row's data. In `prepareForReuse`, reset transient state and cancel async tasks, such as an image download.",
+          "code": "override func prepareForReuse() {\n    super.prepareForReuse()\n    imageTask?.cancel()\n    thumbnail.image = nil\n}"
+        },
+        {
+          "heading": "Diffable data source",
+          "body": "Since iOS 13, `UITableViewDiffableDataSource` and `UICollectionViewDiffableDataSource` replace manual index path bookkeeping: you build an `NSDiffableDataSourceSnapshot` with unique `Hashable` identifiers, then call `apply`, which computes the differences and animates them.\n\nTo update the content of an existing item, use `reconfigureItems` (iOS 15), which reconfigures the existing cell instead of dequeuing a new one the way `reloadItems` does.",
+          "code": "var snapshot = NSDiffableDataSourceSnapshot<Section, Item.ID>()\nsnapshot.appendSections([.main])\nsnapshot.appendItems(items.map(\\.id))\ndataSource.apply(snapshot, animatingDifferences: true)"
+        },
+        {
+          "heading": "Compositional layout",
+          "body": "`UICollectionViewCompositionalLayout` describes the layout as **item → group → section**, with `fractionalWidth`, `absolute`, or `estimated` dimensions. Each section can have its own layout, and `orthogonalScrollingBehavior` gives you horizontal carousels without nested collection views.\n\nIt's the modern alternative to `UICollectionViewFlowLayout` and to custom `UICollectionViewLayout` subclasses.",
+          "code": "let item = NSCollectionLayoutItem(layoutSize: .init(\n    widthDimension: .fractionalWidth(0.5), heightDimension: .fractionalHeight(1)))\nlet group = NSCollectionLayoutGroup.horizontal(layoutSize: .init(\n    widthDimension: .fractionalWidth(1), heightDimension: .absolute(120)),\n    subitems: [item])\nlet layout = UICollectionViewCompositionalLayout(section: .init(group: group))"
+        },
+        {
+          "heading": "Prefetching and performance",
+          "body": "With `UITableViewDataSourcePrefetching` you get `prefetchRowsAt` for upcoming rows and `cancelPrefetchingForRowsAt` for rows that are no longer needed. Prefetching is a hint: `cellForRowAt` must still be able to load the data on its own.\n\nAvoid heavy work in `cellForRowAt` (parsing, image decoding, creating formatters every time). For self-sizing cells, use `UITableView.automaticDimension` with a reasonable estimate.",
+          "code": null
+        },
+        {
+          "heading": "In the interview",
+          "body": "Classic question: **\"Why does a list sometimes show the wrong image in a cell?\"** Short answer: because of reuse, the download finishes when the cell is already showing a different row. You fix it by canceling the task in `prepareForReuse` and checking that the row's identifier is still the same before assigning the image. Wrap up by mentioning diffable data sources and `reconfigureItems` as the modern approach.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-table-collection-1",
+          "prompt": "Why does `UITableView` reuse cells?",
+          "code": null,
+          "options": [
+            "To preserve cell state across scrolls",
+            "Because cells can't be deallocated",
+            "To limit memory and allocations to just the visible cells",
+            "To enable insertion animations"
+          ],
+          "answer": 2,
+          "explanation": "Allocating a cell for every row would be expensive: only the visible ones stay alive, plus a small reuse queue.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Reuse does the opposite: a reused cell carries over the previous row's state, which is exactly why you have to reconfigure it every time.",
+            "Cells can be deallocated just fine; reuse is an efficiency choice, not a constraint.",
+            null,
+            "Insertion animations exist regardless of reuse: the reason is to limit allocations and memory to the visible cells."
+          ]
+        },
+        {
+          "id": "uikit-table-collection-2",
+          "prompt": "When scrolling fast, some cells briefly show another row's image. Why?",
+          "code": "func tableView(_ tv: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {\n    let cell = tv.dequeueReusableCell(withIdentifier: \"c\", for: ip) as! PhotoCell\n    loader.load(items[ip.row].url) { image in\n        cell.photo.image = image\n    }\n    return cell\n}",
+          "options": [
+            "`dequeueReusableCell` returns random cells",
+            "The download finishes after the cell has already been reused",
+            "The closure runs twice",
+            "Images must be assigned in `willDisplay`"
+          ],
+          "answer": 1,
+          "explanation": "The captured cell may be showing a different row by the time the response arrives: cancel the task in `prepareForReuse` or verify identity.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`dequeue` isn't random: it returns a cell from the reuse queue, but that cell may have been used by another row.",
+            null,
+            "The closure runs once per request; the problem is that it writes to a cell that **in the meantime** is showing a different row.",
+            "Moving the assignment to `willDisplay` doesn't fix it: the async download can still land after the cell has been reused."
+          ]
+        },
+        {
+          "id": "uikit-table-collection-3",
+          "prompt": "What happens if you run only this line without changing the `items` array?",
+          "code": "tableView.insertRows(at: [IndexPath(row: 0, section: 0)],\n                     with: .automatic)",
+          "options": [
+            "An empty cell is inserted",
+            "The line is ignored",
+            "Crash with `NSInternalInconsistencyException`",
+            "The table fully reloads"
+          ],
+          "answer": 2,
+          "explanation": "The table checks that the row count after the update equals the previous count plus the insertions: the data source doesn't add up, so the app crashes.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The table doesn't conjure cells out of nothing: it compares the row count before and after, and if it doesn't match the data source, it throws an exception.",
+            "UIKit doesn't ignore the inconsistency: it checks that `numberOfRows` equals the previous rows plus the insertions, and crashes otherwise.",
+            null,
+            "`insertRows` doesn't turn into `reloadData()`: with an unchanged data source, the consistency check fails and the app crashes."
+          ]
+        },
+        {
+          "id": "uikit-table-collection-4",
+          "prompt": "What happens when you call `dequeueReusableCell(withIdentifier:for:)` with an identifier that was never registered?",
+          "code": null,
+          "options": [
+            "It returns `nil`",
+            "It creates a default `UITableViewCell`",
+            "It returns the first registered cell",
+            "An exception is raised and the app crashes"
+          ],
+          "answer": 3,
+          "explanation": "The `for:` variant always returns a non-optional cell, so without registration it raises an exception.",
+          "difficulty": 1,
+          "whyWrong": [
+            "That's what the old variant without `for:` does, returning an optional: the `for:` variant returns a non-optional cell and crashes.",
+            "UIKit doesn't make up a default cell: without registration it doesn't know which class or nib to use, so it raises an exception.",
+            "There's no fallback to the first registered cell: every identifier must be registered, or the app crashes.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-table-collection-5",
+          "prompt": "What requirement must the item identifiers in a diffable snapshot meet?",
+          "code": null,
+          "options": [
+            "Be `Codable`",
+            "Be consecutive `Int`s",
+            "Be class types for identity",
+            "Be `Hashable` and unique within the snapshot"
+          ],
+          "answer": 3,
+          "explanation": "Diffing relies on hashing; duplicate identifiers cause an error when you apply the snapshot.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`Codable` is for serialization, but diffing relies on hashing and equality: the requirement is `Hashable`.",
+            "Identifiers can be any `Hashable` type, including `UUID` or strings; they don't need to be integers, let alone consecutive ones.",
+            "Structs and enums work perfectly well: identity comes from `Hashable`, not from being a reference type.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-table-collection-6",
+          "prompt": "What's the advantage of `reconfigureItems` over `reloadItems` on a diffable snapshot?",
+          "code": null,
+          "options": [
+            "It updates the existing cell without dequeuing a new one",
+            "It recomputes the entire collection layout",
+            "It also works with non-`Hashable` identifiers",
+            "It doesn't require applying the snapshot"
+          ],
+          "answer": 0,
+          "explanation": "`reloadItems` replaces the cell with a new one; `reconfigureItems` (iOS 15) reruns the configuration on the already visible cell, which is more efficient.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "`reconfigureItems` acts on the specific cells you pass it; it doesn't redo the layout of the whole collection.",
+            "Every identifier in a diffable snapshot must be `Hashable`, including for `reconfigureItems`.",
+            "You still have to `apply` the snapshot: `reconfigureItems` only marks the items, and the update happens when you apply."
+          ]
+        },
+        {
+          "id": "uikit-table-collection-7",
+          "prompt": "What's the correct hierarchy of a compositional layout?",
+          "code": null,
+          "options": [
+            "Section → item → group → layout",
+            "Group → item → section → layout",
+            "Item → section → group → layout",
+            "Item → group → section → layout"
+          ],
+          "answer": 3,
+          "explanation": "Items live in groups, groups make up a section, and sections compose the layout.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The section contains the groups, not the other way around: you start from the bottom, with items, the smallest elements.",
+            "A group is a container of items, so the item comes before the group, not after.",
+            "An item doesn't go directly into a section: it has to live in a group, which in turn forms the section.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-table-collection-8",
+          "prompt": "Which statement about `prefetchRowsAt` is correct?",
+          "code": null,
+          "options": [
+            "It's called for every row before `cellForRowAt`",
+            "It replaces `cellForRowAt` for upcoming rows",
+            "It always runs on a background thread",
+            "It isn't guaranteed: `cellForRowAt` must load the data on its own"
+          ],
+          "answer": 3,
+          "explanation": "Prefetching is an optimization the system can skip, for example during very fast scrolling.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Prefetching is neither guaranteed nor systematic: the system can skip it, for example during very fast scrolling.",
+            "It doesn't replace anything: `cellForRowAt` is still required and must work even if the prefetch never happened.",
+            "`prefetchRowsAt` is called on the **main thread**; it's up to you to move heavy work to the background.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-table-collection-9",
+          "prompt": "What's appropriate to do in `prepareForReuse()`?",
+          "code": null,
+          "options": [
+            "Configure the cell with the new row's data",
+            "Reset transient state and cancel async tasks",
+            "Remove all subviews and recreate them",
+            "Call `reloadData()` on the table"
+          ],
+          "answer": 1,
+          "explanation": "The new row's data belongs in `cellForRowAt`; `prepareForReuse` is for cleaning up whatever the previous row left behind.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Configuring with the new data belongs in `cellForRowAt`, where you know the `IndexPath`: in `prepareForReuse` you don't yet know which row is coming.",
+            null,
+            "Recreating subviews on every reuse defeats the purpose of reuse: resetting state is enough, no need to rebuild the hierarchy.",
+            "Calling `reloadData()` from a cell would restart reuse for every cell: you risk loops and a huge amount of work on every scroll."
+          ]
+        },
+        {
+          "id": "uikit-table-collection-10",
+          "prompt": "A self-sizing cell expands its text after a tap, but its height doesn't change. How do you force a recalculation without reloading the cell?",
+          "code": null,
+          "options": [
+            "Call `cell.setNeedsDisplay()`",
+            "Call `tableView.performBatchUpdates(nil)`",
+            "Call `tableView.layoutIfNeeded()`",
+            "Set `rowHeight` to 0"
+          ],
+          "answer": 1,
+          "explanation": "An empty batch update (or `beginUpdates`/`endUpdates`) recalculates heights with animation, without dequeuing again.",
+          "difficulty": 3,
+          "whyWrong": [
+            "`setNeedsDisplay()` only redraws the cell's content: the table doesn't recalculate row heights.",
+            null,
+            "`layoutIfNeeded()` lays out the table's subviews again, but doesn't make it query row heights again.",
+            "With `rowHeight` set to 0 the rows collapse: self-sizing cells need `UITableView.automaticDimension`, not 0."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "navigation",
+      "stage": "mid",
+      "title": "Navigation",
+      "icon": "arrow.right.square",
+      "summary": "Navigation stack, modals, segues vs. code, coordinators, and passing data back.",
+      "lesson": [
+        {
+          "heading": "UINavigationController",
+          "body": "It manages a **stack** of view controllers: `pushViewController` adds one, `popViewController` removes one, and `setViewControllers` replaces the whole stack. The stack holds VCs strongly: once a VC is removed, it should deallocate.\n\nThe back button title belongs to the **previous** VC: you set it on the `navigationItem.backButtonTitle` of the VC doing the push, not the one being shown.",
+          "code": "let detail = DetailViewController(item: item)\nnavigationItem.backButtonTitle = \"List\"\nnavigationController?.pushViewController(detail, animated: true)"
+        },
+        {
+          "heading": "Modal presentation",
+          "body": "`present(_:animated:)` shows a VC modally. On iPhone since iOS 13, the default `.automatic` style resolves to `.pageSheet`, which can be dismissed with a swipe; to block that, set `isModalInPresentation = true`. `.fullScreen` removes the presenter's view from the hierarchy, while `.overFullScreen` keeps it (useful for transparent backgrounds).\n\n`dismiss(animated:)` can be called from the presented VC: UIKit forwards the request to the presenter. A VC can present only one VC at a time.",
+          "code": null
+        },
+        {
+          "heading": "Segues or navigation in code",
+          "body": "With storyboards, you pass data in `prepare(for:sender:)` and go back with **unwind segues**. Navigation in code is more explicit and testable, and enables **dependency injection** through `init`.\n\nSince iOS 13, `instantiateViewController(identifier:creator:)` enables injection with storyboards too, using a custom `init?(coder:)`.",
+          "code": "let vc = storyboard.instantiateViewController(identifier: \"Detail\") { coder in\n    DetailViewController(coder: coder, viewModel: vm)\n}"
+        },
+        {
+          "heading": "Coordinator pattern",
+          "body": "A **coordinator** owns the navigation logic: it creates the VCs, configures them, and decides where to go next. VCs don't know about each other and report actions through delegates or closures, so they're reusable.\n\nChild coordinators are kept in an array and removed when their flow ends. The tricky part is the system back button: you intercept it with `UINavigationControllerDelegate` in `didShow`, checking the `transitionCoordinator`'s source VC.",
+          "code": "protocol Coordinator: AnyObject {\n    var children: [Coordinator] { get set }\n    func start()\n}"
+        },
+        {
+          "heading": "Passing data back",
+          "body": "The classic options are: a **delegate** (protocol constrained to `AnyObject`, `weak` property), a callback **closure** (with `[weak self]`), `NotificationCenter` for one-to-many communication, and Combine publishers.\n\nGoing forward, you use init injection or property injection before the push or present.",
+          "code": "protocol EditDelegate: AnyObject {\n    func didSave(_ item: Item)\n}\nfinal class EditViewController: UIViewController {\n    weak var delegate: EditDelegate?\n    var onCancel: (() -> Void)?\n}"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Classic question: **\"How do you pass data from a child VC back to the previous one?\"** Short answer: a weak delegate or a closure, depending on whether you have many related callbacks or just one. Mention that the protocol must be class-bound to allow `weak`, and that in large apps navigation should be pulled out into a coordinator to decouple the VCs.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-navigation-1",
+          "prompt": "On iPhone with iOS 13+, which presentation style do you get with the default `.automatic`?",
+          "code": null,
+          "options": [
+            "`.pageSheet`",
+            "`.fullScreen`",
+            "`.overFullScreen`",
+            "`.formSheet`"
+          ],
+          "answer": 0,
+          "explanation": "Since iOS 13, `.automatic` almost always resolves to `.pageSheet`, which can be dismissed by swiping down.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "`.fullScreen` was the behavior before iOS 13; since then `.automatic` almost always produces a sheet.",
+            "`.overFullScreen` has to be requested explicitly to keep the presenter visible; `.automatic` never resolves to it on its own.",
+            "On iPhone in portrait, `.formSheet` behaves like a page sheet, but the style `.automatic` resolves to is `.pageSheet`."
+          ]
+        },
+        {
+          "id": "uikit-navigation-2",
+          "prompt": "With storyboards, where do you pass data to a segue's destination VC?",
+          "code": null,
+          "options": [
+            "In `performSegue(withIdentifier:sender:)`",
+            "In the destination's `viewDidLoad`",
+            "In `shouldPerformSegue(withIdentifier:sender:)`",
+            "In `prepare(for:sender:)`"
+          ],
+          "answer": 3,
+          "explanation": "`prepare(for:sender:)` receives the segue with its `destination` already instantiated, before it's shown.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`performSegue` starts the segue but doesn't give you access to the destination: you get the destination VC in `prepare(for:sender:)`.",
+            "In `viewDidLoad`, the destination doesn't know who opened it: the source VC has to pass it the data beforehand.",
+            "`shouldPerformSegue` only decides **whether** to perform the segue; the destination isn't instantiated yet at that point.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-navigation-3",
+          "prompt": "A pushes B. To show \"List\" as the back button title in B, where do you set it?",
+          "code": null,
+          "options": [
+            "`B.navigationItem.backButtonTitle`",
+            "`A.navigationItem.backButtonTitle`",
+            "`B.navigationItem.leftBarButtonItem`",
+            "`navigationController.navigationBar.topItem`"
+          ],
+          "answer": 1,
+          "explanation": "The back button represents the VC you go back to, so it reads the previous VC's `navigationItem`.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It seems logical, but the back button shown in B represents A, the VC you return to: UIKit reads A's `navigationItem`.",
+            null,
+            "Replacing the `leftBarButtonItem` removes the system back button and the swipe gesture: that's not how you change just the title.",
+            "`topItem` changes as you push: relying on it is fragile, and the back title still has to be set on A's `navigationItem`."
+          ]
+        },
+        {
+          "id": "uikit-navigation-4",
+          "prompt": "What's the main difference between `.overFullScreen` and `.fullScreen`?",
+          "code": null,
+          "options": [
+            "`.overFullScreen` is dismissed with a swipe",
+            "`.fullScreen` supports transparency",
+            "`.overFullScreen` leaves the presenter's view in the hierarchy",
+            "None, they're aliases"
+          ],
+          "answer": 2,
+          "explanation": "With `.fullScreen`, UIKit removes the underlying view once the transition ends; with `.overFullScreen`, it stays visible beneath transparent content.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Swipe-to-dismiss applies to sheets (`.pageSheet`/`.formSheet`): neither full-screen style offers it.",
+            "It's the other way around: `.fullScreen` removes the presenter's view, so behind transparent content you'd see black.",
+            null,
+            "They're not aliases: `.fullScreen` removes the underlying view at the end of the transition, `.overFullScreen` leaves it in the hierarchy."
+          ]
+        },
+        {
+          "id": "uikit-navigation-5",
+          "prompt": "Why doesn't this code compile?",
+          "code": "protocol DetailDelegate {\n    func didFinish()\n}\nclass DetailViewController: UIViewController {\n    weak var delegate: DetailDelegate?\n}",
+          "options": [
+            "The protocol isn't constrained to `AnyObject`",
+            "`weak` can't be used on optional properties",
+            "Delegates must be `unowned`",
+            "The method is missing `@objc`"
+          ],
+          "answer": 0,
+          "explanation": "`weak` applies only to reference types: the protocol must be declared `: AnyObject` to use it.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`weak` is designed precisely for optionals: a weak reference must be able to become `nil`, so it has to be optional.",
+            "`unowned` isn't required, and it's actually riskier for a delegate: if the object goes away, accessing it crashes.",
+            "`@objc` is only needed for optional methods or Objective-C interop; the compile error comes from `weak` on a protocol that isn't class-bound."
+          ]
+        },
+        {
+          "id": "uikit-navigation-6",
+          "prompt": "In a coordinator architecture, the user goes back with the system back button and the child coordinator stays in memory. How do you intercept it?",
+          "code": null,
+          "options": [
+            "With the `didShow` method of `UINavigationControllerDelegate`",
+            "With the coordinator's `viewWillDisappear`",
+            "With the navigation controller's `deinit`",
+            "By overriding `popViewController` in an extension"
+          ],
+          "answer": 0,
+          "explanation": "In `didShow`, you compare the `transitionCoordinator`'s source VC against the stack: if it's gone, the flow is over and you remove the child.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "A coordinator usually isn't a `UIViewController`, so it doesn't receive callbacks like `viewWillDisappear`.",
+            "The navigation controller stays alive during the pop, so its `deinit` never fires: it won't tell you a single flow has ended.",
+            "You can't reliably override a class method in an extension; and the system back action doesn't go through your code anyway."
+          ]
+        },
+        {
+          "id": "uikit-navigation-7",
+          "prompt": "VC B, presented modally by A, calls `dismiss(animated: true)` on itself. What happens?",
+          "code": null,
+          "options": [
+            "Nothing: only A can call `dismiss`",
+            "A is dismissed along with B",
+            "UIKit forwards the request to A and B is dismissed",
+            "Crash from calling it on the wrong VC"
+          ],
+          "answer": 2,
+          "explanation": "If the VC isn't presenting anything, `dismiss` is forwarded to the presenting view controller.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Not so: called on B, `dismiss` is forwarded to the presenting view controller, which dismisses B.",
+            "A isn't dismissed: A is the presenter and stays; what gets removed is the presented VC, B.",
+            null,
+            "No crash: UIKit handles the call by forwarding it to the presenting view controller, a very common use case."
+          ]
+        },
+        {
+          "id": "uikit-navigation-8",
+          "prompt": "What happens if you run these two lines back to back in a VC that isn't presenting anything?",
+          "code": "present(alertA, animated: true)\npresent(alertB, animated: true)",
+          "options": [
+            "Only `alertA` appears; B logs a warning in the console",
+            "Both appear, B on top of A",
+            "B replaces A",
+            "Crash with an exception"
+          ],
+          "answer": 0,
+          "explanation": "A VC can present only one VC at a time: the second `present` fails with an \"already presenting\" warning.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "A VC can present only one VC at a time: to stack them, B would have to be presented **by** `alertA`, not by the same VC.",
+            "UIKit doesn't replace the current presentation: the second `present` is rejected with a warning.",
+            "No exception is thrown: the second `present` fails and UIKit just prints an \"already presenting\" warning."
+          ]
+        },
+        {
+          "id": "uikit-navigation-9",
+          "prompt": "How do you prevent swipe-to-dismiss on a sheet that contains an unsaved form?",
+          "code": null,
+          "options": [
+            "`isModalInPresentation = true`",
+            "`modalPresentationStyle = .formSheet`",
+            "`view.isUserInteractionEnabled = false`",
+            "Override `dismiss` without calling `super`"
+          ],
+          "answer": 0,
+          "explanation": "`isModalInPresentation` blocks interactive dismissal; with the presentation delegate you can also ask for confirmation.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`.formSheet` can be swiped away too: changing the style doesn't block interactive dismissal.",
+            "Disabling interaction makes the form unusable and doesn't stop the swipe gesture, which the presentation handles.",
+            "Swipe-to-dismiss doesn't go through your `dismiss` override: the presentation controller handles interactive dismissal."
+          ]
+        },
+        {
+          "id": "uikit-navigation-10",
+          "prompt": "Which API enables dependency injection via init for a VC defined in a storyboard?",
+          "code": null,
+          "options": [
+            "`instantiateInitialViewController()`",
+            "`instantiateViewController(identifier:creator:)`",
+            "`prepare(for:sender:)` with a custom `init`",
+            "`UINib(nibName:bundle:)`"
+          ],
+          "answer": 1,
+          "explanation": "Since iOS 13, the `creator` closure receives the `NSCoder` and lets you call an `init?(coder:...)` with dependencies.",
+          "difficulty": 3,
+          "whyWrong": [
+            "`instantiateInitialViewController()` without `creator` uses the standard `init?(coder:)`: you can't pass dependencies to the init.",
+            null,
+            "In `prepare(for:sender:)`, the destination has already been created: you can assign properties, but you can't call a custom `init`.",
+            "`UINib` loads a nib, not a storyboard scene, and offers no way to inject dependencies into the init."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "events-gestures",
+      "stage": "mid",
+      "title": "Events and Gestures",
+      "icon": "hand.tap",
+      "summary": "Responder chain, hit-testing, gesture recognizers, target-action, and UIControl.",
+      "lesson": [
+        {
+          "heading": "Responder chain",
+          "body": "Every `UIView`, `UIViewController`, `UIWindow`, and `UIApplication` is a `UIResponder`. An unhandled event travels up the chain via `next`: view → superview (or the VC, if the view is its root view) → … → window → application → app delegate.\n\nThe **first responder** receives keyboard events and `nil`-targeted actions. To dismiss the keyboard from anywhere, use `view.endEditing(true)` or send a `resignFirstResponder` action with a `nil` target.",
+          "code": "UIApplication.shared.sendAction(\n    #selector(UIResponder.resignFirstResponder),\n    to: nil, from: nil, for: nil)"
+        },
+        {
+          "heading": "Hit-testing",
+          "body": "To find the touched view, UIKit calls `hitTest(_:with:)` on the window, which recurses into subviews **in reverse order** (topmost first) using `point(inside:with:)`. Views with `isHidden`, `isUserInteractionEnabled = false`, or `alpha < 0.01` are skipped.\n\nA subview that extends outside its superview's `bounds` is visible (if `clipsToBounds` is `false`) but not tappable, because the superview fails the test. Overriding `point(inside:with:)` lets you enlarge the tap area.",
+          "code": "override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {\n    bounds.insetBy(dx: -12, dy: -12).contains(point)\n}"
+        },
+        {
+          "heading": "Gesture recognizers",
+          "body": "Gesture recognizers receive touches **before** the view: once they recognize, by default (`cancelsTouchesInView = true`) they send `touchesCancelled` to the view. They're either discrete (tap) or continuous (pan, pinch), with `.began`, `.changed`, and `.ended` states.\n\nTo resolve conflicts, use `require(toFail:)` or the delegate's `gestureRecognizer(_:shouldRecognizeSimultaneouslyWith:)`. Remember that `UIImageView` and `UILabel` have `isUserInteractionEnabled = false` by default.",
+          "code": "singleTap.require(toFail: doubleTap)\nimageView.isUserInteractionEnabled = true\nimageView.addGestureRecognizer(singleTap)"
+        },
+        {
+          "heading": "Target-action and UIControl",
+          "body": "`UIControl` (buttons, switches, sliders) sends actions for events like `.touchUpInside` and `.valueChanged`. With `addTarget(_:action:for:)`, the target **isn't retained**; since iOS 14 you can use closure-based `UIAction`s, which do retain whatever they capture.\n\nIf you pass `nil` as the target, the action travels the responder chain starting from the first responder. In custom controls, call `sendActions(for:)` to notify targets.",
+          "code": "button.addAction(UIAction { [weak self] _ in\n    self?.save()\n}, for: .touchUpInside)"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Classic question: **\"How does UIKit figure out which view received a touch?\"** Short answer: top-down hit-testing with `hitTest` and `point(inside:)`, skipping hidden, transparent, or non-interactive views; then, if the event isn't handled, it travels up the responder chain. Wrap up with a practical case: a button outside its superview's bounds, or an enlarged tap area.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-events-gestures-1",
+          "prompt": "You add a `UITapGestureRecognizer` to a `UIImageView`, but the tap is never recognized. Most likely cause?",
+          "code": null,
+          "options": [
+            "Image views don't support gestures",
+            "You need `cancelsTouchesInView = false`",
+            "`isUserInteractionEnabled` is `false` by default",
+            "The target must be set to `nil`"
+          ],
+          "answer": 2,
+          "explanation": "`UIImageView` and `UILabel` disable interaction by default, so hit-testing skips them.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Image views support gestures like any `UIView`; the problem is that interaction is disabled by default.",
+            "`cancelsTouchesInView` decides whether touches to the view get canceled, but it doesn't deliver touches to a view excluded from hit-testing.",
+            null,
+            "A `nil` target doesn't enable anything: the recognizer never gets the touches at all, because hit-testing skips the image view."
+          ]
+        },
+        {
+          "id": "uikit-events-gestures-2",
+          "prompt": "A button extends outside its superview's bounds (`clipsToBounds = false`). The outer part is visible but doesn't respond. Why?",
+          "code": null,
+          "options": [
+            "The superview fails `point(inside:with:)` and hit-testing stops there",
+            "Buttons outside the bounds get disabled",
+            "You need `layer.masksToBounds = true`",
+            "The button must be brought forward with `bringSubviewToFront`"
+          ],
+          "answer": 0,
+          "explanation": "Hit-testing only descends into views that contain the point: if the superview says no, its subviews are never examined.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "UIKit doesn't disable anything: the button is enabled, but hit-testing never gets to it because the superview rejects the point.",
+            "`masksToBounds = true` would clip the outer part away: it would make it invisible, not tappable.",
+            "Bringing the button forward changes the order among siblings, but doesn't fix the fact that the point is outside the superview."
+          ]
+        },
+        {
+          "id": "uikit-events-gestures-3",
+          "prompt": "Which of these views still receives touches during hit-testing?",
+          "code": null,
+          "options": [
+            "A view with `alpha = 0.005`",
+            "A view with `backgroundColor = .clear`",
+            "A view with `isHidden = true`",
+            "A view with `isUserInteractionEnabled = false`"
+          ],
+          "answer": 1,
+          "explanation": "A transparent background doesn't matter: only hidden views, views with alpha below 0.01, or non-interactive views are excluded.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It seems visible to hit-testing, but with alpha below **0.01** the view is excluded: 0.005 is under the threshold.",
+            null,
+            "Views with `isHidden = true` are skipped by hit-testing, so they don't receive touches.",
+            "`isUserInteractionEnabled = false` is exactly the flag that excludes the view (and its subviews) from hit-testing."
+          ]
+        },
+        {
+          "id": "uikit-events-gestures-4",
+          "prompt": "Which `UIControl.Event` do you use for the standard tap on a `UIButton`?",
+          "code": null,
+          "options": [
+            "`.touchDown`",
+            "`.touchUpInside`",
+            "`.valueChanged`",
+            "`.primaryActionTriggered`, iPad only"
+          ],
+          "answer": 1,
+          "explanation": "The action fires when the finger lifts inside the button, so the user can cancel by dragging out.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`.touchDown` fires as soon as the finger touches down: it doesn't let the user cancel by dragging out, so it's not the standard tap.",
+            null,
+            "`.valueChanged` is for controls with a value, like `UISwitch` or `UISlider`, not for a button tap.",
+            "`.primaryActionTriggered` isn't limited to iPad, but the standard tap event on `UIButton` is still `.touchUpInside`."
+          ]
+        },
+        {
+          "id": "uikit-events-gestures-5",
+          "prompt": "What happens with this code when the button is tapped?",
+          "code": "button.addTarget(nil,\n                 action: #selector(copy(_:)),\n                 for: .touchUpInside)",
+          "options": [
+            "The action travels up the responder chain to whoever implements it",
+            "Crash: the target can't be `nil`",
+            "Nothing happens",
+            "Only `UIApplication` gets called"
+          ],
+          "answer": 0,
+          "explanation": "With a `nil` target, UIKit looks for the first responder in the chain that responds to the selector (a nil-targeted action).",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "A `nil` target is legal and intentional: it triggers a nil-targeted action, which searches the responder chain for a recipient.",
+            "Something does happen: UIKit walks up the responder chain and calls `copy(_:)` on the first responder that implements it.",
+            "`UIApplication` is just one of the last links: the search starts at the first responder and stops at the first one that responds."
+          ]
+        },
+        {
+          "id": "uikit-events-gestures-6",
+          "prompt": "Two subviews overlap. You tap in the shared area: which one receives the touch?",
+          "code": "container.addSubview(viewA)\ncontainer.addSubview(viewB)   // same frame as viewA",
+          "options": [
+            "`viewA`, because it was added first",
+            "`viewB`, because it's on top and gets tested first",
+            "Both receive the touch",
+            "`container`, because the subviews cancel each other out"
+          ],
+          "answer": 1,
+          "explanation": "`hitTest` walks subviews in reverse order: the last one added is the topmost and wins.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Insertion order matters the other way around: the first one added sits underneath, and `hitTest` checks the last subview first.",
+            null,
+            "Hit-testing returns **a single** view: the first one that contains the point, walking subviews from top to bottom.",
+            "Subviews don't cancel each other out: a view containing the point is found, and the container only gets the touch if none accepts it."
+          ]
+        },
+        {
+          "id": "uikit-events-gestures-7",
+          "prompt": "A view has both a single tap and a double tap. On a double tap, the single tap fires too. How do you fix it?",
+          "code": null,
+          "options": [
+            "`doubleTap.require(toFail: singleTap)`",
+            "`singleTap.cancelsTouchesInView = false`",
+            "`singleTap.require(toFail: doubleTap)`",
+            "`singleTap.numberOfTouchesRequired = 2`"
+          ],
+          "answer": 2,
+          "explanation": "The single tap waits for the double tap to fail before recognizing, at the cost of a small delay.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It's backwards: this way the double tap waits for the single tap, which still fires on the first tap.",
+            "`cancelsTouchesInView` is about touches forwarded to the view, not about two recognizers competing.",
+            null,
+            "`numberOfTouchesRequired` counts **fingers**, not taps: the single tap would then require two fingers at once."
+          ]
+        },
+        {
+          "id": "uikit-events-gestures-8",
+          "prompt": "You add a tap gesture to the view containing a `UITableView` to dismiss the keyboard. Now `didSelectRowAt` is never called. Why?",
+          "code": null,
+          "options": [
+            "Table views don't receive touches when there's a gesture",
+            "The tap gesture becomes the first responder",
+            "`cancelsTouchesInView` is `true` and cancels the table's touches",
+            "`endEditing` disables selection"
+          ],
+          "answer": 2,
+          "explanation": "When the recognizer recognizes, the view receives `touchesCancelled`; setting `cancelsTouchesInView = false` makes selection work again.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Table views receive touches normally; the point is that the recognizer, when it recognizes, cancels the touches meant for the table.",
+            "A gesture recognizer isn't a responder and never becomes first responder: the problem is `cancelsTouchesInView`.",
+            null,
+            "`endEditing` just dismisses the keyboard: it doesn't affect table selection, which is being canceled by the recognizer."
+          ]
+        },
+        {
+          "id": "uikit-events-gestures-9",
+          "prompt": "What is the `next` responder of a `UIViewController`'s root view?",
+          "code": null,
+          "options": [
+            "The window",
+            "`UIApplication`",
+            "The view controller itself",
+            "The navigation controller's view"
+          ],
+          "answer": 2,
+          "explanation": "The root view forwards to its VC; from the VC, the chain continues to the view's superview or the parent.",
+          "difficulty": 1,
+          "whyWrong": [
+            "The window comes later in the chain: before the superview, the root view goes through its view controller.",
+            "`UIApplication` is near the end of the chain: from the root view you first go to the VC, then superview, window, and app.",
+            null,
+            "The root view forwards to the VC that owns it; only from the VC can the chain move up to a container, like the navigation controller."
+          ]
+        },
+        {
+          "id": "uikit-events-gestures-10",
+          "prompt": "Which statement about memory in target-action is correct?",
+          "code": null,
+          "options": [
+            "`addTarget` doesn't retain the target; `UIAction` closures do",
+            "`addTarget` always retains the target",
+            "Neither `addTarget` nor `UIAction` retains anything",
+            "`UIAction` always uses weak references"
+          ],
+          "answer": 0,
+          "explanation": "The control doesn't hold on to the target, but a `UIAction` closure that captures `self` strongly can create a retain cycle.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "The control doesn't hold on to the target: that's why, if the target is deallocated, the action simply stops being sent.",
+            "The `UIAction` closure is retained by the control: if it captures `self` strongly, it can create a retain cycle.",
+            "`UIAction` doesn't weaken anything on its own: captures are strong by default, and it's up to you to write `[weak self]`."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "threading-ui",
+      "stage": "mid",
+      "title": "Threading and UI",
+      "icon": "cpu",
+      "summary": "Main thread, GCD, OperationQueue, DispatchGroup, and race conditions.",
+      "lesson": [
+        {
+          "heading": "The main thread rule",
+          "body": "UIKit isn't thread-safe: nearly all `UIView` and `UIViewController` APIs must be used **only from the main thread**, which also runs the rendering and event run loop. With Swift Concurrency these classes are annotated `@MainActor`, and Xcode's **Main Thread Checker** flags violations at runtime.\n\nHeavy work (networking, parsing, image decoding) belongs in the background; then you hop back to main to update the UI.",
+          "code": "URLSession.shared.dataTask(with: url) { data, _, _ in\n    let image = data.flatMap(UIImage.init(data:))\n    DispatchQueue.main.async {\n        self.imageView.image = image\n    }\n}.resume()"
+        },
+        {
+          "heading": "Grand Central Dispatch",
+          "body": "GCD offers **serial** queues (one task at a time, FIFO) and **concurrent** queues: `DispatchQueue.main` is serial, the `global(qos:)` queues are concurrent. `async` enqueues and returns immediately; `sync` blocks the caller until the task finishes.\n\nCalling `DispatchQueue.main.sync` from the main thread causes a **deadlock** (libdispatch detects it and crashes). For the reader/writer pattern, use a custom concurrent queue with `.barrier` on writes: on global queues, the barrier has no effect.",
+          "code": "let queue = DispatchQueue(label: \"cache\", attributes: .concurrent)\nfunc read(_ k: String) -> Data? { queue.sync { storage[k] } }\nfunc write(_ k: String, _ v: Data) {\n    queue.async(flags: .barrier) { self.storage[k] = v }\n}"
+        },
+        {
+          "heading": "OperationQueue",
+          "body": "`OperationQueue` sits one level above GCD: `Operation`s support **dependencies** (`addDependency`), **cancellation** (`cancel()` and checking `isCancelled`), priorities, and `maxConcurrentOperationCount` to limit parallelism.\n\nIt's handy for download or processing pipelines you need to be able to cancel, for example when a cell scrolls off screen.",
+          "code": null
+        },
+        {
+          "heading": "DispatchGroup",
+          "body": "`DispatchGroup` coordinates multiple async tasks: `enter()` before each one, `leave()` when it's done (**on every path**, including errors), and `notify(queue:)` when they've all finished. `wait()` blocks the current thread: never on main.\n\nWith Swift Concurrency, you get the same result with `async let` or `withTaskGroup`.",
+          "code": "let group = DispatchGroup()\nfor url in urls {\n    group.enter()\n    api.fetch(url) { result in\n        defer { group.leave() }\n        results.append(result)   // careful: serialize this!\n    }\n}\ngroup.notify(queue: .main) { self.reload() }"
+        },
+        {
+          "heading": "Race conditions and Swift Concurrency",
+          "body": "A **data race** happens when multiple threads access the same memory and at least one writes, without synchronization: the result is nondeterministic. You prevent it with a serial queue, a lock (`NSLock`, `OSAllocatedUnfairLock`), or an **actor**, and you catch it with the **Thread Sanitizer**.\n\nIn Swift Concurrency, a `Task {}` created from a `@MainActor` context (like a VC) inherits its isolation: the synchronous code inside it runs on the main thread.",
+          "code": "actor ImageCache {\n    private var images: [URL: UIImage] = [:]\n    func image(for url: URL) -> UIImage? { images[url] }\n    func insert(_ image: UIImage, for url: URL) { images[url] = image }\n}"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Classic question: **\"Why does the UI have to be updated on the main thread?\"** Short answer: UIKit isn't thread-safe, and the main run loop handles events and rendering; updating from other threads leads to nondeterministic glitches or crashes. Then show how you get back to main (`DispatchQueue.main.async` or `@MainActor`) and how you protect shared state with serial queues or actors.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-threading-ui-1",
+          "prompt": "Which thread does the `URLSession.shared.dataTask` completion run on?",
+          "code": null,
+          "options": [
+            "Always on the main thread",
+            "On a background queue: for UI work you have to hop back to main",
+            "On the thread that called `resume()`",
+            "On a `DispatchQueue.global()` thread with `.userInteractive` QoS"
+          ],
+          "answer": 1,
+          "explanation": "The shared session uses a serial background delegate queue, so UI updates have to be dispatched back to main.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`URLSession.shared` doesn't automatically return to main: the completion runs on its background delegate queue.",
+            null,
+            "`resume()` starts the task and returns immediately: the completion doesn't run on the calling thread but on the session's queue.",
+            "The session uses its own delegate queue (a serial `OperationQueue`), not a specific global queue with `.userInteractive` QoS."
+          ]
+        },
+        {
+          "id": "uikit-threading-ui-2",
+          "prompt": "What happens when you run this code from the main thread?",
+          "code": "DispatchQueue.main.sync {\n    label.text = \"Done\"\n}",
+          "options": [
+            "Deadlock: libdispatch detects it and the app crashes",
+            "The text updates immediately",
+            "The block runs on the next run loop iteration",
+            "It's automatically converted to `async`"
+          ],
+          "answer": 0,
+          "explanation": "`sync` waits for the block to finish, but the block can't start because main is busy waiting.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`sync` on main from main can't start: main is blocked waiting on itself, so the text never updates.",
+            "That would be the behavior of `async`: with `sync`, main stays blocked and the run loop never advances.",
+            "GCD doesn't convert `sync` to `async`: it detects the deadlock and crashes the app."
+          ]
+        },
+        {
+          "id": "uikit-threading-ui-3",
+          "prompt": "What does this code print when run on the main thread?",
+          "code": "print(\"1\")\nDispatchQueue.main.async { print(\"2\") }\nprint(\"3\")",
+          "options": [
+            "1, 2, 3",
+            "1, 3, 2",
+            "2, 1, 3",
+            "The order is nondeterministic"
+          ],
+          "answer": 1,
+          "explanation": "The block is enqueued on main and runs only after the current code has finished.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`async` doesn't run the block right away: it enqueues it on main, which is busy until the current code finishes.",
+            null,
+            "The block can't jump ahead of `print(\"1\")`, which already ran before the block was even enqueued.",
+            "Everything happens on the same serial queue, main: the order is deterministic, and the enqueued block runs last."
+          ]
+        },
+        {
+          "id": "uikit-threading-ui-4",
+          "prompt": "In this code, `notify` sometimes never gets called. Why?",
+          "code": "group.enter()\napi.fetch { result in\n    guard case .success(let v) = result else { return }\n    values.append(v)\n    group.leave()\n}",
+          "options": [
+            "The error path is missing `group.leave()`",
+            "`enter` must be called inside the closure",
+            "`notify` must be called before `enter`",
+            "`DispatchGroup` doesn't work with closures"
+          ],
+          "answer": 0,
+          "explanation": "Every `enter` needs its `leave` on every path: use `defer { group.leave() }`.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`enter` must be called **before** starting the async work: inside the closure, the group might already look empty.",
+            "`notify` can be registered at any time; the problem is the missing `leave` on the error path.",
+            "`DispatchGroup` works just fine with closures; here it hangs only because `enter` isn't always balanced."
+          ]
+        },
+        {
+          "id": "uikit-threading-ui-5",
+          "prompt": "What happens when you use `.barrier` on `DispatchQueue.global()`?",
+          "code": null,
+          "options": [
+            "No barrier effect: it behaves like a regular `async`",
+            "It blocks all global queues",
+            "It serializes only tasks with the same QoS",
+            "Runtime crash"
+          ],
+          "answer": 0,
+          "explanation": "Barriers only work on concurrent queues you create; global queues are shared with the system.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "A barrier on a global queue doesn't block anything: global queues are shared with the system and ignore it.",
+            "QoS has nothing to do with barriers: on a global queue, the `.barrier` flag is simply ignored.",
+            "No crash: the flag is ignored and the block runs like a regular concurrent `async`."
+          ]
+        },
+        {
+          "id": "uikit-threading-ui-6",
+          "prompt": "Why must UIKit updates happen on the main thread?",
+          "code": null,
+          "options": [
+            "The main thread has more memory available",
+            "UIKit isn't thread-safe and the main run loop handles rendering",
+            "Other threads can't allocate views",
+            "Only the simulator requires it"
+          ],
+          "answer": 1,
+          "explanation": "Concurrent access to UIKit state produces nondeterministic glitches and crashes.",
+          "difficulty": 1,
+          "whyWrong": [
+            "All threads share the same process memory: the reason is UIKit's lack of thread safety.",
+            null,
+            "Technically you can allocate a view on another thread; the problem is that accessing UIKit state concurrently isn't safe.",
+            "It applies on device too: UIKit isn't thread-safe anywhere, and the Main Thread Checker flags it in both."
+          ]
+        },
+        {
+          "id": "uikit-threading-ui-7",
+          "prompt": "What advantage does `OperationQueue` offer over plain GCD?",
+          "code": null,
+          "options": [
+            "It's always faster than GCD",
+            "It runs tasks on the main thread by default",
+            "It automatically prevents race conditions",
+            "Dependencies between tasks, cancellation, and a concurrency limit"
+          ],
+          "answer": 3,
+          "explanation": "`addDependency`, `cancel()`, and `maxConcurrentOperationCount` are built in, whereas with GCD you have to build them by hand.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`OperationQueue` is built on top of GCD and adds overhead: the advantage is in features, not speed.",
+            "An `OperationQueue()` you create runs in the background; only `OperationQueue.main` uses the main thread.",
+            "No queue prevents race conditions on its own: with multiple concurrent operations you still have to synchronize shared state.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-threading-ui-8",
+          "prompt": "What value does this code print?",
+          "code": "var count = 0\nDispatchQueue.concurrentPerform(iterations: 1000) { _ in\n    count += 1\n}\nprint(count)",
+          "options": [
+            "Always 1000",
+            "Always 0",
+            "Compile error in Swift 5",
+            "A nondeterministic value, often less than 1000"
+          ],
+          "answer": 3,
+          "explanation": "`count += 1` isn't atomic: concurrent reads and writes overlap (a data race).",
+          "difficulty": 3,
+          "whyWrong": [
+            "It seems obvious it would reach 1000, but the iterations run in parallel and `count += 1` isn't atomic: some increments get lost.",
+            "`concurrentPerform` is synchronous: by the time `print` runs, all iterations have finished, so the value doesn't stay at 0.",
+            "In Swift 5 it compiles without errors: the compiler doesn't detect the data race, which at most shows up at runtime.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-threading-ui-9",
+          "prompt": "What characterizes a serial queue?",
+          "code": null,
+          "options": [
+            "It always runs on the main thread",
+            "It runs tasks in parallel but in order",
+            "It runs one task at a time in FIFO order",
+            "It uses a single fixed thread for the app's entire lifetime"
+          ],
+          "answer": 2,
+          "explanation": "Serial means one task at a time; the underlying thread can change from one task to the next.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Only the main queue is tied to the main thread: serial queues you create run on background threads.",
+            "Parallel and serial are mutually exclusive: a serial queue runs one task at a time, never two at once.",
+            null,
+            "GCD doesn't dedicate a fixed thread to the queue: the underlying thread can change from one task to the next."
+          ]
+        },
+        {
+          "id": "uikit-threading-ui-10",
+          "prompt": "In a `UIViewController`, which thread does `heavyParse()` (a synchronous, nonisolated function) run on?",
+          "code": "override func viewDidLoad() {\n    super.viewDidLoad()\n    Task {\n        let items = heavyParse(data)\n        show(items)\n    }\n}",
+          "options": [
+            "On the main thread: the Task inherits `@MainActor` isolation",
+            "On a background thread from the cooperative pool",
+            "On a new thread created just for it",
+            "It depends on the device's QoS"
+          ],
+          "answer": 0,
+          "explanation": "A synchronous function runs on the caller's executor: to move the work off main you need `Task.detached` or a `@concurrent` function.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "The `Task` inherits the VC's `@MainActor` isolation, and a synchronous function runs on the caller's executor: it stays on main.",
+            "`Task` doesn't create dedicated threads: it uses existing executors, and here it inherits the main actor's.",
+            "QoS affects priority, not isolation: the code runs on main because the `Task` inherits `@MainActor`."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "architecture",
+      "stage": "senior",
+      "title": "Architecture",
+      "icon": "building.columns",
+      "summary": "MVC, MVVM, VIPER, coordinators, and patterns for communication between objects.",
+      "lesson": [
+        {
+          "heading": "MVC and Massive View Controller",
+          "body": "In Apple's MVC, the `UIViewController` mediates between model and view, but it's tightly coupled to the view (it manages its lifecycle). The risk is the **Massive View Controller**: networking, formatting, validation, navigation, and data sources all in the same file.\n\nYou slim it down with child view controllers, separate data sources, injected services, and by extracting navigation.",
+          "code": null
+        },
+        {
+          "heading": "MVVM",
+          "body": "The **ViewModel** turns model data into view-ready state (formatted strings, loading flags) and exposes inputs as methods. It doesn't import UIKit and holds no reference to the view, so you can test it with plain unit tests.\n\nBinding is done with closures, Combine (`@Published`), or `@Observable`. Starting with iOS 26, UIKit automatically tracks `@Observable` properties read in methods like `layoutSubviews` (on iOS 18 you need an Info.plist key).",
+          "code": "final class ProfileViewModel {\n    @Published private(set) var title = \"\"\n    func load() async {\n        let user = try? await service.fetchUser()\n        title = user.map { \"Hi, \\($0.name)\" } ?? \"Error\"\n    }\n}"
+        },
+        {
+          "heading": "VIPER and Clean Architecture",
+          "body": "VIPER splits a module into **View**, **Interactor** (business logic), **Presenter** (presentation logic), **Entity**, and **Router** (navigation). Every part talks through protocols, so everything is mockable.\n\nThe cost is a lot of boilerplate: it makes sense for large teams with independent modules and is overkill for small apps. In an interview, what matters is weighing the trade-off, not reciting the acronym.",
+          "code": null
+        },
+        {
+          "heading": "Coordinator",
+          "body": "A coordinator pulls navigation out of view controllers: the VCs (or ViewModels) signal an intent, such as \"user selected\", and the coordinator decides what to show. Combined with MVVM, it's called **MVVM-C**.\n\nBenefits: reusable VCs, centralized deep links, testable flows. Be careful to manage the lifecycle of child coordinators.",
+          "code": null
+        },
+        {
+          "heading": "Communication patterns",
+          "body": "**Delegation**: one-to-one, good for several related callbacks or methods that return values. **Closures**: lightweight one-to-one, for a single callback. **NotificationCenter**: one-to-many, decoupled but loosely typed. **KVO**: observes `@objc dynamic` properties of `NSObject` subclasses. **Combine**: declarative streams, with subscriptions kept in `AnyCancellable`.\n\nIn every case, watch your memory: `weak` delegates, `[weak self]` in closures, tokens and cancellables kept alive for exactly the right amount of time.",
+          "code": "viewModel.$title\n    .receive(on: DispatchQueue.main)\n    .sink { [weak self] in self?.titleLabel.text = $0 }\n    .store(in: &cancellables)"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"Which architecture would you use, and why?\"** Short answer: there's no universally right one; MVVM with coordinators is a good default for testability and separation, VIPER only if the team and domain justify the cost. Always back it up with testability, team size, and maintenance, and show you know why MVC tends to degrade.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-architecture-1",
+          "prompt": "What typically causes a Massive View Controller?",
+          "code": null,
+          "options": [
+            "The VC piles up networking, formatting, navigation, and data sources",
+            "Using storyboards instead of code",
+            "Too many subviews in the hierarchy",
+            "Using Auto Layout"
+          ],
+          "answer": 0,
+          "explanation": "The VC becomes the default home for every responsibility because it's where model and view meet.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Storyboards move UI construction out of code: if anything they slim the VC down, they don't make it massive.",
+            "Lots of subviews make the hierarchy heavy, but the Massive VC problem is about the number of **responsibilities**, not views.",
+            "Auto Layout is just a layout system; the VC bloats when it piles up networking, logic, and navigation."
+          ]
+        },
+        {
+          "id": "uikit-architecture-2",
+          "prompt": "In MVVM, which of these traits should the ViewModel have?",
+          "code": null,
+          "options": [
+            "It holds a strong reference to the view",
+            "It subclasses `UIViewController`",
+            "It manages the constraints directly",
+            "It doesn't depend on UIKit and exposes already-formatted state"
+          ],
+          "answer": 3,
+          "explanation": "Without UIKit and without references to the view, the ViewModel can be tested with plain unit tests.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The view observes the ViewModel, not the other way around: a strong reference to the view would couple it to UIKit.",
+            "A ViewModel that subclasses `UIViewController` is just a view controller again and loses all its testability.",
+            "Constraints belong to the view: the ViewModel exposes state, it doesn't manage layout or UIKit objects.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-architecture-3",
+          "prompt": "In VIPER, which component contains the business logic?",
+          "code": null,
+          "options": [
+            "The Presenter",
+            "The Router",
+            "The Interactor",
+            "The Entity"
+          ],
+          "answer": 2,
+          "explanation": "The Interactor runs the use cases; the Presenter prepares data for the view, and the Router handles navigation.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The Presenter is the bridge: it prepares data for the view and reacts to input, but delegates use cases to the Interactor.",
+            "The Router only handles navigation between modules, not business logic.",
+            null,
+            "The Entity is the data model, usually plain structs with no logic: use cases live in the Interactor."
+          ]
+        },
+        {
+          "id": "uikit-architecture-4",
+          "prompt": "You need to notify several independent screens that the user logged out. Which mechanism fits best?",
+          "code": null,
+          "options": [
+            "A delegate",
+            "`NotificationCenter`",
+            "A callback closure",
+            "KVO on `UIApplication`"
+          ],
+          "answer": 1,
+          "explanation": "Delegates and closures are one-to-one; `NotificationCenter` is designed for one-to-many broadcasts.",
+          "difficulty": 1,
+          "whyWrong": [
+            "A delegate connects an object to **a single** recipient: notifying many screens would take many delegates.",
+            null,
+            "A callback closure is one-to-one like a delegate: it's not suited to broadcasting to independent screens.",
+            "`UIApplication` doesn't expose a logout property to observe, and KVO requires `@objc dynamic`: it's not the right tool."
+          ]
+        },
+        {
+          "id": "uikit-architecture-5",
+          "prompt": "When is a delegate preferable to a closure?",
+          "code": null,
+          "options": [
+            "When you need a single callback",
+            "When there are many recipients",
+            "Never: closures are always preferable",
+            "With several related callbacks or methods that return values"
+          ],
+          "answer": 3,
+          "explanation": "That's the `UITableViewDataSource` model: a protocol groups many interactions under a clear contract.",
+          "difficulty": 2,
+          "whyWrong": [
+            "With a single callback a closure is usually simpler and more readable: a delegate pays off with many related callbacks.",
+            "Neither delegates nor closures are meant for many recipients: for broadcasting there's `NotificationCenter`.",
+            "Closures don't always win: with many related methods, or methods that return values, a protocol is clearer.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-architecture-6",
+          "prompt": "What do you need to observe a property of your own Swift class with KVO?",
+          "code": null,
+          "options": [
+            "Just the `@Published` property wrapper",
+            "Conformance to `Observable`",
+            "A `struct` with `didSet`",
+            "An `NSObject` subclass and an `@objc dynamic` property"
+          ],
+          "answer": 3,
+          "explanation": "KVO relies on the Objective-C runtime: you need `@objc dynamic`, and you have to keep the `NSKeyValueObservation` token.",
+          "difficulty": 3,
+          "whyWrong": [
+            "`@Published` is Combine: you observe it with `$property`, not with KVO, which requires the Objective-C runtime.",
+            "The `Observable` protocol belongs to the Observation framework, not KVO; the two mechanisms are separate.",
+            "KVO only works with instances of `NSObject` classes: a `struct` with `didSet` can't be observed via KVO.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-architecture-7",
+          "prompt": "What happens with this subscription inside `viewDidLoad`?",
+          "code": "_ = viewModel.$title.sink { [weak self] title in\n    self?.titleLabel.text = title\n}",
+          "options": [
+            "It works as long as the VC is alive",
+            "Crash: the cancellable can't be discarded",
+            "It's canceled immediately: at most the initial value arrives",
+            "It receives no values at all, not even the initial one"
+          ],
+          "answer": 2,
+          "explanation": "Discarding the `AnyCancellable` cancels the subscription when it's deallocated; `@Published`, however, sends the current value synchronously right away.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The discarded `AnyCancellable` is deallocated immediately, and its deallocation cancels the subscription: it doesn't live as long as the VC.",
+            "Discarding the cancellable is allowed (with `_ =` there isn't even a warning): no crash, just a subscription that dies immediately.",
+            null,
+            "`@Published` sends the current value synchronously during `sink`, so the initial one arrives before the cancellation."
+          ]
+        },
+        {
+          "id": "uikit-architecture-8",
+          "prompt": "In MVVM-C, who decides to show the detail screen after a tap on a row?",
+          "code": null,
+          "options": [
+            "The ViewModel, by pushing onto the navigation controller",
+            "The cell, via `UIResponder`",
+            "The coordinator, notified by the ViewModel or the VC",
+            "The model, with a notification"
+          ],
+          "answer": 2,
+          "explanation": "The ViewModel and VC signal the intent; navigation stays in the coordinator, which knows the flows.",
+          "difficulty": 3,
+          "whyWrong": [
+            "That would make the ViewModel depend on UIKit and the navigation controller: in MVVM-C it signals intent, it doesn't navigate.",
+            "The cell only knows about its own row: deciding navigation there mixes the view with the app's flows.",
+            null,
+            "The model knows nothing about UI: navigation is a flow decision, which in this pattern belongs to the coordinator."
+          ]
+        },
+        {
+          "id": "uikit-architecture-9",
+          "prompt": "In Apple's MVC, why is the view controller hard to test?",
+          "code": null,
+          "options": [
+            "It's tightly coupled to the view and its lifecycle",
+            "It can't have dependencies",
+            "It can't contain logic",
+            "It can only be created from storyboards"
+          ],
+          "answer": 0,
+          "explanation": "To test it you have to load the view and simulate the lifecycle; moving the logic into separate objects solves this.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "A VC can have dependencies just fine, for example injected via init: that's not what makes it hard to test.",
+            "A VC can contain logic, and that's exactly the problem: the logic is tied to the view and its lifecycle.",
+            "VCs can also be created in code with `init`: storyboards aren't the only way to instantiate them."
+          ]
+        },
+        {
+          "id": "uikit-architecture-10",
+          "prompt": "This VC is never deallocated. Why?",
+          "code": "token = NotificationCenter.default.addObserver(\n    forName: .userDidLogout, object: nil, queue: .main\n) { _ in\n    self.reset()\n}",
+          "options": [
+            "`queue: .main` retains the VC",
+            "The center retains the closure, which captures `self` strongly",
+            "`token` is strong and creates a cycle with the center",
+            "The `reset` method is missing `@objc`"
+          ],
+          "answer": 1,
+          "explanation": "With the block-based API, the center keeps the closure until you call `removeObserver(token)`: you need `[weak self]`.",
+          "difficulty": 3,
+          "whyWrong": [
+            "The queue only says where the closure runs: `OperationQueue.main` doesn't retain the view controller.",
+            null,
+            "The `token` retains the observer, not the VC; the cycle exists because the center retains the closure that captures `self` strongly.",
+            "The block-based API doesn't need `@objc`: the closure just has to call the method. `@objc` is only needed with `#selector`."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "memory-performance",
+      "stage": "senior",
+      "title": "Memory and Performance",
+      "icon": "gauge.with.dots.needle.67percent",
+      "summary": "Retain cycles, Instruments, offscreen rendering, frame vs bounds, and CALayer.",
+      "lesson": [
+        {
+          "heading": "ARC and retain cycles",
+          "body": "ARC deallocates an object when its retain count reaches zero. Two objects that reference each other strongly form a **retain cycle** and are never freed. That's why delegates are `weak` and protocols are constrained to `AnyObject`.\n\n`weak` is optional and becomes `nil` on deallocation; `unowned` is not optional, and accessing it after deallocation **crashes**: use it only when the referenced object is guaranteed to outlive the reference.",
+          "code": null
+        },
+        {
+          "heading": "Closures and timers",
+          "body": "A closure stored by `self` that captures `self` strongly creates a cycle: use `[weak self]`. You don't need it for closures that `self` doesn't retain, like `UIView.animate` or `DispatchQueue.main.async` blocks, which are released after they run.\n\n`Timer.scheduledTimer(target:selector:)` retains its target, and the run loop retains the timer: `deinit` is never called until you call `invalidate()`. Prefer the block-based version with `[weak self]`, and invalidate the timer when the screen goes away.",
+          "code": "timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in\n    self?.tick()\n}\n// in viewWillDisappear: timer?.invalidate()"
+        },
+        {
+          "heading": "Instruments and memory debugging",
+          "body": "The tools to mention: Xcode's **Memory Graph Debugger** to see who is retaining an object, **Leaks** and **Allocations** in Instruments for leaks and memory growth, **Time Profiler** for work on the main thread, and **Animation Hitches** for dropped frames.\n\nA quick trick: a `print` in your view controllers' `deinit` immediately reveals the ones that aren't deallocated after a pop or dismiss.",
+          "code": null
+        },
+        {
+          "heading": "Rendering and cell performance",
+          "body": "**Offscreen rendering** forces the GPU to draw into a separate buffer: it's caused by shadows without a `shadowPath`, masks, and in some cases `cornerRadius` with `masksToBounds` on the content. You mitigate it by setting `shadowPath`, using `cornerCurve`/`cornerRadius` without masks when possible, or `shouldRasterize` for static content.\n\nIn cells: no heavy work in `cellForRowAt`, images resized to their displayed size (downsampling with ImageIO or `preparingThumbnail(of:)`), and caching. A decoded image takes roughly `width × height × 4` bytes, regardless of the file size.",
+          "code": "card.layer.shadowOpacity = 0.2\ncard.layer.shadowRadius = 8\ncard.layer.shadowPath = UIBezierPath(\n    roundedRect: card.bounds, cornerRadius: 12).cgPath"
+        },
+        {
+          "heading": "frame, bounds, and CALayer",
+          "body": "`frame` is the view's rectangle in the **superview's** coordinate system; `bounds` is in **the view's own** coordinate system (origin usually zero, changes with scrolling). Once a `transform` is applied, `frame` becomes the bounding box and shouldn't be used to set the size.\n\nEvery `UIView` is backed by a `CALayer`, which handles rendering and animations; the view is its delegate and adds event handling and layout.",
+          "code": null
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"How do you find and fix a memory leak?\"** Short answer: I check that `deinit` gets called, use the Memory Graph Debugger to find the strong reference, then break the cycle with a `weak` delegate or `[weak self]` in the closure; for timers I use `invalidate()`. Mention Instruments (Leaks, Time Profiler) to show a method, not just theory.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-memory-performance-1",
+          "prompt": "What's the difference between `frame` and `bounds`?",
+          "code": null,
+          "options": [
+            "They're always identical",
+            "`bounds` is in window coordinates",
+            "`frame` uses the superview's coordinates, `bounds` the view's own",
+            "`frame` includes the transform, `bounds` includes the safe area"
+          ],
+          "answer": 2,
+          "explanation": "`bounds.origin` is normally zero but changes, for example, when a `UIScrollView` scrolls.",
+          "difficulty": 1,
+          "whyWrong": [
+            "They only match in special cases: a non-zero origin, a transform, or scrolling is enough to make them differ.",
+            "`bounds` uses the view's **own** coordinate system; neither of the two is expressed in window coordinates.",
+            null,
+            "`bounds` doesn't include the safe area, which you read from `safeAreaInsets`; it is true, though, that `frame` reflects the transform."
+          ]
+        },
+        {
+          "id": "uikit-memory-performance-2",
+          "prompt": "What does this code print?",
+          "code": "let v = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))\nv.transform = CGAffineTransform(rotationAngle: .pi / 4)\nprint(v.bounds.size, v.frame.size)",
+          "options": [
+            "(100, 100) and (100, 100)",
+            "About (141, 141) and (100, 100)",
+            "(0, 0) and (100, 100)",
+            "(100, 100) and about (141, 141)"
+          ],
+          "answer": 3,
+          "explanation": "The transform doesn't touch `bounds`, while `frame` becomes the bounding box of the rotated view.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The transform doesn't change `bounds`, but it does change `frame`: the bounding box of a square rotated by 45° is larger.",
+            "You swapped the two values: it's `frame` that becomes the bounding box of about 141 pt, while `bounds` stays 100×100.",
+            "`bounds` isn't reset by the transform: it keeps its original 100×100 size.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-memory-performance-3",
+          "prompt": "Why are `delegate` properties usually `weak`?",
+          "code": null,
+          "options": [
+            "To improve dispatch performance",
+            "To avoid retain cycles between the object and its delegate",
+            "Because protocols don't support strong references",
+            "To make them thread-safe"
+          ],
+          "answer": 1,
+          "explanation": "The delegate often owns the object (the VC owns the table): a strong reference back would close the cycle.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`weak` doesn't speed up dispatch: if anything, every access has to check that the object is still alive.",
+            null,
+            "Protocols support strong references just fine: `weak` is a choice to avoid cycles, and it requires an `AnyObject` protocol.",
+            "A `weak` reference isn't thread-safe by itself: it's there to avoid retain cycles, not to protect against concurrent access."
+          ]
+        },
+        {
+          "id": "uikit-memory-performance-4",
+          "prompt": "After this VC is popped, `deinit` is never called. Why?",
+          "code": "override func viewDidLoad() {\n    super.viewDidLoad()\n    timer = Timer.scheduledTimer(timeInterval: 1, target: self,\n        selector: #selector(tick), userInfo: nil, repeats: true)\n}\ndeinit { timer?.invalidate() }",
+          "options": [
+            "`#selector` creates a circular reference with the class",
+            "The timer, retained by the run loop, retains `self`",
+            "The navigation controller retains the VC",
+            "`userInfo: nil` prevents deallocation"
+          ],
+          "answer": 1,
+          "explanation": "The `invalidate` in `deinit` is never reached: call it earlier (e.g. in `viewWillDisappear`) or use the block-based timer with `[weak self]`.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`#selector` is just a method name, it retains nothing: the strong reference to `self` is held by the timer through `target`.",
+            null,
+            "After the pop, the navigation controller releases the VC: it's the timer, retained by the run loop, that keeps it alive.",
+            "`userInfo` is just an optional payload: with `nil` it retains nothing and has no effect on deallocation."
+          ]
+        },
+        {
+          "id": "uikit-memory-performance-5",
+          "prompt": "Do you need `[weak self]` in this closure?",
+          "code": "UIView.animate(withDuration: 0.3) {\n    self.panel.alpha = 0\n}",
+          "options": [
+            "Yes, otherwise the VC is never deallocated",
+            "No: the closure isn't retained by `self`, so there's no cycle",
+            "Yes, because the closure is `@escaping`",
+            "No, because `self` is always `unowned` in animations"
+          ],
+          "answer": 1,
+          "explanation": "A cycle requires `self` to retain the closure; here UIKit retains it only until the animation ends.",
+          "difficulty": 3,
+          "whyWrong": [
+            "The VC doesn't retain the closure, so there's no cycle: UIKit holds it only for the duration of the animation and then releases it.",
+            null,
+            "`@escaping` means the closure can outlive the call, but unless `self` retains it, no cycle forms.",
+            "`self` never becomes `unowned` automatically: the capture is strong, but here it's harmless because it's temporary."
+          ]
+        },
+        {
+          "id": "uikit-memory-performance-6",
+          "prompt": "A shadow on many cells makes scrolling choppy. What's the most effective fix?",
+          "code": null,
+          "options": [
+            "Set `layer.shadowPath`",
+            "Set `layer.masksToBounds = true`",
+            "Increase `shadowRadius`",
+            "Move the shadow into `draw(_:)`"
+          ],
+          "answer": 0,
+          "explanation": "Without a `shadowPath`, Core Animation has to compute the shape from the content in an offscreen pass on every frame.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`masksToBounds = true` clips everything outside the bounds, **shadow included**: the shadow disappears instead of getting faster.",
+            "A larger radius makes the shadow more expensive to compute, not less: it would make scrolling worse.",
+            "Drawing the shadow in `draw(_:)` moves the work to the CPU on every redraw: it's usually even slower."
+          ]
+        },
+        {
+          "id": "uikit-memory-performance-7",
+          "prompt": "What happens when you access an `unowned` reference after the object has been deallocated?",
+          "code": null,
+          "options": [
+            "It returns `nil`",
+            "It returns the last valid value",
+            "Compile-time error",
+            "Runtime crash"
+          ],
+          "answer": 3,
+          "explanation": "`unowned` assumes the object is alive; if it isn't, the access is a fatal error. `weak`, on the other hand, becomes `nil`.",
+          "difficulty": 3,
+          "whyWrong": [
+            "That's how `weak` behaves: an `unowned` reference doesn't become `nil` and isn't even optional.",
+            "There's no \"last valid value\": the object is deallocated, and the runtime catches it with a fatal error.",
+            "The compiler can't know when the object will be deallocated: the problem only shows up at runtime.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-memory-performance-8",
+          "prompt": "Which Instruments tool do you use to find out what's slowing down the main thread while scrolling?",
+          "code": null,
+          "options": [
+            "Leaks",
+            "Allocations",
+            "Network",
+            "Time Profiler"
+          ],
+          "answer": 3,
+          "explanation": "Time Profiler samples stacks and shows where the main thread spends its time; Leaks and Allocations are about memory.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Leaks looks for objects in memory that are no longer reachable, but it doesn't tell you where the main thread spends its time.",
+            "Allocations tracks how much memory you allocate and where, not how long code takes on the main thread.",
+            "Network analyzes network requests, which normally don't run on the main thread and don't explain scroll hitches.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-memory-performance-9",
+          "prompt": "A 4000×3000 pixel JPEG (2 MB file) is shown in a thumbnail. Roughly how much memory does it take once decoded?",
+          "code": null,
+          "options": [
+            "About 2 MB",
+            "About 12 MB",
+            "About 200 KB",
+            "About 48 MB"
+          ],
+          "answer": 3,
+          "explanation": "A decoded bitmap costs width × height × 4 bytes: you need to downsample to the displayed size.",
+          "difficulty": 3,
+          "whyWrong": [
+            "2 MB is the size of the **compressed** file: once decoded, the bitmap takes width × height × 4 bytes.",
+            "12 million is the pixel count: but each pixel takes 4 bytes in RGBA, so the total is about four times that.",
+            "Displaying it small doesn't reduce memory: without downsampling, the whole image is decoded at full resolution.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-memory-performance-10",
+          "prompt": "What's the relationship between `UIView` and `CALayer`?",
+          "code": null,
+          "options": [
+            "`CALayer` is a subclass of `UIView`",
+            "The layer only exists if you set `cornerRadius`",
+            "Every view has a layer for rendering and is its delegate",
+            "The view draws, the layer handles touches"
+          ],
+          "answer": 2,
+          "explanation": "The layer handles content and animations; the view adds events, the responder chain, and layout.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`CALayer` comes from Core Animation and doesn't inherit from `UIView`: the view owns a layer, not the other way around.",
+            "Every view **always** has a layer: `cornerRadius` is just one of its properties.",
+            null,
+            "It's the other way around: the layer handles content and rendering, while the view handles touches and the responder chain."
+          ]
+        }
+      ]
+    }
+  ]
+}

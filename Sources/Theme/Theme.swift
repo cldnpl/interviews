@@ -56,8 +56,3 @@ extension Color {
     static let wrong = Color(hex: 0xE5484D)
     static let codeBackground = Color(hex: 0x1E1F29)
 }
-
-extension Locale {
-    /// L'app è in italiano anche su un iPhone impostato in un'altra lingua.
-    static let app = Locale(identifier: "it_IT")
-}

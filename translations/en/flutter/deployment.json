@@ -1,0 +1,207 @@
+{
+  "title": "Advanced Deployment",
+  "summary": "iOS and Android signing, flavors, environment variables, CI/CD with Fastlane, the stores, obfuscation, and symbols",
+  "lesson": [
+    {
+      "heading": "iOS signing",
+      "body": "On iOS, an installable build needs three pieces that have to match: a **certificate** (development or distribution, i.e. your identity), a **provisioning profile** (which ties together the certificate, the App ID, and, for development, the authorized devices), and the **bundle identifier** with its enabled capabilities, which must match the ones declared in App Store Connect.\n\nXcode's *automatic signing* is perfectly fine when you're on your own; on a team it becomes a problem, because everyone generates different certificates. The classic fix is **fastlane match**, which keeps encrypted certificates and profiles in a shared repository and installs the same ones on every machine and on CI.\n\nDistribution goes through App Store Connect: upload the build, use **TestFlight** for testers, then review and release (optionally rolled out gradually with a *phased release*)."
+    },
+    {
+      "heading": "Android signing",
+      "body": "On Android you sign with a **keystore** (`.jks`). The configuration goes in `android/app/build.gradle`, reading a `key.properties` file that **never goes into the repository**: if you lose the key and aren't using Play App Signing, you can never update the app again.\n\nWith **Play App Signing**, Google holds the app signing key: you sign with an **upload key**, which can be replaced if it's compromised. That's the main reason the Play Store now requires an **App Bundle (.aab)** rather than an APK: Google generates and signs APKs optimized for each device.\n\nDebug builds use an automatically generated debug key: the same on every machine, and useless for distribution.",
+      "code": "// android/app/build.gradle\nval props = Properties().apply {\n  load(rootProject.file(\"key.properties\").inputStream()) // kept out of VCS\n}\n\nsigningConfigs {\n  create(\"release\") {\n    storeFile = file(props[\"storeFile\"] as String)\n    storePassword = props[\"storePassword\"] as String\n    keyAlias = props[\"keyAlias\"] as String\n    keyPassword = props[\"keyPassword\"] as String\n  }\n}"
+    },
+    {
+      "heading": "Flavors and build configurations",
+      "body": "A **flavor** is a variant of the same app: dev, staging, production. What changes is the identifier (with a suffix, so all three can be installed side by side on the same phone), the name, the icon, and the endpoint.\n\nUnder the hood these are native mechanisms: Gradle `productFlavors` on Android, and on iOS **schemes** with their `.xcconfig` files and build configurations. Flutter ties them together with `--flavor`, often paired with a dedicated entry point.\n\nDon't confuse a flavor with a **build mode**: `debug`, `profile`, and `release` determine compilation (JIT or AOT), asserts, and tooling; the flavor determines *which environment* you're building. They're orthogonal: there's such a thing as a release build of the staging flavor.",
+      "code": "flutter run --flavor dev -t lib/main_dev.dart\nflutter build appbundle --flavor prod -t lib/main_prod.dart --release"
+    },
+    {
+      "heading": "Environment variables and secrets",
+      "body": "Flutter's native approach is `--dart-define` (or `--dart-define-from-file=config/prod.json`), read in Dart with `String.fromEnvironment`. The value is resolved **at compile time**, which is why the read has to be declared `const`; otherwise, in AOT you end up with the empty default string.\n\nA `.env` file bundled in the assets is convenient, but it's just a file inside the package: anyone can extract it. For the same reason, **a real secret doesn't belong in the app**, not in a define and not obfuscated: the binary can be inspected. Private API keys, signing keys, and tokens stay on the backend, which exposes an endpoint; the app keeps only public identifiers (client IDs, Firebase keys, which are public by design).",
+      "code": "// read at compile time: must be const\nconst apiUrl = String.fromEnvironment('API_URL',\n    defaultValue: 'https://staging.api.app.io');\nconst isProd = bool.fromEnvironment('PROD');"
+    },
+    {
+      "heading": "CI/CD, obfuscation, and symbols",
+      "body": "A serious pipeline runs, in order: `flutter analyze` → `flutter test` → signed build → upload. **Fastlane** covers the tedious part (`match` for certificates, `gym` for the iOS build, `pilot` for TestFlight, `supply` for the Play Store) and works the same locally and on GitHub Actions or Codemagic. The build number should be incremented automatically, not by hand.\n\n**Obfuscation** is enabled with `--obfuscate --split-debug-info=build/symbols`: class and function names disappear from the binary, and the symbols are kept in a separate folder. The direct consequence: from then on, crash stack traces are unreadable, so **those symbols must be archived and uploaded** to your crash reporting service (dSYMs on iOS, symbol and mapping files on Android) for every build you ship. Lose the symbols, and you lose the crashes for that version.",
+      "code": "flutter build ipa --release \\\n  --obfuscate --split-debug-info=build/symbols/ios\n\nflutter build appbundle --release \\\n  --obfuscate --split-debug-info=build/symbols/android"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"How do you get the app from your machine to the stores?\"** Walk through the chain: flavors and `--dart-define` for the environment; signing managed by match and by a keystore kept out of the repository; a pipeline that analyzes, tests, builds, and uploads to TestFlight and the Play Store internal track; automatic build numbers; a staged rollout.\n\nThe two details that set you apart: saying that **secrets don't go in the app** no matter how much obfuscation you use, and that obfuscation **means you have to archive the symbols**, or your crash reports become useless. Also mention percentage rollouts and a remote *kill switch* as a safety net, because a release still needs to be controllable after it ships."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What do you need to sign a distributable iOS build?",
+      "options": [
+        "Just the developer's Apple ID",
+        "A distribution certificate and a provisioning profile consistent with the bundle ID",
+        "A keystore generated by Xcode",
+        "Only having TestFlight enabled"
+      ],
+      "answer": 1,
+      "explanation": "The certificate (identity), the provisioning profile (which ties together certificate, App ID, and capabilities), and the bundle identifier all have to match: if any one of them doesn't, the build won't be signed or won't install.",
+      "whyWrong": [
+        "The Apple ID gets you signed in, but signing requires an actual certificate and profile.",
+        null,
+        "A keystore is the Android mechanism; iOS uses certificates and provisioning profiles.",
+        "TestFlight distributes a build that's already signed: it doesn't replace signing."
+      ]
+    },
+    {
+      "prompt": "Which format does the Play Store require today to publish an app?",
+      "options": [
+        "A universal APK",
+        "APKs split by ABI",
+        "An App Bundle (.aab)",
+        "Either an APK or an AAB"
+      ],
+      "answer": 2,
+      "explanation": "The Play Store requires an App Bundle: Google generates and signs APKs optimized for each device itself, reducing download size. APKs are still fine for distribution outside the store.",
+      "whyWrong": [
+        "A universal APK contains every architecture and is no longer accepted for new apps.",
+        "Google does the ABI split starting from the AAB: you don't upload those yourself.",
+        null,
+        "For the store you don't get to choose: you need an AAB."
+      ]
+    },
+    {
+      "prompt": "Where do you keep `key.properties` and the release keystore?",
+      "options": [
+        "In the repository, so CI can find them",
+        "Outside the repository, injected as secrets on CI",
+        "Inside `assets/`, so Dart can read them",
+        "In `android/app/src/main/res/`"
+      ],
+      "answer": 1,
+      "explanation": "Anyone with the keystore and its passwords can sign an app as if it were yours: they stay out of VCS and reach CI as secrets or an encrypted file (match for iOS, a secure file for Android).",
+      "whyWrong": [
+        "Committing signing credentials exposes them to anyone with access to the repo, and forever after in the git history.",
+        null,
+        "Assets end up inside the app package: that would be the worst possible exposure.",
+        "Android resources are bundled into the APK: same problem."
+      ]
+    },
+    {
+      "prompt": "What is a flavor for?",
+      "options": [
+        "Choosing between JIT and AOT compilation",
+        "Creating variants of the app (dev, staging, prod) with different IDs, names, and endpoints",
+        "Reducing binary size",
+        "Managing translations"
+      ],
+      "answer": 1,
+      "explanation": "A flavor is the environment variant: a bundle ID with a suffix (so the versions can coexist on the phone), a different name and icon, different configuration. Under the hood, it's Gradle productFlavors and Xcode schemes.",
+      "whyWrong": [
+        "That's the build mode (`debug`/`profile`/`release`), which is orthogonal to the flavor.",
+        null,
+        "Size depends on build mode, splits, and tree shaking, not on the flavor.",
+        "Translations are handled by localization, independently of the flavor."
+      ]
+    },
+    {
+      "prompt": "How do you pass the API URL so it changes between staging and production?",
+      "options": [
+        "With `--dart-define`, read via `String.fromEnvironment`",
+        "With an `if` on `kDebugMode`",
+        "With a `.env` file bundled in the assets",
+        "By changing it by hand before each build"
+      ],
+      "answer": 0,
+      "explanation": "`--dart-define` (or `--dart-define-from-file`) injects the value at compile time and makes it reproducible from CI, without changing code between environments.",
+      "whyWrong": [
+        null,
+        "`kDebugMode` distinguishes the build mode, not the environment: a staging release build would be treated as production.",
+        "It works, but the file stays readable inside the package and you have to remember it on every build: defines are a better fit.",
+        "Editing by hand before the build is the classic source of releases pointed at the wrong environment."
+      ]
+    },
+    {
+      "prompt": "With Play App Signing, what's the difference between the upload key and the app signing key?",
+      "options": [
+        "They're the same key under two names",
+        "The upload key signs debug builds, the other signs release builds",
+        "You sign with the upload key, and Google re-signs with the app key it holds",
+        "The upload key is only used for the first release"
+      ],
+      "answer": 2,
+      "explanation": "You sign the AAB with the upload key; Google verifies it, strips that signature, and signs the APKs with the app signing key. If the upload key is compromised it can be replaced, whereas losing the app signing key would be irreversible.",
+      "whyWrong": [
+        "They're two distinct keys, and that very separation is what makes recovery possible.",
+        "Debug builds use an automatically generated debug key, not the upload key.",
+        null,
+        "The upload key is used on every upload, not just the first time."
+      ]
+    },
+    {
+      "prompt": "In release, this variable is always empty. Why?",
+      "code": "final apiUrl = String.fromEnvironment('API_URL');\n// build: flutter build apk --dart-define=API_URL=https://api.app.io",
+      "options": [
+        "Because `--dart-define` only works in debug",
+        "Because `defaultValue` is missing",
+        "Because the name must be lowercase",
+        "Because the read isn't `const`: the value is resolved at compile time"
+      ],
+      "answer": 3,
+      "explanation": "`String.fromEnvironment` is a const constructor: only in a constant context does the compiler substitute the value passed with `--dart-define`. Declared like this, it returns the default in AOT.",
+      "whyWrong": [
+        "`--dart-define` works in every build mode: the problem is how the value is read.",
+        "`defaultValue` only changes what you get when the define is actually missing.",
+        "The name is an arbitrary key: case has nothing to do with it.",
+        null
+      ]
+    },
+    {
+      "prompt": "You ship with `--obfuscate --split-debug-info`. What does that mean for crash reports?",
+      "options": [
+        "Nothing: stack traces stay readable",
+        "Stack traces are unreadable unless you upload the symbols to your crash service",
+        "Crashes are no longer recorded",
+        "Only native crashes come out obfuscated"
+      ],
+      "answer": 1,
+      "explanation": "Obfuscation strips names from the binary and saves them in the symbols folder: unless you upload those files (dSYMs, mapping, symbols) for that exact build, the stack traces are unusable.",
+      "whyWrong": [
+        "That's exactly what changes: class and method names disappear from stack traces.",
+        null,
+        "Crashes are still collected: it's their readability that suffers.",
+        "Obfuscation applies to Dart code; native crashes are symbolicated with their own files."
+      ]
+    },
+    {
+      "prompt": "Can the private key for a paid service live in the app if the binary is obfuscated?",
+      "options": [
+        "Yes, obfuscation makes it unrecoverable",
+        "Yes, if it's passed with `--dart-define`",
+        "No: the binary can be inspected, so the secret belongs on the backend",
+        "Yes, if you save it to the keychain on first launch"
+      ],
+      "answer": 2,
+      "explanation": "Obfuscation and defines make the string less obvious, not unreachable: anyone with the package can extract it or intercept it at runtime. Signed calls are made from the backend, which exposes an endpoint to the app.",
+      "whyWrong": [
+        "Obfuscation renames symbols, but constants stay in the binary and can be found.",
+        "`--dart-define` still puts the value in the binary: calling that obfuscation is a stretch.",
+        null,
+        "The keychain protects what's already on the device, but you'd still have to ship or bundle the key: the problem remains."
+      ]
+    },
+    {
+      "prompt": "What problem does `fastlane match` solve on a team?",
+      "options": [
+        "It keeps iOS certificates and profiles encrypted in a shared repo and installs the same ones everywhere",
+        "It builds the AAB and uploads it to the Play Store",
+        "It increments the build number",
+        "It runs integration tests before the build"
+      ],
+      "answer": 0,
+      "explanation": "Without match, every developer and CI generate different certificates and the profiles keep invalidating each other. Match centralizes the signing material in an encrypted repository and keeps every machine in sync.",
+      "whyWrong": [
+        null,
+        "That's the job of `gym`/`supply`: match only handles iOS signing.",
+        "Incrementing the build number is a separate pipeline action.",
+        "You run tests as a separate step: match doesn't run them."
+      ]
+    }
+  ]
+}

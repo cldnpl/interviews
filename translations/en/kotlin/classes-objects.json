@@ -1,0 +1,210 @@
+{
+  "title": "Classes and Objects",
+  "summary": "Data, sealed, enum, object and companion, inheritance, interfaces, and value classes.",
+  "lesson": [
+    {
+      "heading": "Inheritance: final by default",
+      "body": "In Kotlin, classes and methods are **final by default**: to extend them you need `open` on the class and on the member, and `override` in the subclass. An `override` is itself open, unless you mark it `final override`.\n\nThe default visibility is `public`; there are also `internal` (same module), `protected`, and `private`. `abstract` classes are implicitly open.",
+      "code": "open class Animal {\n    open fun sound() = \"...\"\n}\n\nclass Dog : Animal() {\n    override fun sound() = \"Woof\"\n}"
+    },
+    {
+      "heading": "Data classes",
+      "body": "A `data class` generates `equals`, `hashCode`, `toString`, `copy`, and the `componentN` functions for destructuring, but **only for the properties in the primary constructor**. Properties declared in the body are ignored by `equals`.\n\n`copy()` is a **shallow** copy: referenced objects (a `MutableList`, for example) are shared. A data class can't be `open`, `abstract`, `sealed`, or `inner`, but it can extend classes and implement interfaces.",
+      "code": "data class User(val id: Int, val name: String)\n\nval u = User(1, \"Ann\")\nval v = u.copy(name = \"Bea\")\nval (id, name) = v\nprintln(v) // User(id=1, name=Bea)"
+    },
+    {
+      "heading": "Sealed vs enum",
+      "body": "An `enum` has a fixed set of **instances**, all with the same structure. A `sealed class` or `sealed interface` has a fixed set of **subtypes**, each with its own data and potentially many instances.\n\nBoth allow an exhaustive `when` without `else`: adding a case breaks compilation wherever it needs handling. The subtypes of a sealed type must live in the same module and package. They're ideal for UI states and results (`Loading`, `Success(data)`, `Error(msg)`).",
+      "code": "sealed interface UiState {\n    data object Loading : UiState\n    data class Success(val items: List<String>) : UiState\n    data class Error(val message: String) : UiState\n}\n\nfun render(s: UiState) = when (s) {\n    UiState.Loading -> \"...\"\n    is UiState.Success -> \"${s.items.size} items\"\n    is UiState.Error -> s.message\n}"
+    },
+    {
+      "heading": "object and companion object",
+      "body": "`object` declares a **singleton**, initialized lazily and thread-safely on first access. `data object` adds a readable `toString` and is handy in sealed hierarchies.\n\nA `companion object` holds members accessed through the class name, replacing Java statics, and is often used for factories and constants. To expose them to Java as true statics, use `@JvmStatic` or `const val`.",
+      "code": "class Api private constructor(val url: String) {\n    companion object {\n        const val TIMEOUT = 30\n        fun create() = Api(\"https://example.com\")\n    }\n}\n\nval api = Api.create()"
+    },
+    {
+      "heading": "Interfaces and value classes",
+      "body": "Interfaces can have methods with default implementations and properties that are abstract or have getters, but **no state** (no backing fields). A class can implement many of them while extending only one class.\n\nA `@JvmInline value class` wraps a single value, giving you type safety (e.g. `UserId` vs `String`) with no runtime allocation in most cases. It does get **boxed**, though, when used as a generic type, as an interface, or, if the underlying type is primitive, as a nullable.",
+      "code": "@JvmInline\nvalue class UserId(val raw: String)\n\nfun load(id: UserId) { /* ... */ }\n\nload(UserId(\"42\"))\n// load(\"42\") // type error"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Classic question: **\"What's the difference between a data class, a sealed class, and an enum?\"** Short answer: a data class is a data holder with equals/hashCode/copy generated from the primary constructor; an enum is a closed set of instances; a sealed class is a closed set of types, each with its own data.\n\nMention the exhaustive `when`, that `object` is a thread-safe singleton, and that classes are final by default, a choice that favors composition over inheritance."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "By default, a Kotlin class is:",
+      "options": [
+        "open and public",
+        "final and internal",
+        "final and public",
+        "open and internal"
+      ],
+      "answer": 2,
+      "explanation": "Classes are final (you need `open` to extend them) and the default visibility is public.",
+      "whyWrong": [
+        "Public, yes, but not open: Kotlin classes are final by default, and you have to explicitly mark them `open` to extend them.",
+        "Final is right, but the default visibility is public; `internal` (visible only within the module) has to be declared explicitly.",
+        null,
+        "Both halves are flipped: by default a class is final (not open) and public (not internal)."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "data class User(val name: String) {\n    var age: Int = 0\n}\n\nval a = User(\"Ann\").apply { age = 30 }\nval b = User(\"Ann\").apply { age = 40 }\nprintln(a == b)",
+      "options": [
+        "true",
+        "false",
+        "Doesn't compile",
+        "Depends on hashCode"
+      ],
+      "answer": 0,
+      "explanation": "The generated `equals` only considers primary constructor properties: `age` is in the body and gets ignored.",
+      "whyWrong": [
+        null,
+        "Different ages suggest different objects, but `age` is declared in the body, and the generated `equals` only compares `name`, which is the same in both.",
+        "A data class can have properties in its body, and `apply` works on any object: the code compiles just fine.",
+        "`==` calls `equals`, not `hashCode`; and in any case both generated methods only consider `name`, so the result is deterministic: true."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "data class Team(val members: MutableList<String>)\n\nval t1 = Team(mutableListOf(\"A\"))\nval t2 = t1.copy()\nt2.members.add(\"B\")\nprintln(t1.members.size)",
+      "options": [
+        "1",
+        "0",
+        "2",
+        "Exception"
+      ],
+      "answer": 2,
+      "explanation": "`copy()` is shallow: t1 and t2 share the same MutableList, so the addition is visible from t1 too.",
+      "whyWrong": [
+        "It looks like `copy()` creates a new list, but it only copies the reference: t1 and t2 point to the same `MutableList`, which now has 2 elements.",
+        "Nothing gets removed: t1 starts with \"A\" and also sees \"B\" through the shared list, so the size is 2.",
+        null,
+        "`copy()` doesn't throw, and `add` on a `MutableList` is perfectly legal: the code runs and prints 2."
+      ]
+    },
+    {
+      "prompt": "How do you declare a singleton in Kotlin?",
+      "options": [
+        "static class Foo",
+        "singleton class Foo",
+        "companion class Foo",
+        "object Foo"
+      ],
+      "answer": 3,
+      "explanation": "An `object` declaration creates a singleton that's initialized lazily and thread-safely.",
+      "whyWrong": [
+        "Kotlin has no `static` keyword: you use `object` and `companion object` instead.",
+        "`singleton` isn't a Kotlin keyword: you declare a singleton with `object Foo`.",
+        "There's `companion object` inside a class, not `companion class`: for a top-level singleton, `object Foo` is all you need.",
+        null
+      ]
+    },
+    {
+      "prompt": "What's the main advantage of a sealed hierarchy in a `when`?",
+      "options": [
+        "The subclasses are all singletons",
+        "A when expression is exhaustive without else",
+        "It can be extended from any module",
+        "It's faster than an enum"
+      ],
+      "answer": 1,
+      "explanation": "The compiler knows every subtype, so the `when` is exhaustive and a new case produces errors wherever it needs handling.",
+      "whyWrong": [
+        "Subclasses of a sealed type can be `object`s, but also classes or data classes with many instances: they aren't required to be singletons.",
+        null,
+        "It's the opposite: the direct subclasses of a sealed type must live in the same module and package, precisely because the compiler has to know all of them.",
+        "It's not about performance: the benefit is compiler-checked exhaustiveness in `when`, which enums get too, for that matter."
+      ]
+    },
+    {
+      "prompt": "Given `@JvmInline value class Meters(val v: Int)`, in which case does Meters get boxed?",
+      "options": [
+        "fun f(m: Meters)",
+        "val list: List<Meters>",
+        "val m: Meters = Meters(1)",
+        "fun g(): Meters"
+      ],
+      "answer": 1,
+      "explanation": "When used as a generic argument, the value class has to be boxed; as a direct parameter or return type it's represented as an Int.",
+      "whyWrong": [
+        "As a direct parameter, `Meters` is represented as an `Int` (with the function name mangled): no boxing.",
+        null,
+        "A variable of the exact type `Meters` stays a plain `Int` in the bytecode: boxing kicks in with generics, nullable types, or supertypes.",
+        "Even as a direct return type, the value class is \"unwrapped\" into an `Int`; boxing is needed when it's used as a generic argument, a nullable, or a supertype."
+      ]
+    },
+    {
+      "prompt": "What is a `companion object` for?",
+      "options": [
+        "It creates a second instance of the class",
+        "It makes the class abstract",
+        "It defines an extension of the class",
+        "It holds members accessed through the class name"
+      ],
+      "answer": 3,
+      "explanation": "It's the idiomatic equivalent of static members: factories, constants, and helpers accessed as `ClassName.member`.",
+      "whyWrong": [
+        "There's only one companion object per class, and it's an object in its own right: it isn't a second instance of the enclosing class.",
+        "It has no effect on abstractness: a class only becomes abstract with `abstract`, and it can have a companion object either way.",
+        "Extensions are declared with `fun ClassName.name()`; the companion is a nested object (if anything, you can define extensions on the companion itself).",
+        null
+      ]
+    },
+    {
+      "prompt": "Which statement about data classes is true?",
+      "options": [
+        "It can be declared open",
+        "It must have at least two properties",
+        "It can extend an open class and implement interfaces",
+        "equals includes the body properties"
+      ],
+      "answer": 2,
+      "explanation": "A data class can't be open/abstract/sealed/inner, but it can extend classes and implement interfaces. One constructor property is enough.",
+      "whyWrong": [
+        "A data class can't be `open`, `abstract`, `sealed`, or `inner`: the generated `equals` wouldn't hold up with subclasses.",
+        "A single property in the primary constructor is enough: the requirement is at least one, not two.",
+        null,
+        "The generated `equals` only uses primary constructor properties; the ones declared in the body are ignored."
+      ]
+    },
+    {
+      "prompt": "When should you prefer a sealed class over an enum?",
+      "options": [
+        "When you only need constants",
+        "When you need `ordinal`",
+        "When you need `entries`",
+        "When the cases carry different data or have multiple instances"
+      ],
+      "answer": 3,
+      "explanation": "An enum has fixed instances with the same structure; a sealed type allows subtypes with their own data, like Success(data) and Error(msg).",
+      "whyWrong": [
+        "For a fixed set of constants, an enum is the natural choice: a sealed type becomes useful when the cases carry different data.",
+        "`ordinal` is an enum feature, not a sealed class one: if you need it, an enum is the right choice.",
+        "`entries` is generated for enums, and sealed classes don't offer it: if anything, that's a reason to prefer the enum.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "interface Named {\n    val name: String\n    val greeting: String get() = \"Hi $name\"\n}\n\nclass P : Named { override val name = \"Bo\" }\nprintln(P().greeting)",
+      "options": [
+        "Hi Bo",
+        "Hi null",
+        "Doesn't compile: no properties in interfaces",
+        "Hi "
+      ],
+      "answer": 0,
+      "explanation": "Interfaces can have properties with default getters (no backing field). `greeting` uses P's `name`.",
+      "whyWrong": [
+        null,
+        "`name` isn't null: it's an abstract property that P implements with \"Bo\", and the default getter reads it at call time.",
+        "Kotlin interfaces can declare properties, either abstract or with default getters; what they can't have is a backing field.",
+        "The `greeting` getter is evaluated on every access, when `name` is already \"Bo\": there's no initialization-order issue at all."
+      ]
+    }
+  ]
+}

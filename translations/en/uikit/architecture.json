@@ -1,0 +1,206 @@
+{
+  "title": "Architecture",
+  "summary": "MVC, MVVM, VIPER, coordinators, and patterns for communication between objects.",
+  "lesson": [
+    {
+      "heading": "MVC and Massive View Controller",
+      "body": "In Apple's MVC, the `UIViewController` mediates between model and view, but it's tightly coupled to the view (it manages its lifecycle). The risk is the **Massive View Controller**: networking, formatting, validation, navigation, and data sources all in the same file.\n\nYou slim it down with child view controllers, separate data sources, injected services, and by extracting navigation."
+    },
+    {
+      "heading": "MVVM",
+      "body": "The **ViewModel** turns model data into view-ready state (formatted strings, loading flags) and exposes inputs as methods. It doesn't import UIKit and holds no reference to the view, so you can test it with plain unit tests.\n\nBinding is done with closures, Combine (`@Published`), or `@Observable`. Starting with iOS 26, UIKit automatically tracks `@Observable` properties read in methods like `layoutSubviews` (on iOS 18 you need an Info.plist key).",
+      "code": "final class ProfileViewModel {\n    @Published private(set) var title = \"\"\n    func load() async {\n        let user = try? await service.fetchUser()\n        title = user.map { \"Hi, \\($0.name)\" } ?? \"Error\"\n    }\n}"
+    },
+    {
+      "heading": "VIPER and Clean Architecture",
+      "body": "VIPER splits a module into **View**, **Interactor** (business logic), **Presenter** (presentation logic), **Entity**, and **Router** (navigation). Every part talks through protocols, so everything is mockable.\n\nThe cost is a lot of boilerplate: it makes sense for large teams with independent modules and is overkill for small apps. In an interview, what matters is weighing the trade-off, not reciting the acronym."
+    },
+    {
+      "heading": "Coordinator",
+      "body": "A coordinator pulls navigation out of view controllers: the VCs (or ViewModels) signal an intent, such as \"user selected\", and the coordinator decides what to show. Combined with MVVM, it's called **MVVM-C**.\n\nBenefits: reusable VCs, centralized deep links, testable flows. Be careful to manage the lifecycle of child coordinators."
+    },
+    {
+      "heading": "Communication patterns",
+      "body": "**Delegation**: one-to-one, good for several related callbacks or methods that return values. **Closures**: lightweight one-to-one, for a single callback. **NotificationCenter**: one-to-many, decoupled but loosely typed. **KVO**: observes `@objc dynamic` properties of `NSObject` subclasses. **Combine**: declarative streams, with subscriptions kept in `AnyCancellable`.\n\nIn every case, watch your memory: `weak` delegates, `[weak self]` in closures, tokens and cancellables kept alive for exactly the right amount of time.",
+      "code": "viewModel.$title\n    .receive(on: DispatchQueue.main)\n    .sink { [weak self] in self?.titleLabel.text = $0 }\n    .store(in: &cancellables)"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"Which architecture would you use, and why?\"** Short answer: there's no universally right one; MVVM with coordinators is a good default for testability and separation, VIPER only if the team and domain justify the cost. Always back it up with testability, team size, and maintenance, and show you know why MVC tends to degrade."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What typically causes a Massive View Controller?",
+      "options": [
+        "The VC piles up networking, formatting, navigation, and data sources",
+        "Using storyboards instead of code",
+        "Too many subviews in the hierarchy",
+        "Using Auto Layout"
+      ],
+      "answer": 0,
+      "explanation": "The VC becomes the default home for every responsibility because it's where model and view meet.",
+      "whyWrong": [
+        null,
+        "Storyboards move UI construction out of code: if anything they slim the VC down, they don't make it massive.",
+        "Lots of subviews make the hierarchy heavy, but the Massive VC problem is about the number of **responsibilities**, not views.",
+        "Auto Layout is just a layout system; the VC bloats when it piles up networking, logic, and navigation."
+      ]
+    },
+    {
+      "prompt": "In MVVM, which of these traits should the ViewModel have?",
+      "options": [
+        "It holds a strong reference to the view",
+        "It subclasses `UIViewController`",
+        "It manages the constraints directly",
+        "It doesn't depend on UIKit and exposes already-formatted state"
+      ],
+      "answer": 3,
+      "explanation": "Without UIKit and without references to the view, the ViewModel can be tested with plain unit tests.",
+      "whyWrong": [
+        "The view observes the ViewModel, not the other way around: a strong reference to the view would couple it to UIKit.",
+        "A ViewModel that subclasses `UIViewController` is just a view controller again and loses all its testability.",
+        "Constraints belong to the view: the ViewModel exposes state, it doesn't manage layout or UIKit objects.",
+        null
+      ]
+    },
+    {
+      "prompt": "In VIPER, which component contains the business logic?",
+      "options": [
+        "The Presenter",
+        "The Router",
+        "The Interactor",
+        "The Entity"
+      ],
+      "answer": 2,
+      "explanation": "The Interactor runs the use cases; the Presenter prepares data for the view, and the Router handles navigation.",
+      "whyWrong": [
+        "The Presenter is the bridge: it prepares data for the view and reacts to input, but delegates use cases to the Interactor.",
+        "The Router only handles navigation between modules, not business logic.",
+        null,
+        "The Entity is the data model, usually plain structs with no logic: use cases live in the Interactor."
+      ]
+    },
+    {
+      "prompt": "You need to notify several independent screens that the user logged out. Which mechanism fits best?",
+      "options": [
+        "A delegate",
+        "`NotificationCenter`",
+        "A callback closure",
+        "KVO on `UIApplication`"
+      ],
+      "answer": 1,
+      "explanation": "Delegates and closures are one-to-one; `NotificationCenter` is designed for one-to-many broadcasts.",
+      "whyWrong": [
+        "A delegate connects an object to **a single** recipient: notifying many screens would take many delegates.",
+        null,
+        "A callback closure is one-to-one like a delegate: it's not suited to broadcasting to independent screens.",
+        "`UIApplication` doesn't expose a logout property to observe, and KVO requires `@objc dynamic`: it's not the right tool."
+      ]
+    },
+    {
+      "prompt": "When is a delegate preferable to a closure?",
+      "options": [
+        "When you need a single callback",
+        "When there are many recipients",
+        "Never: closures are always preferable",
+        "With several related callbacks or methods that return values"
+      ],
+      "answer": 3,
+      "explanation": "That's the `UITableViewDataSource` model: a protocol groups many interactions under a clear contract.",
+      "whyWrong": [
+        "With a single callback a closure is usually simpler and more readable: a delegate pays off with many related callbacks.",
+        "Neither delegates nor closures are meant for many recipients: for broadcasting there's `NotificationCenter`.",
+        "Closures don't always win: with many related methods, or methods that return values, a protocol is clearer.",
+        null
+      ]
+    },
+    {
+      "prompt": "What do you need to observe a property of your own Swift class with KVO?",
+      "options": [
+        "Just the `@Published` property wrapper",
+        "Conformance to `Observable`",
+        "A `struct` with `didSet`",
+        "An `NSObject` subclass and an `@objc dynamic` property"
+      ],
+      "answer": 3,
+      "explanation": "KVO relies on the Objective-C runtime: you need `@objc dynamic`, and you have to keep the `NSKeyValueObservation` token.",
+      "whyWrong": [
+        "`@Published` is Combine: you observe it with `$property`, not with KVO, which requires the Objective-C runtime.",
+        "The `Observable` protocol belongs to the Observation framework, not KVO; the two mechanisms are separate.",
+        "KVO only works with instances of `NSObject` classes: a `struct` with `didSet` can't be observed via KVO.",
+        null
+      ]
+    },
+    {
+      "prompt": "What happens with this subscription inside `viewDidLoad`?",
+      "code": "_ = viewModel.$title.sink { [weak self] title in\n    self?.titleLabel.text = title\n}",
+      "options": [
+        "It works as long as the VC is alive",
+        "Crash: the cancellable can't be discarded",
+        "It's canceled immediately: at most the initial value arrives",
+        "It receives no values at all, not even the initial one"
+      ],
+      "answer": 2,
+      "explanation": "Discarding the `AnyCancellable` cancels the subscription when it's deallocated; `@Published`, however, sends the current value synchronously right away.",
+      "whyWrong": [
+        "The discarded `AnyCancellable` is deallocated immediately, and its deallocation cancels the subscription: it doesn't live as long as the VC.",
+        "Discarding the cancellable is allowed (with `_ =` there isn't even a warning): no crash, just a subscription that dies immediately.",
+        null,
+        "`@Published` sends the current value synchronously during `sink`, so the initial one arrives before the cancellation."
+      ]
+    },
+    {
+      "prompt": "In MVVM-C, who decides to show the detail screen after a tap on a row?",
+      "options": [
+        "The ViewModel, by pushing onto the navigation controller",
+        "The cell, via `UIResponder`",
+        "The coordinator, notified by the ViewModel or the VC",
+        "The model, with a notification"
+      ],
+      "answer": 2,
+      "explanation": "The ViewModel and VC signal the intent; navigation stays in the coordinator, which knows the flows.",
+      "whyWrong": [
+        "That would make the ViewModel depend on UIKit and the navigation controller: in MVVM-C it signals intent, it doesn't navigate.",
+        "The cell only knows about its own row: deciding navigation there mixes the view with the app's flows.",
+        null,
+        "The model knows nothing about UI: navigation is a flow decision, which in this pattern belongs to the coordinator."
+      ]
+    },
+    {
+      "prompt": "In Apple's MVC, why is the view controller hard to test?",
+      "options": [
+        "It's tightly coupled to the view and its lifecycle",
+        "It can't have dependencies",
+        "It can't contain logic",
+        "It can only be created from storyboards"
+      ],
+      "answer": 0,
+      "explanation": "To test it you have to load the view and simulate the lifecycle; moving the logic into separate objects solves this.",
+      "whyWrong": [
+        null,
+        "A VC can have dependencies just fine, for example injected via init: that's not what makes it hard to test.",
+        "A VC can contain logic, and that's exactly the problem: the logic is tied to the view and its lifecycle.",
+        "VCs can also be created in code with `init`: storyboards aren't the only way to instantiate them."
+      ]
+    },
+    {
+      "prompt": "This VC is never deallocated. Why?",
+      "code": "token = NotificationCenter.default.addObserver(\n    forName: .userDidLogout, object: nil, queue: .main\n) { _ in\n    self.reset()\n}",
+      "options": [
+        "`queue: .main` retains the VC",
+        "The center retains the closure, which captures `self` strongly",
+        "`token` is strong and creates a cycle with the center",
+        "The `reset` method is missing `@objc`"
+      ],
+      "answer": 1,
+      "explanation": "With the block-based API, the center keeps the closure until you call `removeObserver(token)`: you need `[weak self]`.",
+      "whyWrong": [
+        "The queue only says where the closure runs: `OperationQueue.main` doesn't retain the view controller.",
+        null,
+        "The `token` retains the observer, not the VC; the cycle exists because the center retains the closure that captures `self` strongly.",
+        "The block-based API doesn't need `@objc`: the closure just has to call the method. `@objc` is only needed with `#selector`."
+      ]
+    }
+  ]
+}

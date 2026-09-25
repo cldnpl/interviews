@@ -1,0 +1,213 @@
+{
+  "title": "Language Basics",
+  "summary": "let and var, the fundamental types, control flow, and functions: the minimum vocabulary you need to read any Swift code.",
+  "lesson": [
+    {
+      "heading": "let and var",
+      "body": "`let` declares a **constant**: you assign the value once and never touch it again. `var` declares a **variable**, which can be reassigned. The compiler warns you if you declare something with `var` that never changes, and stops you if you try to reassign a `let`.\n\nSwift **infers** the type from the initial value, so an explicit annotation is only needed when the type can't be inferred or when you want something other than the default. A constant can even be declared without a value, as long as it's assigned before its first use.",
+      "code": "let pi = 3.14        // Double by inference\nvar counter = 0      // Int\ncounter += 1\n\nlet name: String     // declared now...\nname = \"Ada\"         // ...assigned exactly once\n\n// pi = 3.15         // error: can't assign to a 'let'"
+    },
+    {
+      "heading": "The fundamental types",
+      "body": "The building blocks are `Int` (integers), `Double` (floating point), `Bool` (`true`/`false`), and `String` (text). An integer literal with no annotation becomes an `Int`; one with a decimal point becomes a `Double`.\n\nSwift **never converts anything behind your back**: `Int + Double` doesn't compile. You write the conversion yourself by constructing the type you want, `Double(a)` or `Int(b)`. It's annoying for the first week, and it's the reason an entire family of bugs doesn't exist in Swift.\n\nWatch out for **integer division**: `7 / 2` is `3`, not `3.5`, because both operands are `Int` and so is the result.",
+      "code": "let a = 3            // Int\nlet b = 2.5          // Double\n\n// let c = a + b     // error: mismatched types\nlet c = Double(a) + b   // 5.5\n\nprint(7 / 2)         // 3   (integer division)\nprint(7.0 / 2)       // 3.5 (Double)\n\nlet name = \"Ada\"\nprint(\"Hello \\(name), you have \\(2 + 3) messages\")"
+    },
+    {
+      "heading": "Control Flow: if and switch",
+      "body": "An `if` condition must be an actual `Bool`: in Swift, `if 1` doesn't compile, and there's no such thing as a \"truthy\" value.\n\n`switch` is far more powerful than its C namesake: it must be **exhaustive** (cover every case or add a `default`), it **doesn't fall through** from one case to the next — if you want fallthrough, you write it — and it can match ranges, tuples, and patterns with `where`.",
+      "code": "let grade = 7\n\nif grade >= 6 {\n    print(\"passed\")\n} else {\n    print(\"failed\")\n}\n\nswitch grade {\ncase ..<6:      print(\"failing\")\ncase 6...7:     print(\"passing\")\ncase let v where v >= 9: print(\"excellent\")\ndefault:        print(\"good\")\n}"
+    },
+    {
+      "heading": "Loops",
+      "body": "`for-in` iterates over any sequence: a range, an array, the characters of a string. Ranges are written `1...5` (closed, includes 5) or `1..<5` (half-open, stops at 4): mixing the two up is the most common source of off-by-one errors.\n\nIf you don't need the index, use `_` in its place. There are also `while` and `repeat-while`, but you rarely see them in Swift.",
+      "code": "var total = 0\nfor i in 1..<4 {     // 1, 2, 3\n    total += i\n}\nprint(total)         // 6\n\nfor _ in 0..<3 { print(\"hi\") }\n\nfor c in \"abc\" { print(c) }"
+    },
+    {
+      "heading": "Functions",
+      "body": "You declare a function with `func`; parameters must have a type, and the return type goes after `->`. If it's omitted, the function returns `Void`.\n\nWhat's distinctive about Swift is **argument labels**: every parameter has two names, the label you write at the call site and the name you use inside the body. If you write just one name, it's used for both; `_` as the label removes it from the call. Parameters can have a **default value**, and a single-expression function can omit `return`.",
+      "code": "func sum(_ a: Int, with b: Int) -> Int {\n    a + b            // implicit 'return': single expression\n}\nsum(2, with: 3)      // 5\n\nfunc greet(_ name: String = \"world\") -> String {\n    \"Hello \\(name)\"\n}\ngreet()              // \"Hello world\"\ngreet(\"Ada\")         // \"Hello Ada\"\n\n// Multiple return values at once, via a tuple\nfunc minMax(_ v: [Int]) -> (min: Int, max: Int)? {\n    guard let lo = v.min(), let hi = v.max() else { return nil }\n    return (lo, hi)\n}"
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What happens when you compile this code?",
+      "code": "let x = 10\nx = 20\nprint(x)",
+      "options": [
+        "Compile error",
+        "Prints 20",
+        "Prints 10",
+        "Prints 10 with a warning"
+      ],
+      "answer": 0,
+      "explanation": "`let` declares a constant: the value is assigned exactly once. Reassigning it is an error the compiler rejects, not a warning. To be able to change it, you have to declare it with `var`.",
+      "whyWrong": [
+        null,
+        "That would be true with `var x = 10`: since it's declared with `let`, the line `x = 20` doesn't even compile, so nothing ever gets printed.",
+        "Nothing gets printed: the error happens at compile time, so the program never runs at all. `let` doesn't ignore the reassignment, it rejects it.",
+        "It's not a warning but a real error: the code doesn't produce an executable. Swift uses warnings for harmless things, like a `var` that's never reassigned."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let n = 7\nlet m = 2\nprint(n / m)",
+      "options": [
+        "3",
+        "3.5",
+        "4",
+        "Compile error"
+      ],
+      "answer": 0,
+      "explanation": "Both operands are `Int`, so this is integer division and the result stays an `Int`: the fractional part is truncated, not rounded. To get 3.5 you need at least one `Double`, for example `Double(n) / Double(m)`.",
+      "whyWrong": [
+        null,
+        "3.5 is the result of dividing `Double`s: here both types are `Int`, and `Int / Int` produces an `Int`. You need to convert: `Double(n) / Double(m)`.",
+        "Integer division **truncates**, it doesn't round: 3.5 becomes 3, never 4. Rounding has to be requested explicitly, for example with `(Double(n) / Double(m)).rounded()`.",
+        "The code compiles: dividing two `Int`s is perfectly legal. The trap is the result, not whether it's valid."
+      ]
+    },
+    {
+      "prompt": "What happens when you compile this code?",
+      "code": "let a = 3\nlet b = 2.5\nprint(a + b)",
+      "options": [
+        "Compile error",
+        "Prints 5.5",
+        "Prints 5",
+        "Prints 5.0"
+      ],
+      "answer": 0,
+      "explanation": "`a` is inferred as `Int` and `b` as `Double`: Swift doesn't do implicit numeric conversions, so there's no `+` operator that takes an `Int` and a `Double`. You have to write it yourself: `Double(a) + b`.",
+      "whyWrong": [
+        null,
+        "5.5 would be the result if Swift promoted `a` to `Double` on its own, the way C or Java do. Swift doesn't: you have to write the conversion, `Double(a) + b`.",
+        "No truncation happens, because the addition never runs at all: the compiler stops first, since it can't find a `+` between `Int` and `Double`.",
+        "The type of the result isn't the problem: the problem is that the expression `a + b` doesn't exist as long as the two operands have different types."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let name = \"Ada\"\nprint(\"Hello \\(name), you have \\(2 + 3) messages\")",
+      "options": [
+        "Hello Ada, you have 5 messages",
+        "Hello \\(name), you have \\(2 + 3) messages",
+        "Hello Ada, you have 2 + 3 messages",
+        "Compile error"
+      ],
+      "answer": 0,
+      "explanation": "Interpolation with `\\(...)` evaluates any expression and inserts its description into the string: `name` becomes `Ada`, and `2 + 3` is computed before it's inserted.",
+      "whyWrong": [
+        null,
+        "That's the literal text: to actually print it you'd need a raw string, `#\"...\\(name)...\"#`. With regular quotes, `\\(` always starts an interpolation.",
+        "What goes inside `\\(...)` isn't a string but an **expression**, and it gets evaluated: `2 + 3` becomes `5` before it ends up in the text.",
+        "The code is valid: interpolation accepts any expression, arithmetic included."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "var total = 0\nfor i in 1..<4 {\n    total += i\n}\nprint(total)",
+      "options": [
+        "6",
+        "10",
+        "3",
+        "4"
+      ],
+      "answer": 0,
+      "explanation": "`1..<4` is a **half-open** range: it includes 1, 2, and 3 and excludes 4. So the sum is 1 + 2 + 3 = 6.",
+      "whyWrong": [
+        null,
+        "10 is the sum from 1 to 4, which is what `1...4` with three dots would give you. `..<` excludes the upper bound, so 4 never enters the loop.",
+        "3 is the number of iterations, not the sum of the values: the loop runs three times, but each pass adds `i`, not 1.",
+        "4 is the excluded bound: it's exactly the value `..<` leaves out. Confusing `..<` with `...` is the most common off-by-one error in Swift."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let n = 1\nswitch n {\ncase 1:\n    print(\"one\")\n    fallthrough\ncase 2:\n    print(\"two\")\ndefault:\n    print(\"other\")\n}",
+      "options": [
+        "one, then two",
+        "only one",
+        "one, two, and other",
+        "Compile error"
+      ],
+      "answer": 0,
+      "explanation": "In Swift, a switch **doesn't fall through** from one case to the next: normally it would print only `one`. The explicit `fallthrough` forces a jump into the next case, which prints `two` — and stops there, because that case doesn't have a `fallthrough` of its own.",
+      "whyWrong": [
+        null,
+        "That would be the answer without the `fallthrough` line: that keyword is exactly what explicitly requests the jump to the next case.",
+        "`fallthrough` makes a single jump, to the case immediately after. To reach `default` you'd need a second `fallthrough` inside `case 2`.",
+        "The code is valid: `fallthrough` is a Swift keyword, designed precisely to request the behavior that's the default in C."
+      ]
+    },
+    {
+      "prompt": "Given this function, which call compiles?",
+      "code": "func sum(_ a: Int, with b: Int) -> Int {\n    a + b\n}",
+      "options": [
+        "sum(2, with: 3)",
+        "sum(a: 2, with: 3)",
+        "sum(2, 3)",
+        "sum(a: 2, b: 3)"
+      ],
+      "answer": 0,
+      "explanation": "The first parameter has `_` as its label, so you pass it bare at the call site; the second has the label `with`, different from the internal name `b`, and it has to be written. Inside the body you use the internal names, `a` and `b`.",
+      "whyWrong": [
+        null,
+        "There's no `a:` label: the first parameter was declared with `_`, which removes the label precisely so it can be passed without a name.",
+        "The `with:` label on the second parameter isn't optional: only the first one was made unnamed with `_`. Omitting a declared label is an error.",
+        "`b` is the **internal** name, visible only inside the function body. At the call site you use the external label, which here is `with`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let grade = 7\nswitch grade {\ncase ..<6:\n    print(\"failing\")\ncase 6...7:\n    print(\"passing\")\ncase let v where v >= 9:\n    print(\"excellent\")\ndefault:\n    print(\"good\")\n}",
+      "options": [
+        "passing",
+        "good",
+        "failing",
+        "passing and good"
+      ],
+      "answer": 0,
+      "explanation": "Cases are evaluated top to bottom, and the switch stops at the first one that matches: 7 isn't in `..<6` but it is in `6...7`, so it prints `passing`. Closed ranges written with `...` include both bounds.",
+      "whyWrong": [
+        null,
+        "`default` only kicks in if no earlier case matches. Here `6...7` includes 7, so the switch stops before it gets there.",
+        "`..<6` is the range of values less than 6: 7 falls outside it. This would be the right answer for a grade of 5 or lower.",
+        "A switch runs **only one** case and then exits: without an explicit `fallthrough`, it doesn't continue to the next one."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let x = Int8.max\nprint(x &+ 1)",
+      "options": [
+        "-128",
+        "128",
+        "127",
+        "Runtime crash"
+      ],
+      "answer": 0,
+      "explanation": "`Int8` ranges from -128 to 127. The `&+` operator is addition **with wraparound**: once you go past the maximum, you start over from the minimum, so 127 &+ 1 gives -128. With the regular `+`, the program would crash on overflow instead.",
+      "whyWrong": [
+        null,
+        "128 can't be represented in an `Int8`, which tops out at 127: that's exactly why the value wraps around and ends up at -128.",
+        "127 is the starting value, `Int8.max`: the addition definitely happens, it just overflows and wraps around to the minimum.",
+        "A crash is what the regular `+` would give you, since it terminates the program on overflow. The `&+`, `&-`, and `&*` operators exist precisely to request wraparound instead of a crash."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let s = \"e\\u{301}\"   // 'e' + combining acute accent\nprint(s.count)",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "0"
+      ],
+      "answer": 0,
+      "explanation": "A Swift `String` is a sequence of `Character`s, and a `Character` is a **grapheme cluster**: a character as a human perceives it. The `e` and the combining accent form a single grapheme, so `count` is 1. To count Unicode scalars you use `s.unicodeScalars.count`, which would give 2 here.",
+      "whyWrong": [
+        null,
+        "2 is the number of **Unicode scalars** (`s.unicodeScalars.count`), not characters: `count` on a String counts grapheme clusters, and the two scalars here make up just one.",
+        "3 would be the number of bytes in UTF-8 (`s.utf8.count`): the `e` takes one and the combining accent takes two. `count` doesn't count bytes.",
+        "The string isn't empty: it contains one character, the one made of the `e` plus the accent."
+      ]
+    }
+  ]
+}

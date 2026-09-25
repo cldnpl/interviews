@@ -1,13 +1,17 @@
 // Disegna l'icona: quattro spicchi coi colori di Swift, UIKit, Kotlin e Flutter.
 // Uso: swift scripts/make_icon.swift Resources/Assets.xcassets/AppIcon.appiconset/icon.png
-import AppKit
+//
+// Il PNG esce senza canale alpha (noneSkipLast): l'icona dell'App Store non può
+// averne, altrimenti l'upload viene respinto con ITMS-90717.
+import CoreGraphics
+import ImageIO
+import UniformTypeIdentifiers
+import Foundation
 
-let size: CGFloat = 1024
-let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size), pixelsHigh: Int(size),
-                           bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                           colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
-NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-let ctx = NSGraphicsContext.current!.cgContext
+let size = 1024
+let space = CGColorSpace(name: CGColorSpace.sRGB)!
+let ctx = CGContext(data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
+                    space: space, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
 
 func c(_ hex: UInt32) -> CGColor {
     CGColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
@@ -15,10 +19,11 @@ func c(_ hex: UInt32) -> CGColor {
 }
 
 ctx.setFillColor(c(0xFFF8F3))
-ctx.fill(CGRect(x: 0, y: 0, width: size, height: size))
+ctx.fill(CGRect(x: 0, y: 0, width: CGFloat(size), height: CGFloat(size)))
 
+let side = CGFloat(size)
 let tile: CGFloat = 330, gap: CGFloat = 56
-let origin = (size - tile * 2 - gap) / 2
+let origin = (side - tile * 2 - gap) / 2
 // Coordinate CoreGraphics: y cresce verso l'alto, quindi la riga "alta" è la seconda.
 let tiles: [(CGFloat, CGFloat, [UInt32])] = [
     (0, 1, [0xFA7343, 0xF05138]),
@@ -31,9 +36,12 @@ for (col, row, colors) in tiles {
     ctx.saveGState()
     ctx.addPath(CGPath(roundedRect: rect, cornerWidth: 92, cornerHeight: 92, transform: nil))
     ctx.clip()
-    let g = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors.map(c) as CFArray, locations: nil)!
+    let g = CGGradient(colorsSpace: space, colors: colors.map(c) as CFArray, locations: nil)!
     ctx.drawLinearGradient(g, start: CGPoint(x: rect.minX, y: rect.maxY), end: CGPoint(x: rect.maxX, y: rect.minY), options: [])
     ctx.restoreGState()
 }
 
-try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: CommandLine.arguments[1]))
+let url = URL(fileURLWithPath: CommandLine.arguments[1]) as CFURL
+let dest = CGImageDestinationCreateWithURL(url, UTType.png.identifier as CFString, 1, nil)!
+CGImageDestinationAddImage(dest, ctx.makeImage()!, nil)
+guard CGImageDestinationFinalize(dest) else { fatalError("scrittura PNG fallita") }

@@ -1,0 +1,208 @@
+{
+  "title": "Navigation",
+  "summary": "Navigation stack, modals, segues vs. code, coordinators, and passing data back.",
+  "lesson": [
+    {
+      "heading": "UINavigationController",
+      "body": "It manages a **stack** of view controllers: `pushViewController` adds one, `popViewController` removes one, and `setViewControllers` replaces the whole stack. The stack holds VCs strongly: once a VC is removed, it should deallocate.\n\nThe back button title belongs to the **previous** VC: you set it on the `navigationItem.backButtonTitle` of the VC doing the push, not the one being shown.",
+      "code": "let detail = DetailViewController(item: item)\nnavigationItem.backButtonTitle = \"List\"\nnavigationController?.pushViewController(detail, animated: true)"
+    },
+    {
+      "heading": "Modal presentation",
+      "body": "`present(_:animated:)` shows a VC modally. On iPhone since iOS 13, the default `.automatic` style resolves to `.pageSheet`, which can be dismissed with a swipe; to block that, set `isModalInPresentation = true`. `.fullScreen` removes the presenter's view from the hierarchy, while `.overFullScreen` keeps it (useful for transparent backgrounds).\n\n`dismiss(animated:)` can be called from the presented VC: UIKit forwards the request to the presenter. A VC can present only one VC at a time."
+    },
+    {
+      "heading": "Segues or navigation in code",
+      "body": "With storyboards, you pass data in `prepare(for:sender:)` and go back with **unwind segues**. Navigation in code is more explicit and testable, and enables **dependency injection** through `init`.\n\nSince iOS 13, `instantiateViewController(identifier:creator:)` enables injection with storyboards too, using a custom `init?(coder:)`.",
+      "code": "let vc = storyboard.instantiateViewController(identifier: \"Detail\") { coder in\n    DetailViewController(coder: coder, viewModel: vm)\n}"
+    },
+    {
+      "heading": "Coordinator pattern",
+      "body": "A **coordinator** owns the navigation logic: it creates the VCs, configures them, and decides where to go next. VCs don't know about each other and report actions through delegates or closures, so they're reusable.\n\nChild coordinators are kept in an array and removed when their flow ends. The tricky part is the system back button: you intercept it with `UINavigationControllerDelegate` in `didShow`, checking the `transitionCoordinator`'s source VC.",
+      "code": "protocol Coordinator: AnyObject {\n    var children: [Coordinator] { get set }\n    func start()\n}"
+    },
+    {
+      "heading": "Passing data back",
+      "body": "The classic options are: a **delegate** (protocol constrained to `AnyObject`, `weak` property), a callback **closure** (with `[weak self]`), `NotificationCenter` for one-to-many communication, and Combine publishers.\n\nGoing forward, you use init injection or property injection before the push or present.",
+      "code": "protocol EditDelegate: AnyObject {\n    func didSave(_ item: Item)\n}\nfinal class EditViewController: UIViewController {\n    weak var delegate: EditDelegate?\n    var onCancel: (() -> Void)?\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Classic question: **\"How do you pass data from a child VC back to the previous one?\"** Short answer: a weak delegate or a closure, depending on whether you have many related callbacks or just one. Mention that the protocol must be class-bound to allow `weak`, and that in large apps navigation should be pulled out into a coordinator to decouple the VCs."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "On iPhone with iOS 13+, which presentation style do you get with the default `.automatic`?",
+      "options": [
+        "`.pageSheet`",
+        "`.fullScreen`",
+        "`.overFullScreen`",
+        "`.formSheet`"
+      ],
+      "answer": 0,
+      "explanation": "Since iOS 13, `.automatic` almost always resolves to `.pageSheet`, which can be dismissed by swiping down.",
+      "whyWrong": [
+        null,
+        "`.fullScreen` was the behavior before iOS 13; since then `.automatic` almost always produces a sheet.",
+        "`.overFullScreen` has to be requested explicitly to keep the presenter visible; `.automatic` never resolves to it on its own.",
+        "On iPhone in portrait, `.formSheet` behaves like a page sheet, but the style `.automatic` resolves to is `.pageSheet`."
+      ]
+    },
+    {
+      "prompt": "With storyboards, where do you pass data to a segue's destination VC?",
+      "options": [
+        "In `performSegue(withIdentifier:sender:)`",
+        "In the destination's `viewDidLoad`",
+        "In `shouldPerformSegue(withIdentifier:sender:)`",
+        "In `prepare(for:sender:)`"
+      ],
+      "answer": 3,
+      "explanation": "`prepare(for:sender:)` receives the segue with its `destination` already instantiated, before it's shown.",
+      "whyWrong": [
+        "`performSegue` starts the segue but doesn't give you access to the destination: you get the destination VC in `prepare(for:sender:)`.",
+        "In `viewDidLoad`, the destination doesn't know who opened it: the source VC has to pass it the data beforehand.",
+        "`shouldPerformSegue` only decides **whether** to perform the segue; the destination isn't instantiated yet at that point.",
+        null
+      ]
+    },
+    {
+      "prompt": "A pushes B. To show \"List\" as the back button title in B, where do you set it?",
+      "options": [
+        "`B.navigationItem.backButtonTitle`",
+        "`A.navigationItem.backButtonTitle`",
+        "`B.navigationItem.leftBarButtonItem`",
+        "`navigationController.navigationBar.topItem`"
+      ],
+      "answer": 1,
+      "explanation": "The back button represents the VC you go back to, so it reads the previous VC's `navigationItem`.",
+      "whyWrong": [
+        "It seems logical, but the back button shown in B represents A, the VC you return to: UIKit reads A's `navigationItem`.",
+        null,
+        "Replacing the `leftBarButtonItem` removes the system back button and the swipe gesture: that's not how you change just the title.",
+        "`topItem` changes as you push: relying on it is fragile, and the back title still has to be set on A's `navigationItem`."
+      ]
+    },
+    {
+      "prompt": "What's the main difference between `.overFullScreen` and `.fullScreen`?",
+      "options": [
+        "`.overFullScreen` is dismissed with a swipe",
+        "`.fullScreen` supports transparency",
+        "`.overFullScreen` leaves the presenter's view in the hierarchy",
+        "None, they're aliases"
+      ],
+      "answer": 2,
+      "explanation": "With `.fullScreen`, UIKit removes the underlying view once the transition ends; with `.overFullScreen`, it stays visible beneath transparent content.",
+      "whyWrong": [
+        "Swipe-to-dismiss applies to sheets (`.pageSheet`/`.formSheet`): neither full-screen style offers it.",
+        "It's the other way around: `.fullScreen` removes the presenter's view, so behind transparent content you'd see black.",
+        null,
+        "They're not aliases: `.fullScreen` removes the underlying view at the end of the transition, `.overFullScreen` leaves it in the hierarchy."
+      ]
+    },
+    {
+      "prompt": "Why doesn't this code compile?",
+      "code": "protocol DetailDelegate {\n    func didFinish()\n}\nclass DetailViewController: UIViewController {\n    weak var delegate: DetailDelegate?\n}",
+      "options": [
+        "The protocol isn't constrained to `AnyObject`",
+        "`weak` can't be used on optional properties",
+        "Delegates must be `unowned`",
+        "The method is missing `@objc`"
+      ],
+      "answer": 0,
+      "explanation": "`weak` applies only to reference types: the protocol must be declared `: AnyObject` to use it.",
+      "whyWrong": [
+        null,
+        "`weak` is designed precisely for optionals: a weak reference must be able to become `nil`, so it has to be optional.",
+        "`unowned` isn't required, and it's actually riskier for a delegate: if the object goes away, accessing it crashes.",
+        "`@objc` is only needed for optional methods or Objective-C interop; the compile error comes from `weak` on a protocol that isn't class-bound."
+      ]
+    },
+    {
+      "prompt": "In a coordinator architecture, the user goes back with the system back button and the child coordinator stays in memory. How do you intercept it?",
+      "options": [
+        "With the `didShow` method of `UINavigationControllerDelegate`",
+        "With the coordinator's `viewWillDisappear`",
+        "With the navigation controller's `deinit`",
+        "By overriding `popViewController` in an extension"
+      ],
+      "answer": 0,
+      "explanation": "In `didShow`, you compare the `transitionCoordinator`'s source VC against the stack: if it's gone, the flow is over and you remove the child.",
+      "whyWrong": [
+        null,
+        "A coordinator usually isn't a `UIViewController`, so it doesn't receive callbacks like `viewWillDisappear`.",
+        "The navigation controller stays alive during the pop, so its `deinit` never fires: it won't tell you a single flow has ended.",
+        "You can't reliably override a class method in an extension; and the system back action doesn't go through your code anyway."
+      ]
+    },
+    {
+      "prompt": "VC B, presented modally by A, calls `dismiss(animated: true)` on itself. What happens?",
+      "options": [
+        "Nothing: only A can call `dismiss`",
+        "A is dismissed along with B",
+        "UIKit forwards the request to A and B is dismissed",
+        "Crash from calling it on the wrong VC"
+      ],
+      "answer": 2,
+      "explanation": "If the VC isn't presenting anything, `dismiss` is forwarded to the presenting view controller.",
+      "whyWrong": [
+        "Not so: called on B, `dismiss` is forwarded to the presenting view controller, which dismisses B.",
+        "A isn't dismissed: A is the presenter and stays; what gets removed is the presented VC, B.",
+        null,
+        "No crash: UIKit handles the call by forwarding it to the presenting view controller, a very common use case."
+      ]
+    },
+    {
+      "prompt": "What happens if you run these two lines back to back in a VC that isn't presenting anything?",
+      "code": "present(alertA, animated: true)\npresent(alertB, animated: true)",
+      "options": [
+        "Only `alertA` appears; B logs a warning in the console",
+        "Both appear, B on top of A",
+        "B replaces A",
+        "Crash with an exception"
+      ],
+      "answer": 0,
+      "explanation": "A VC can present only one VC at a time: the second `present` fails with an \"already presenting\" warning.",
+      "whyWrong": [
+        null,
+        "A VC can present only one VC at a time: to stack them, B would have to be presented **by** `alertA`, not by the same VC.",
+        "UIKit doesn't replace the current presentation: the second `present` is rejected with a warning.",
+        "No exception is thrown: the second `present` fails and UIKit just prints an \"already presenting\" warning."
+      ]
+    },
+    {
+      "prompt": "How do you prevent swipe-to-dismiss on a sheet that contains an unsaved form?",
+      "options": [
+        "`isModalInPresentation = true`",
+        "`modalPresentationStyle = .formSheet`",
+        "`view.isUserInteractionEnabled = false`",
+        "Override `dismiss` without calling `super`"
+      ],
+      "answer": 0,
+      "explanation": "`isModalInPresentation` blocks interactive dismissal; with the presentation delegate you can also ask for confirmation.",
+      "whyWrong": [
+        null,
+        "`.formSheet` can be swiped away too: changing the style doesn't block interactive dismissal.",
+        "Disabling interaction makes the form unusable and doesn't stop the swipe gesture, which the presentation handles.",
+        "Swipe-to-dismiss doesn't go through your `dismiss` override: the presentation controller handles interactive dismissal."
+      ]
+    },
+    {
+      "prompt": "Which API enables dependency injection via init for a VC defined in a storyboard?",
+      "options": [
+        "`instantiateInitialViewController()`",
+        "`instantiateViewController(identifier:creator:)`",
+        "`prepare(for:sender:)` with a custom `init`",
+        "`UINib(nibName:bundle:)`"
+      ],
+      "answer": 1,
+      "explanation": "Since iOS 13, the `creator` closure receives the `NSCoder` and lets you call an `init?(coder:...)` with dependencies.",
+      "whyWrong": [
+        "`instantiateInitialViewController()` without `creator` uses the standard `init?(coder:)`: you can't pass dependencies to the init.",
+        null,
+        "In `prepare(for:sender:)`, the destination has already been created: you can assign properties, but you can't call a custom `init`.",
+        "`UINib` loads a nib, not a storyboard scene, and offers no way to inject dependencies into the init."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "title": "State Management",
+  "summary": "setState, ChangeNotifier, Provider, Riverpod, BLoC/Cubit, and when to use each",
+  "lesson": [
+    {
+      "heading": "Ephemeral state vs. app state",
+      "body": "The Flutter docs distinguish **ephemeral state** (the selected tab, an animation, the text in a field), which lives happily in a `StatefulWidget` with `setState`, from **app state** (the logged-in user, a shopping cart, preferences) that is shared across screens.\n\nNot everything belongs in a global solution: reaching for BLoC to manage a local toggle is over-engineering. The signal that you need something more is **prop drilling**, or business logic tangled up with the UI."
+    },
+    {
+      "heading": "ChangeNotifier and ValueNotifier",
+      "body": "`ChangeNotifier` is an observable class: you modify the state and call `notifyListeners()`. `ValueNotifier<T>` notifies automatically when you assign a new `value` that differs from the previous one.\n\nWatch out: mutating an inner object (e.g. `value.add(x)` on a list) does **not** notify, because the reference doesn't change. In the UI, you listen with `ListenableBuilder` or `ValueListenableBuilder`.",
+      "code": "class Cart extends ChangeNotifier {\n  final _items = <Item>[];\n  List<Item> get items => List.unmodifiable(_items);\n\n  void add(Item i) {\n    _items.add(i);\n    notifyListeners();\n  }\n}"
+    },
+    {
+      "heading": "Provider",
+      "body": "Provider is a wrapper around InheritedWidget that simplifies dependency injection and listening for changes. `context.watch<T>()` rebuilds the widget when T notifies, `context.read<T>()` reads without subscribing (for callbacks), and `context.select` rebuilds only when a specific part changes.\n\nIt's simple and recommended by the Flutter team as a starting point, but it depends on `BuildContext`, and some errors (a missing provider) only surface at runtime.",
+      "code": "ChangeNotifierProvider(\n  create: (_) => Cart(),\n  child: const App(),\n);\n\n// in build\nfinal count = context.select<Cart, int>((c) => c.items.length);\n// in a callback\nonPressed: () => context.read<Cart>().add(item),"
+    },
+    {
+      "heading": "Riverpod",
+      "body": "Riverpod (from the same author as Provider) declares providers as immutable global variables, **independent of BuildContext**, with errors caught at compile time. You read with `ref.watch` in build and `ref.read` in callbacks, and use `ref.listen` for side effects.\n\nIt offers `Notifier`/`AsyncNotifier` for logic, `AsyncValue` for loading/error/data, `autoDispose` and `family`, and easy overrides in tests via `ProviderScope` or `ProviderContainer`.",
+      "code": "@riverpod\nFuture<User> user(Ref ref, String id) =>\n    ref.watch(apiProvider).fetchUser(id);\n\n// in the UI\nfinal user = ref.watch(userProvider('42'));\nreturn user.when(\n  data: (u) => Text(u.name),\n  loading: () => const CircularProgressIndicator(),\n  error: (e, _) => Text('$e'),\n);"
+    },
+    {
+      "heading": "BLoC and Cubit",
+      "body": "BLoC strictly separates UI and logic: the UI sends **events**, and the Bloc emits **states** as a Stream. **Cubit** is the simplified version: public methods that call `emit(newState)`, with no events.\n\n`BlocBuilder` rebuilds the UI, `BlocListener` runs one-off side effects (navigation, SnackBar), and `BlocConsumer` does both. It's highly testable (`bloc_test`) and predictable, at the cost of more boilerplate.",
+      "code": "class CounterCubit extends Cubit<int> {\n  CounterCubit() : super(0);\n  void increment() => emit(state + 1);\n}\n\nBlocBuilder<CounterCubit, int>(\n  builder: (context, count) => Text('$count'),\n)"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"Which state management do you use, and why?\"** There's no single right answer, so show your criteria. `setState` for local state; Provider or Riverpod for shared state in small and mid-sized apps; BLoC when you need event traceability, large teams, and strict rules.\n\nMention the cross-cutting concepts: immutable state, UI/logic separation, granular rebuilds (`select`, `Consumer`), side effects kept out of build, testability. Walk through a real case where you made the call and what you'd do differently."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "The selected tab on a single screen should be managed with:",
+      "options": [
+        "BLoC, always",
+        "`setState` in a StatefulWidget",
+        "A global Provider",
+        "SharedPreferences"
+      ],
+      "answer": 1,
+      "explanation": "It's ephemeral state, local to one widget: `setState` is the simplest correct solution.",
+      "whyWrong": [
+        "BLoC is never mandatory: for local ephemeral state it would add complexity with no benefit.",
+        null,
+        "A global Provider would expose to the whole app state that only one widget cares about.",
+        "SharedPreferences is for persisting to disk, not for managing in-memory UI state."
+      ]
+    },
+    {
+      "prompt": "What's the difference between `context.watch<T>()` and `context.read<T>()`?",
+      "options": [
+        "read is for lists, watch is for single objects",
+        "watch is async, read is synchronous",
+        "There is none",
+        "watch rebuilds on changes, read doesn't"
+      ],
+      "answer": 3,
+      "explanation": "`watch` registers the widget as a dependent; `read` returns the value without subscribing, which makes it the right fit for callbacks like onPressed.",
+      "whyWrong": [
+        "The type of the value is irrelevant: the difference is whether the widget subscribes to changes.",
+        "Both are synchronous and return the value immediately; the only difference is whether a dependency is registered.",
+        "There's an important difference: `watch` rebuilds the widget on changes, `read` doesn't.",
+        null
+      ]
+    },
+    {
+      "prompt": "When `Cart` calls `notifyListeners()` but `count` hasn't changed, the widget:",
+      "code": "@override\nWidget build(BuildContext context) {\n  final count = context.select<Cart, int>((c) => c.count);\n  return Text('$count');\n}",
+      "options": [
+        "Is not rebuilt",
+        "Is rebuilt anyway",
+        "Throws an exception",
+        "Loses its state"
+      ],
+      "answer": 0,
+      "explanation": "`select` compares the selected value before and after, and rebuilds only if it changed. Cutting down rebuilds is exactly what it's for.",
+      "whyWrong": [
+        null,
+        "`select` compares the selected value before and after: if `count` is the same, the rebuild is skipped.",
+        "No exception: `notifyListeners` is business as usual, and `select` simply ignores the notification.",
+        "The widget isn't even rebuilt, so there's no way for it to lose its state."
+      ]
+    },
+    {
+      "prompt": "What's the main difference between Cubit and Bloc?",
+      "options": [
+        "Cubit doesn't use Streams",
+        "Bloc isn't testable",
+        "Cubit has methods that emit, Bloc receives events",
+        "Bloc only works on Flutter web"
+      ],
+      "answer": 2,
+      "explanation": "Both expose a Stream of states. A Cubit is driven by method calls, a Bloc by events mapped with `on<Event>`.",
+      "whyWrong": [
+        "A Cubit also exposes a Stream of states: what differs is only how you feed it.",
+        "Bloc is highly testable: with `bloc_test` you verify the states emitted in response to events.",
+        null,
+        "Bloc is pure Dart and runs on every platform, not just the web."
+      ]
+    },
+    {
+      "prompt": "What does `notifyListeners()` do in a ChangeNotifier?",
+      "options": [
+        "Rebuilds the entire app",
+        "Calls all registered listeners",
+        "Persists the state",
+        "Closes the notifier"
+      ],
+      "answer": 1,
+      "explanation": "It synchronously invokes the registered listeners; it's builders like `ListenableBuilder` or Provider that schedule the rebuilds.",
+      "whyWrong": [
+        "It doesn't rebuild anything directly: it calls the listeners, and only subscribed widgets schedule a rebuild.",
+        null,
+        "`notifyListeners` doesn't save anything: persistence has to be handled separately.",
+        "You close a notifier with `dispose()`; `notifyListeners` leaves it active."
+      ]
+    },
+    {
+      "prompt": "What's the key advantage of Riverpod over Provider?",
+      "options": [
+        "It never uses InheritedWidget",
+        "It compiles faster",
+        "It only supports immutable state",
+        "Independent of BuildContext, compile-time errors"
+      ],
+      "answer": 3,
+      "explanation": "Riverpod providers are declared globally and read through `ref`, so there's no `ProviderNotFoundException` at runtime, and you can access them outside widgets too.",
+      "whyWrong": [
+        "Riverpod still uses an InheritedWidget, `ProviderScope`, to expose the container: the advantage is not depending on the context to read.",
+        "Compile speed isn't a distinguishing advantage; independence from BuildContext and compile-time safety are.",
+        "Riverpod supports mutable state too, e.g. with ChangeNotifierProvider; immutability is recommended, not enforced.",
+        null
+      ]
+    },
+    {
+      "prompt": "Why doesn't the UI update when `add` is called?",
+      "code": "class Numbers extends ValueNotifier<List<int>> {\n  Numbers() : super([]);\n\n  void add(int x) => value.add(x);\n}",
+      "options": [
+        "The list is mutated without reassigning `value`",
+        "ValueNotifier doesn't support lists",
+        "`dispose()` is missing",
+        "`add` should be async"
+      ],
+      "answer": 0,
+      "explanation": "ValueNotifier only notifies in the `value` setter, when the new value is different. You need `value = [...value, x]`.",
+      "whyWrong": [
+        null,
+        "ValueNotifier accepts any type; the point is that it only notifies in the `value` setter, which isn't called here.",
+        "`dispose` releases resources but has nothing to do with notifications: even with dispose the UI wouldn't update.",
+        "Making `add` async wouldn't change anything: the list would still be mutated without going through the `value` setter."
+      ]
+    },
+    {
+      "prompt": "Where do you navigate or show a SnackBar in response to a Bloc state?",
+      "options": [
+        "Inside `BlocBuilder.builder`",
+        "In the Bloc's constructor",
+        "In a `BlocListener`",
+        "In initState with a Timer"
+      ],
+      "answer": 2,
+      "explanation": "The builder can run many times and must be pure; `BlocListener` is called once per state change, which makes it ideal for side effects.",
+      "whyWrong": [
+        "The builder can run several times for the same state: navigating there would cause multiple pushes.",
+        "The Bloc's constructor has no BuildContext, and business logic shouldn't be dealing with navigation.",
+        null,
+        "A Timer in `initState` is a hack: it doesn't react to state changes and risks using a context that's no longer valid."
+      ]
+    },
+    {
+      "prompt": "In Riverpod, inside `build()` you should use:",
+      "options": [
+        "`ref.read` for everything",
+        "`ref.watch` to react, `ref.read` in callbacks",
+        "Always `ref.listen` instead of watch",
+        "`context.watch`"
+      ],
+      "answer": 1,
+      "explanation": "`ref.watch` in build keeps the UI in sync; `ref.read` in callbacks avoids unnecessary rebuilds; `ref.listen` is for side effects.",
+      "whyWrong": [
+        "With `ref.read` in build, the UI doesn't update when the provider changes: it reads the value just once.",
+        null,
+        "`ref.listen` is for side effects like navigation or a SnackBar, and it doesn't return the value to display.",
+        "`context.watch` belongs to Provider; in Riverpod you read through `ref`."
+      ]
+    },
+    {
+      "prompt": "How do you justify your state management choice in an interview?",
+      "options": [
+        "Scale, team, and testability; setState for local state",
+        "Always Riverpod: Provider is deprecated",
+        "GetX, because it has less boilerplate",
+        "Always BLoC: it's the standard"
+      ],
+      "answer": 0,
+      "explanation": "No library is mandatory and Provider isn't deprecated: interviewers are looking for reasoned criteria, not an absolute preference.",
+      "whyWrong": [
+        null,
+        "Provider isn't deprecated and is still recommended; always picking the same library shows no judgment.",
+        "Boilerplate isn't the only criterion: GetX is often criticized for tight coupling and poor testability.",
+        "There's no single standard: BLoC is a good fit for large apps, but always imposing it ignores scale and context."
+      ]
+    }
+  ]
+}

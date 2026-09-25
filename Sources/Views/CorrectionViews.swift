@@ -11,7 +11,7 @@ struct CorrectionBody: View {
         VStack(alignment: .leading, spacing: 12) {
             if let chosen, chosen != question.answer, question.options.indices.contains(chosen) {
                 AnswerBlock(
-                    label: "Hai risposto",
+                    label: "Your answer",
                     answer: question.options[chosen],
                     reason: question.whyWrong(chosen),
                     color: .wrong,
@@ -19,7 +19,7 @@ struct CorrectionBody: View {
                 )
             }
             AnswerBlock(
-                label: "La risposta giusta",
+                label: "Correct answer",
                 answer: question.options[question.answer],
                 reason: question.explanation,
                 color: .correct,
@@ -95,11 +95,11 @@ struct SessionCorrectionsView: View {
                 .padding(20)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Le tue correzioni")
+            .navigationTitle("Your corrections")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Fatto") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -122,12 +122,12 @@ struct MistakesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if items.isEmpty {
-                    ContentUnavailableView("Nessun errore da ripassare",
+                    ContentUnavailableView("No mistakes to review",
                                            systemImage: "checkmark.seal.fill",
-                                           description: Text("Quando sbagli una domanda la trovi qui, con la correzione."))
+                                           description: Text("When you get a question wrong it shows up here, with the correction."))
                         .padding(.top, 60)
                 } else {
-                    Text("Leggi le correzioni, poi riprova: quando rispondi giusto l'errore sparisce da qui.")
+                    Text("Read the corrections, then try again: once you answer correctly, the mistake disappears from here.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     ForEach(items) { CorrectionCard(item: $0, chosen: state.wrongChoice(for: $0)) }
@@ -136,15 +136,15 @@ struct MistakesView: View {
             .padding(20)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("I tuoi errori")
+        .navigationTitle("Your mistakes")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .safeAreaInset(edge: .bottom) {
             if !items.isEmpty {
                 Button {
-                    session = QuizSession(mode: .mistakes, items: Array(items.shuffled().prefix(10)), title: "I tuoi errori")
+                    session = QuizSession(mode: .mistakes, items: Array(items.shuffled().prefix(10)), title: String(localized: "Your mistakes", bundle: .app))
                 } label: {
-                    Label("Riprova \(min(items.count, 10)) errori", systemImage: "arrow.counterclockwise")
+                    Label("Retry \(min(items.count, 10)) mistakes", systemImage: "arrow.counterclockwise")
                 }
                 .buttonStyle(PrimaryButtonStyle(gradient: state.activeTrack.theme.linear))
                 .padding(.horizontal, 20)

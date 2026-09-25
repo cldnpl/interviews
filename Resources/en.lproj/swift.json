@@ -1,0 +1,2164 @@
+{
+  "track": "swift",
+  "topics": [
+    {
+      "id": "basics",
+      "stage": "junior",
+      "title": "Language Basics",
+      "icon": "character.book.closed",
+      "summary": "let and var, the fundamental types, control flow, and functions: the minimum vocabulary you need to read any Swift code.",
+      "lesson": [
+        {
+          "heading": "let and var",
+          "body": "`let` declares a **constant**: you assign the value once and never touch it again. `var` declares a **variable**, which can be reassigned. The compiler warns you if you declare something with `var` that never changes, and stops you if you try to reassign a `let`.\n\nSwift **infers** the type from the initial value, so an explicit annotation is only needed when the type can't be inferred or when you want something other than the default. A constant can even be declared without a value, as long as it's assigned before its first use.",
+          "code": "let pi = 3.14        // Double by inference\nvar counter = 0      // Int\ncounter += 1\n\nlet name: String     // declared now...\nname = \"Ada\"         // ...assigned exactly once\n\n// pi = 3.15         // error: can't assign to a 'let'"
+        },
+        {
+          "heading": "The fundamental types",
+          "body": "The building blocks are `Int` (integers), `Double` (floating point), `Bool` (`true`/`false`), and `String` (text). An integer literal with no annotation becomes an `Int`; one with a decimal point becomes a `Double`.\n\nSwift **never converts anything behind your back**: `Int + Double` doesn't compile. You write the conversion yourself by constructing the type you want, `Double(a)` or `Int(b)`. It's annoying for the first week, and it's the reason an entire family of bugs doesn't exist in Swift.\n\nWatch out for **integer division**: `7 / 2` is `3`, not `3.5`, because both operands are `Int` and so is the result.",
+          "code": "let a = 3            // Int\nlet b = 2.5          // Double\n\n// let c = a + b     // error: mismatched types\nlet c = Double(a) + b   // 5.5\n\nprint(7 / 2)         // 3   (integer division)\nprint(7.0 / 2)       // 3.5 (Double)\n\nlet name = \"Ada\"\nprint(\"Hello \\(name), you have \\(2 + 3) messages\")"
+        },
+        {
+          "heading": "Control Flow: if and switch",
+          "body": "An `if` condition must be an actual `Bool`: in Swift, `if 1` doesn't compile, and there's no such thing as a \"truthy\" value.\n\n`switch` is far more powerful than its C namesake: it must be **exhaustive** (cover every case or add a `default`), it **doesn't fall through** from one case to the next — if you want fallthrough, you write it — and it can match ranges, tuples, and patterns with `where`.",
+          "code": "let grade = 7\n\nif grade >= 6 {\n    print(\"passed\")\n} else {\n    print(\"failed\")\n}\n\nswitch grade {\ncase ..<6:      print(\"failing\")\ncase 6...7:     print(\"passing\")\ncase let v where v >= 9: print(\"excellent\")\ndefault:        print(\"good\")\n}"
+        },
+        {
+          "heading": "Loops",
+          "body": "`for-in` iterates over any sequence: a range, an array, the characters of a string. Ranges are written `1...5` (closed, includes 5) or `1..<5` (half-open, stops at 4): mixing the two up is the most common source of off-by-one errors.\n\nIf you don't need the index, use `_` in its place. There are also `while` and `repeat-while`, but you rarely see them in Swift.",
+          "code": "var total = 0\nfor i in 1..<4 {     // 1, 2, 3\n    total += i\n}\nprint(total)         // 6\n\nfor _ in 0..<3 { print(\"hi\") }\n\nfor c in \"abc\" { print(c) }"
+        },
+        {
+          "heading": "Functions",
+          "body": "You declare a function with `func`; parameters must have a type, and the return type goes after `->`. If it's omitted, the function returns `Void`.\n\nWhat's distinctive about Swift is **argument labels**: every parameter has two names, the label you write at the call site and the name you use inside the body. If you write just one name, it's used for both; `_` as the label removes it from the call. Parameters can have a **default value**, and a single-expression function can omit `return`.",
+          "code": "func sum(_ a: Int, with b: Int) -> Int {\n    a + b            // implicit 'return': single expression\n}\nsum(2, with: 3)      // 5\n\nfunc greet(_ name: String = \"world\") -> String {\n    \"Hello \\(name)\"\n}\ngreet()              // \"Hello world\"\ngreet(\"Ada\")         // \"Hello Ada\"\n\n// Multiple return values at once, via a tuple\nfunc minMax(_ v: [Int]) -> (min: Int, max: Int)? {\n    guard let lo = v.min(), let hi = v.max() else { return nil }\n    return (lo, hi)\n}"
+        }
+      ],
+      "questions": [
+        {
+          "id": "swift-basics-1",
+          "prompt": "What happens when you compile this code?",
+          "code": "let x = 10\nx = 20\nprint(x)",
+          "options": [
+            "Compile error",
+            "Prints 20",
+            "Prints 10",
+            "Prints 10 with a warning"
+          ],
+          "answer": 0,
+          "explanation": "`let` declares a constant: the value is assigned exactly once. Reassigning it is an error the compiler rejects, not a warning. To be able to change it, you have to declare it with `var`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "That would be true with `var x = 10`: since it's declared with `let`, the line `x = 20` doesn't even compile, so nothing ever gets printed.",
+            "Nothing gets printed: the error happens at compile time, so the program never runs at all. `let` doesn't ignore the reassignment, it rejects it.",
+            "It's not a warning but a real error: the code doesn't produce an executable. Swift uses warnings for harmless things, like a `var` that's never reassigned."
+          ]
+        },
+        {
+          "id": "swift-basics-2",
+          "prompt": "What does this code print?",
+          "code": "let n = 7\nlet m = 2\nprint(n / m)",
+          "options": [
+            "3",
+            "3.5",
+            "4",
+            "Compile error"
+          ],
+          "answer": 0,
+          "explanation": "Both operands are `Int`, so this is integer division and the result stays an `Int`: the fractional part is truncated, not rounded. To get 3.5 you need at least one `Double`, for example `Double(n) / Double(m)`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "3.5 is the result of dividing `Double`s: here both types are `Int`, and `Int / Int` produces an `Int`. You need to convert: `Double(n) / Double(m)`.",
+            "Integer division **truncates**, it doesn't round: 3.5 becomes 3, never 4. Rounding has to be requested explicitly, for example with `(Double(n) / Double(m)).rounded()`.",
+            "The code compiles: dividing two `Int`s is perfectly legal. The trap is the result, not whether it's valid."
+          ]
+        },
+        {
+          "id": "swift-basics-3",
+          "prompt": "What happens when you compile this code?",
+          "code": "let a = 3\nlet b = 2.5\nprint(a + b)",
+          "options": [
+            "Compile error",
+            "Prints 5.5",
+            "Prints 5",
+            "Prints 5.0"
+          ],
+          "answer": 0,
+          "explanation": "`a` is inferred as `Int` and `b` as `Double`: Swift doesn't do implicit numeric conversions, so there's no `+` operator that takes an `Int` and a `Double`. You have to write it yourself: `Double(a) + b`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "5.5 would be the result if Swift promoted `a` to `Double` on its own, the way C or Java do. Swift doesn't: you have to write the conversion, `Double(a) + b`.",
+            "No truncation happens, because the addition never runs at all: the compiler stops first, since it can't find a `+` between `Int` and `Double`.",
+            "The type of the result isn't the problem: the problem is that the expression `a + b` doesn't exist as long as the two operands have different types."
+          ]
+        },
+        {
+          "id": "swift-basics-4",
+          "prompt": "What does this code print?",
+          "code": "let name = \"Ada\"\nprint(\"Hello \\(name), you have \\(2 + 3) messages\")",
+          "options": [
+            "Hello Ada, you have 5 messages",
+            "Hello \\(name), you have \\(2 + 3) messages",
+            "Hello Ada, you have 2 + 3 messages",
+            "Compile error"
+          ],
+          "answer": 0,
+          "explanation": "Interpolation with `\\(...)` evaluates any expression and inserts its description into the string: `name` becomes `Ada`, and `2 + 3` is computed before it's inserted.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "That's the literal text: to actually print it you'd need a raw string, `#\"...\\(name)...\"#`. With regular quotes, `\\(` always starts an interpolation.",
+            "What goes inside `\\(...)` isn't a string but an **expression**, and it gets evaluated: `2 + 3` becomes `5` before it ends up in the text.",
+            "The code is valid: interpolation accepts any expression, arithmetic included."
+          ]
+        },
+        {
+          "id": "swift-basics-5",
+          "prompt": "What does this code print?",
+          "code": "var total = 0\nfor i in 1..<4 {\n    total += i\n}\nprint(total)",
+          "options": [
+            "6",
+            "10",
+            "3",
+            "4"
+          ],
+          "answer": 0,
+          "explanation": "`1..<4` is a **half-open** range: it includes 1, 2, and 3 and excludes 4. So the sum is 1 + 2 + 3 = 6.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "10 is the sum from 1 to 4, which is what `1...4` with three dots would give you. `..<` excludes the upper bound, so 4 never enters the loop.",
+            "3 is the number of iterations, not the sum of the values: the loop runs three times, but each pass adds `i`, not 1.",
+            "4 is the excluded bound: it's exactly the value `..<` leaves out. Confusing `..<` with `...` is the most common off-by-one error in Swift."
+          ]
+        },
+        {
+          "id": "swift-basics-6",
+          "prompt": "What does this code print?",
+          "code": "let n = 1\nswitch n {\ncase 1:\n    print(\"one\")\n    fallthrough\ncase 2:\n    print(\"two\")\ndefault:\n    print(\"other\")\n}",
+          "options": [
+            "one, then two",
+            "only one",
+            "one, two, and other",
+            "Compile error"
+          ],
+          "answer": 0,
+          "explanation": "In Swift, a switch **doesn't fall through** from one case to the next: normally it would print only `one`. The explicit `fallthrough` forces a jump into the next case, which prints `two` — and stops there, because that case doesn't have a `fallthrough` of its own.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "That would be the answer without the `fallthrough` line: that keyword is exactly what explicitly requests the jump to the next case.",
+            "`fallthrough` makes a single jump, to the case immediately after. To reach `default` you'd need a second `fallthrough` inside `case 2`.",
+            "The code is valid: `fallthrough` is a Swift keyword, designed precisely to request the behavior that's the default in C."
+          ]
+        },
+        {
+          "id": "swift-basics-7",
+          "prompt": "Given this function, which call compiles?",
+          "code": "func sum(_ a: Int, with b: Int) -> Int {\n    a + b\n}",
+          "options": [
+            "sum(2, with: 3)",
+            "sum(a: 2, with: 3)",
+            "sum(2, 3)",
+            "sum(a: 2, b: 3)"
+          ],
+          "answer": 0,
+          "explanation": "The first parameter has `_` as its label, so you pass it bare at the call site; the second has the label `with`, different from the internal name `b`, and it has to be written. Inside the body you use the internal names, `a` and `b`.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "There's no `a:` label: the first parameter was declared with `_`, which removes the label precisely so it can be passed without a name.",
+            "The `with:` label on the second parameter isn't optional: only the first one was made unnamed with `_`. Omitting a declared label is an error.",
+            "`b` is the **internal** name, visible only inside the function body. At the call site you use the external label, which here is `with`."
+          ]
+        },
+        {
+          "id": "swift-basics-8",
+          "prompt": "What does this code print?",
+          "code": "let grade = 7\nswitch grade {\ncase ..<6:\n    print(\"failing\")\ncase 6...7:\n    print(\"passing\")\ncase let v where v >= 9:\n    print(\"excellent\")\ndefault:\n    print(\"good\")\n}",
+          "options": [
+            "passing",
+            "good",
+            "failing",
+            "passing and good"
+          ],
+          "answer": 0,
+          "explanation": "Cases are evaluated top to bottom, and the switch stops at the first one that matches: 7 isn't in `..<6` but it is in `6...7`, so it prints `passing`. Closed ranges written with `...` include both bounds.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`default` only kicks in if no earlier case matches. Here `6...7` includes 7, so the switch stops before it gets there.",
+            "`..<6` is the range of values less than 6: 7 falls outside it. This would be the right answer for a grade of 5 or lower.",
+            "A switch runs **only one** case and then exits: without an explicit `fallthrough`, it doesn't continue to the next one."
+          ]
+        },
+        {
+          "id": "swift-basics-9",
+          "prompt": "What does this code print?",
+          "code": "let x = Int8.max\nprint(x &+ 1)",
+          "options": [
+            "-128",
+            "128",
+            "127",
+            "Runtime crash"
+          ],
+          "answer": 0,
+          "explanation": "`Int8` ranges from -128 to 127. The `&+` operator is addition **with wraparound**: once you go past the maximum, you start over from the minimum, so 127 &+ 1 gives -128. With the regular `+`, the program would crash on overflow instead.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "128 can't be represented in an `Int8`, which tops out at 127: that's exactly why the value wraps around and ends up at -128.",
+            "127 is the starting value, `Int8.max`: the addition definitely happens, it just overflows and wraps around to the minimum.",
+            "A crash is what the regular `+` would give you, since it terminates the program on overflow. The `&+`, `&-`, and `&*` operators exist precisely to request wraparound instead of a crash."
+          ]
+        },
+        {
+          "id": "swift-basics-10",
+          "prompt": "What does this code print?",
+          "code": "let s = \"e\\u{301}\"   // 'e' + combining acute accent\nprint(s.count)",
+          "options": [
+            "1",
+            "2",
+            "3",
+            "0"
+          ],
+          "answer": 0,
+          "explanation": "A Swift `String` is a sequence of `Character`s, and a `Character` is a **grapheme cluster**: a character as a human perceives it. The `e` and the combining accent form a single grapheme, so `count` is 1. To count Unicode scalars you use `s.unicodeScalars.count`, which would give 2 here.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "2 is the number of **Unicode scalars** (`s.unicodeScalars.count`), not characters: `count` on a String counts grapheme clusters, and the two scalars here make up just one.",
+            "3 would be the number of bytes in UTF-8 (`s.utf8.count`): the `e` takes one and the combining accent takes two. `count` doesn't count bytes.",
+            "The string isn't empty: it contains one character, the one made of the `e` plus the accent."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "optionals",
+      "stage": "junior",
+      "title": "Optionals",
+      "icon": "questionmark.circle",
+      "summary": "How Swift represents the absence of a value safely, with the compiler checking your work.",
+      "lesson": [
+        {
+          "heading": "What an optional really is",
+          "body": "An Optional is just a generic `enum` with two cases: `.none` and `.some(Wrapped)`. The `Int?` syntax is only sugar for `Optional<Int>`, and the `nil` literal corresponds to `.none`.\n\nThe payoff is that the absence of a value is encoded in the **type system**: a `String` can never be nil, and the compiler forces you to handle the empty case before you use a `String?`.",
+          "code": "enum Optional<Wrapped> {\n    case none\n    case some(Wrapped)\n}\nlet a: Int? = 5      // .some(5)\nlet b: Int? = nil    // .none"
+        },
+        {
+          "heading": "Safe Unwrapping",
+          "body": "The main tools are `if let`, `guard let`, and **optional chaining** `a?.b?.c`. With `guard let`, the unwrapped value stays available for the rest of the scope, and the `else` branch must exit (return, throw, break). Since Swift 5.7 you can write the shorthand `if let name` instead of `if let name = name`.\n\nOptional chaining always returns an Optional: if any link in the chain is nil, the whole expression is nil.",
+          "code": "func greet(_ name: String?) {\n    guard let name else { return }\n    print(\"Hello \\(name)\")\n}\nlet count = user?.address?.street.count  // Int?"
+        },
+        {
+          "heading": "Nil-coalescing and force unwrapping",
+          "body": "The `??` operator supplies a default value; its right-hand operand is an `@autoclosure`, so it's evaluated **only** if the left-hand side is nil. Force unwrapping with `!` crashes the app if the value is nil: in an interview you need to justify it (a guaranteed invariant), and never use it out of laziness.\n\n**Implicitly unwrapped optionals** (`String!`) are Optionals that the compiler unwraps automatically when a non-optional type is required; you mostly see them on `@IBOutlet`s.",
+          "code": "let port = Int(env[\"PORT\"] ?? \"\") ?? 8080\n@IBOutlet weak var titleLabel: UILabel!"
+        },
+        {
+          "heading": "map, flatMap, and Pattern Matching",
+          "body": "Optional has `map` and `flatMap` too: `map` transforms the value if there is one, and `flatMap` avoids a double Optional when the transformation itself returns an Optional. Without `flatMap`, it's easy to end up with an `Int??`.\n\nYou can also match Optionals against patterns: `if case let x? = value`, or a `switch` over `.some` and `.none`. A classic source of double Optionals is a `Dictionary` with optional values, where the subscript returns `Value??`.",
+          "code": "let s: String? = \"42\"\nlet a = s.map { Int($0) }      // Int??\nlet b = s.flatMap { Int($0) }  // Int?"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"What is an Optional and how do you handle it?\"** Concise answer: it's an enum with `.none` and `.some` that makes the possible absence of a value explicit in the type; I unwrap it with `guard let` for early exits, `if let` for local branches, `??` for defaults, and optional chaining for chains of accesses.\n\nAdd that you avoid `!` except for documented invariants, and mention the double-Optional trap with `map` or with dictionaries: it shows you understand the type, not just the syntax.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "swift-optionals-1",
+          "prompt": "What does this code print?",
+          "code": "let a: Int? = nil\nprint(a ?? 5)",
+          "options": [
+            "5",
+            "nil",
+            "Optional(5)",
+            "Compile error"
+          ],
+          "answer": 0,
+          "explanation": "`??` returns the right-hand value when the left-hand side is nil, and the result has the non-optional type `Int`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "It's tempting to think nil because `a` is nil, but `??` exists precisely to replace it: when the left side is nil, it returns the right-hand value, `5`.",
+            "The result of `a ?? 5` isn't optional: with a default of type `Int`, `??` returns an `Int`, so `print` shows `5` with no wrapper.",
+            "The code is valid: `??` takes an `Int?` on the left and an `Int` on the right, which are compatible types. No error; it prints `5`."
+          ]
+        },
+        {
+          "id": "swift-optionals-2",
+          "prompt": "What does this code print?",
+          "code": "let s: String? = \"hello\"\nprint(s)",
+          "options": [
+            "hello",
+            "\"hello\"",
+            "Compile error",
+            "Optional(\"hello\")"
+          ],
+          "answer": 3,
+          "explanation": "Printing an Optional without unwrapping it shows the `Optional(...)` wrapper along with the debug description; the compiler only emits a warning.",
+          "difficulty": 1,
+          "whyWrong": [
+            "That's what you'd get with `s!` or `if let`: without unwrapping, `print` receives the Optional and shows `Optional(\"hello\")`.",
+            "The quotes really do appear, but inside the wrapper: `print` uses the Optional's debug description, which wraps the string in `Optional(...)`.",
+            "Passing an Optional to `print` is legal because the parameter is `Any`: the compiler only emits a warning about the implicit coercion, not an error.",
+            null
+          ]
+        },
+        {
+          "id": "swift-optionals-3",
+          "prompt": "How is `Optional` implemented in the standard library?",
+          "code": null,
+          "options": [
+            "A pointer that can be NULL",
+            "A generic enum with the cases `.none` and `.some(Wrapped)`",
+            "A class with a `value` property",
+            "A protocol adopted by every type"
+          ],
+          "answer": 1,
+          "explanation": "Optional is a plain enum: `nil` is `.none`, and the compiler only adds syntactic sugar (`?`, `!`, optional chaining).",
+          "difficulty": 1,
+          "whyWrong": [
+            "That's the C and Objective-C model, where nil is a null pointer. In Swift, Optional also works for value types like `Int`, and it's an enum, not a pointer.",
+            null,
+            "Optional is a value type: a class would have reference semantics and allocation costs. In reality it's an `enum` with `.none` and `.some`.",
+            "There's no protocol adopted by every type: `Optional<Wrapped>` is a generic type that wraps any `Wrapped`."
+          ]
+        },
+        {
+          "id": "swift-optionals-4",
+          "prompt": "What's the main difference between `guard let` and `if let`?",
+          "code": null,
+          "options": [
+            "With `guard let`, the constant stays visible after the guard",
+            "`guard let` is faster at runtime",
+            "`if let` doesn't work with properties",
+            "`guard let` only accepts reference types"
+          ],
+          "answer": 0,
+          "explanation": "`guard let` unwraps the value into the enclosing scope and forces the `else` branch to exit, which encourages early exits.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Performance is identical: both boil down to checking for the `.some` case. The difference is about scope and control flow, not speed.",
+            "`if let` works perfectly well with properties, for example `if let name = user.name`; since Swift 5.7 there's also the shorthand `if let name`.",
+            "`guard let` works with any Optional, value types included (`Int?`, `String?`): there's no restriction to reference types."
+          ]
+        },
+        {
+          "id": "swift-optionals-5",
+          "prompt": "`street` is a non-optional `String`. What is the type of `n`?",
+          "code": "let n = user?.address?.street.count",
+          "options": [
+            "Int",
+            "Int??",
+            "String?",
+            "Int?"
+          ],
+          "answer": 3,
+          "explanation": "Optional chaining flattens the chain: a single optional link is enough to make the result `Int?`, never a nested Optional.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`count` is an `Int`, but the chain goes through `user?` and `address?`: if either one is nil the result is nil, so the type becomes `Int?`.",
+            "Optional chaining doesn't stack levels: multiple `?` in the same chain still produce a single Optional, `Int?`.",
+            "The last member of the chain is `.count`, not `street`: the final type is the type of `count` (`Int`) made optional, so `Int?`.",
+            null
+          ]
+        },
+        {
+          "id": "swift-optionals-6",
+          "prompt": "What is the type of `r`?",
+          "code": "let s: String? = \"42\"\nlet r = s.map { Int($0) }",
+          "options": [
+            "Int??",
+            "Int?",
+            "Int",
+            "String?"
+          ],
+          "answer": 0,
+          "explanation": "`Int(_:)` returns an `Int?`, and `map` wraps it in another Optional; `flatMap` would have given you `Int?`.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "It would be `Int?` with `flatMap`. `map` wraps whatever the closure returns, and here the closure already returns `Int?`: the result is `Int??`.",
+            "`map` on an Optional always returns an Optional, and `Int(_:)` from a String is itself failable: neither level goes away.",
+            "`map` transforms the wrapped value and doesn't preserve the original type: the closure returns `Int?`, so you get `Int??`."
+          ]
+        },
+        {
+          "id": "swift-optionals-7",
+          "prompt": "What does this code print?",
+          "code": "func fallback() -> Int {\n    print(\"fallback\")\n    return 0\n}\nlet v: Int? = 3\nprint(v ?? fallback())",
+          "options": [
+            "\"fallback\", then \"3\"",
+            "Only \"3\"",
+            "\"fallback\", then \"0\"",
+            "Optional(3)"
+          ],
+          "answer": 1,
+          "explanation": "The right-hand operand of `??` is an `@autoclosure`: it isn't evaluated if the left-hand side contains a value.",
+          "difficulty": 2,
+          "whyWrong": [
+            "That would be true if the right-hand side were evaluated like a normal argument; instead it's an `@autoclosure`, and since `v` is 3, `fallback()` is never called.",
+            null,
+            "`fallback()` only comes into play when `v` is nil. Here `v` contains 3, so there's no \"fallback\" and the printed value is `3`.",
+            "With a non-optional default (`Int`), `??` returns an `Int`: the wrapper goes away and it simply prints `3`."
+          ]
+        },
+        {
+          "id": "swift-optionals-8",
+          "prompt": "What does this code print?",
+          "code": "let x: Int? = 5\nif case .some(let y) = x {\n    print(y)\n}",
+          "options": [
+            "Optional(5)",
+            "Nothing",
+            "5",
+            "Compile error"
+          ],
+          "answer": 2,
+          "explanation": "The `.some(let y)` pattern matches and binds the unwrapped value, so `y` is a non-optional `Int`.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The `.some(let y)` pattern extracts the payload: `y` is the wrapped `Int`, not the Optional, so it prints `5`.",
+            "The match only fails if `x` is `.none`. Here `x` is 5, i.e. `.some(5)`, so the body of the `if` runs.",
+            null,
+            "`if case` with an enum pattern is valid syntax on Optionals too, which are exactly an enum with `.some` and `.none`; `case let y?` is the shorthand form."
+          ]
+        },
+        {
+          "id": "swift-optionals-9",
+          "prompt": "What is the inferred type of `copy`?",
+          "code": "var name: String! = \"Ada\"\nlet copy = name",
+          "options": [
+            "String",
+            "String!",
+            "String?",
+            "Compile error"
+          ],
+          "answer": 2,
+          "explanation": "Since SE-0054, an IUO is a regular Optional with an implicit force-unwrap flag; if the context doesn't require a `String`, inference produces `String?`.",
+          "difficulty": 3,
+          "whyWrong": [
+            "The implicit force unwrap only kicks in if the context requires a `String`. With `let copy = name` there's no annotation, so the inferred type stays `String?`.",
+            "Since SE-0054, `String!` is no longer a type of its own but a `String?` with an attribute on the declaration, and that attribute doesn't propagate through inference.",
+            null,
+            "Copying an IUO into a new constant is perfectly legal: the compiler infers `String?` with no errors."
+          ]
+        },
+        {
+          "id": "swift-optionals-10",
+          "prompt": "What does this code print?",
+          "code": "let dict: [String: Int?] = [\"a\": nil]\nprint(dict[\"a\"] == nil)",
+          "options": [
+            "true",
+            "false",
+            "nil",
+            "Compile error"
+          ],
+          "answer": 1,
+          "explanation": "The key exists with a nil value: the subscript returns `.some(nil)` of type `Int??`, which is different from `.none`.",
+          "difficulty": 3,
+          "whyWrong": [
+            "The stored value is nil, but the subscript returns `Int??`: the key exists, so you get `.some(nil)`, which is different from `nil` (`.none`).",
+            null,
+            "`==` always returns a `Bool`, never nil: comparing `.some(nil)` with `nil` produces `false`.",
+            "A dictionary with `Int?` values is legal, and comparing with nil works on nested Optionals: it compiles and prints `false`."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "value-vs-reference",
+      "stage": "junior",
+      "title": "Value vs Reference Types",
+      "icon": "shippingbox",
+      "summary": "Structs, enums, and classes: copying vs sharing, mutability, and copy-on-write.",
+      "lesson": [
+        {
+          "heading": "Value and reference semantics",
+          "body": "`struct`s, `enum`s, and tuples are **value types**: assignment creates an independent copy. `class`es (and `actor`s) are **reference types**: assignment copies the reference, so multiple variables point to the same instance.\n\nReference types have identity: `===` checks whether two references point to the same object, while `==` compares values through `Equatable`.",
+          "code": "struct P { var x = 0 }\nclass R { var x = 0 }\nvar p1 = P(); var p2 = p1; p2.x = 1  // p1.x == 0\nlet r1 = R(); let r2 = r1; r2.x = 1  // r1.x == 1"
+        },
+        {
+          "heading": "let, var, and mutating",
+          "body": "A struct declared with `let` is deeply immutable: you can't change any of its `var` properties. With a class, `let` only locks the reference: the instance's properties remain mutable.\n\nStruct and enum methods that modify `self` must be marked `mutating`, and they can only be called on `var` instances.",
+          "code": "struct Counter {\n    var value = 0\n    mutating func increment() { value += 1 }\n}"
+        },
+        {
+          "heading": "Copy-on-Write",
+          "body": "Array, Dictionary, Set, and String are structs that hold a buffer on the heap: copying is cheap because the buffer is shared, and it's duplicated only on the first **mutation** if it isn't uniquely referenced.\n\nYour own structs don't get COW automatically. To implement it, you wrap a storage class and, before mutating, use `isKnownUniquelyReferenced(&storage)` to decide whether to clone it.",
+          "code": "mutating func append(_ x: Int) {\n    if !isKnownUniquelyReferenced(&storage) {\n        storage = storage.copy()\n    }\n    storage.items.append(x)\n}"
+        },
+        {
+          "heading": "When to choose which",
+          "body": "The recommended default is `struct`: predictable semantics, simpler thread safety, and no ARC overhead for pure value fields. Use a `class` when you need **identity**, shared mutable state, inheritance, or Objective-C interop; mark it `final` if it isn't meant to be subclassed.\n\n`enum`s with associated values model mutually exclusive states; recursive types need `indirect`, which stores the payload in a box on the heap.",
+          "code": "indirect enum Expr {\n    case number(Int)\n    case add(Expr, Expr)\n}"
+        },
+        {
+          "heading": "Stack and heap myths",
+          "body": "\"Structs live on the stack and classes on the heap\" is an oversimplification. A struct can end up on the heap if it's captured by an escaping closure, stored in an existential that's too large for its inline buffer, or if it contains buffers like an Array.\n\nOn top of that, a struct that holds references to classes still performs retain/release when it's copied, and the reference field is shared between copies: value semantics apply only to the outer struct.",
+          "code": null
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"Struct or class? What are the differences?\"** Concise answer: structs are copied, classes are shared; structs have no inheritance and no deinit, they're the default in Swift, and they keep state local and predictable. I choose a class when I need identity or shared state.\n\nRound it out by mentioning **copy-on-write** in the collections and the case of a struct that contains a class: it shows you understand where value semantics really end.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "swift-value-vs-reference-1",
+          "prompt": "What does this code print?",
+          "code": "struct P { var x = 0 }\nvar a = P()\nvar b = a\nb.x = 5\nprint(a.x)",
+          "options": [
+            "5",
+            "0",
+            "nil",
+            "Compile error"
+          ],
+          "answer": 1,
+          "explanation": "`P` is a struct: `b` is an independent copy, so modifying `b` doesn't touch `a`.",
+          "difficulty": 1,
+          "whyWrong": [
+            "It would be 5 with a class. `P` is a struct: `var b = a` creates an independent copy, so `b.x = 5` doesn't touch `a.x`, which stays 0.",
+            null,
+            "`x` is a non-optional `Int` initialized to 0: it can never be nil.",
+            "Both `a` and `b` are `var`, so modifying `b.x` is legal: the code compiles and prints 0."
+          ]
+        },
+        {
+          "id": "swift-value-vs-reference-2",
+          "prompt": "What does this code print?",
+          "code": "class P { var x = 0 }\nlet a = P()\nlet b = a\nb.x = 5\nprint(a.x)",
+          "options": [
+            "0",
+            "nil",
+            "5",
+            "Compile error"
+          ],
+          "answer": 2,
+          "explanation": "`P` is a class: `a` and `b` point to the same instance, so the change is visible through both.",
+          "difficulty": 1,
+          "whyWrong": [
+            "With a struct it would be 0, but `P` is a class: `let b = a` copies the reference, not the instance, so `a.x` sees the 5.",
+            "`x` is a non-optional `Int`: the result is always a number, here 5.",
+            null,
+            "With a class, `let` makes the reference constant, not the object: `var` properties can be modified even through a constant."
+          ]
+        },
+        {
+          "id": "swift-value-vs-reference-3",
+          "prompt": "What happens with this code?",
+          "code": "struct S { var v = 1 }\nlet s = S()\ns.v = 2\nprint(s.v)",
+          "options": [
+            "Compile error",
+            "Prints 2",
+            "Prints 1",
+            "Runtime crash"
+          ],
+          "answer": 0,
+          "explanation": "A struct declared with `let` is immutable in all of its properties, even the ones declared `var`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "It would work with `var s` or with a class. For a struct, `let` locks the entire value, so `s.v = 2` is rejected at compile time.",
+            "The program never gets as far as printing: `s.v = 2` on a `let` struct is a compile error, not a statement that gets ignored.",
+            "The problem is caught statically: the compiler rejects mutating a struct constant, so execution is never reached."
+          ]
+        },
+        {
+          "id": "swift-value-vs-reference-4",
+          "prompt": "What does this code print?",
+          "code": "class C { var v = 1 }\nlet c = C()\nc.v = 2\nprint(c.v)",
+          "options": [
+            "1",
+            "Compile error",
+            "2",
+            "Runtime crash"
+          ],
+          "answer": 2,
+          "explanation": "With a class, `let` only makes the reference constant: the instance's `var` properties remain mutable.",
+          "difficulty": 1,
+          "whyWrong": [
+            "The assignment `c.v = 2` isn't ignored: it really modifies the instance, so the print that follows shows 2.",
+            "With a struct it would be an error, but with a class `let` only pins the reference: the instance's `var` properties stay mutable.",
+            null,
+            "There's nothing dangerous here: `c` is a valid reference and `v` is a `var`, so the assignment succeeds and it prints 2."
+          ]
+        },
+        {
+          "id": "swift-value-vs-reference-5",
+          "prompt": "When is the array's buffer actually copied?",
+          "code": "var a = [1, 2, 3]\nvar b = a\nb.append(4)",
+          "options": [
+            "Immediately, on the assignment `var b = a`",
+            "On the first mutation of `b`, i.e. on `append`",
+            "Never: `a` and `b` always share the buffer",
+            "When `a` goes out of scope"
+          ],
+          "answer": 1,
+          "explanation": "Copy-on-write defers the copy until you modify a buffer that isn't uniquely referenced.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The assignment only copies the reference to the buffer and bumps its reference count: the real copy is deferred by copy-on-write.",
+            null,
+            "Sharing forever would break value semantics: on `append`, `b` finds that the buffer isn't unique and makes its own copy.",
+            "The copy doesn't depend on `a`'s scope: it happens when `b` is mutated while the buffer is still shared, i.e. on `append`."
+          ]
+        },
+        {
+          "id": "swift-value-vs-reference-6",
+          "prompt": "What does this code print?",
+          "code": "class Box { var v = 0 }\nstruct W { var box = Box() }\nvar a = W()\nvar b = a\nb.box.v = 9\nprint(a.box.v)",
+          "options": [
+            "0",
+            "nil",
+            "Compile error",
+            "9"
+          ],
+          "answer": 3,
+          "explanation": "The struct is copied, but the `box` property is a reference: both copies point to the same `Box` instance.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The struct `W` is copied, but the `box` field is a reference: the copy points to the same `Box` instance, so `a.box.v` becomes 9.",
+            "`v` is a non-optional `Int` and `box` is never nil: the result is a number, here 9.",
+            "The code is valid: `b` is a `var`, and in any case `v` belongs to a class instance, so modifying it through `b.box` is legal.",
+            null
+          ]
+        },
+        {
+          "id": "swift-value-vs-reference-7",
+          "prompt": "What does the `===` operator check?",
+          "code": null,
+          "options": [
+            "Whether two Equatable values are equal",
+            "Whether two structs have the same fields",
+            "Whether two types are identical",
+            "Whether two references point to the same instance"
+          ],
+          "answer": 3,
+          "explanation": "`===` compares the identity of class instances (`AnyObject`), regardless of `Equatable`.",
+          "difficulty": 2,
+          "whyWrong": [
+            "That's `==`. `===` ignores `Equatable` and compares identity: two objects with equal contents but different instances give `false`.",
+            "`===` doesn't apply to structs: it works on class instances (`AnyObject`), because value types have no identity.",
+            "To compare types you use metatypes, for example `type(of: a) == B.self`. `===` compares instances, not types.",
+            null
+          ]
+        },
+        {
+          "id": "swift-value-vs-reference-8",
+          "prompt": "Why does a recursive enum require `indirect`?",
+          "code": null,
+          "options": [
+            "Without indirection its size would be infinite",
+            "To enable pattern matching",
+            "To make it a reference type",
+            "To make it automatically Equatable"
+          ],
+          "answer": 0,
+          "explanation": "A value type must have a fixed size; `indirect` stores the payload in a box on the heap, breaking the layout recursion.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Pattern matching works on any enum, recursive or not. `indirect` solves a memory layout problem, not a syntax one.",
+            "The enum stays a value type: `indirect` puts the payload in a box on the heap, but the copy semantics remain value semantics.",
+            "`indirect` doesn't add any conformance: `Equatable` has to be declared, and automatic synthesis works if all the payloads are Equatable."
+          ]
+        },
+        {
+          "id": "swift-value-vs-reference-9",
+          "prompt": "Which function do you use to implement copy-on-write in a custom struct?",
+          "code": null,
+          "options": [
+            "`withUnsafeMutablePointer(to:_:)`",
+            "`ObjectIdentifier(_:)`",
+            "`CFGetRetainCount(_:)`",
+            "`isKnownUniquelyReferenced(_:)`"
+          ],
+          "answer": 3,
+          "explanation": "It checks whether the reference to the storage is unique: if it isn't, you clone the storage before mutating it.",
+          "difficulty": 3,
+          "whyWrong": [
+            "It gives you a temporary pointer to a value, but tells you nothing about how many references point to the storage, which is the key piece of information for CoW.",
+            "It identifies an instance, which is useful for comparisons or as a dictionary key, but it doesn't reveal whether the storage has other owners.",
+            "The retain count is unreliable (optimizations, autorelease) and isn't meant for this: the official, efficient check is `isKnownUniquelyReferenced`.",
+            null
+          ]
+        },
+        {
+          "id": "swift-value-vs-reference-10",
+          "prompt": "What does this code print?",
+          "code": "struct P { var x = 0 }\nvar p = P()\nlet f = { print(p.x) }\np.x = 7\nf()",
+          "options": [
+            "0",
+            "Compile error",
+            "7",
+            "It depends on the optimizer"
+          ],
+          "answer": 2,
+          "explanation": "Closures capture variables by reference, even when they hold value types: the closure reads the updated value.",
+          "difficulty": 3,
+          "whyWrong": [
+            "You might picture the struct being copied into the closure, but without a capture list the variable `p` itself is captured: by the time `f()` runs, it's 7.",
+            "Capturing a `var` in a closure is legal even if it holds a struct: the code compiles, and the closure reads `p` at call time.",
+            null,
+            "Capture semantics are defined by the language, not by the optimizer: without a capture list you always read the current value, which is 7."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "closures",
+      "stage": "junior",
+      "title": "Closures",
+      "icon": "function",
+      "summary": "Escaping, capture lists, trailing closures, and @autoclosure, without the surprises.",
+      "lesson": [
+        {
+          "heading": "Syntax and trailing closures",
+          "body": "Closures are first-class blocks of code: you can assign them, pass them around, and return them. Swift offers plenty of shortcuts: type inference, implicit return for single expressions, and shorthand arguments `$0`, `$1`.\n\nIf the last parameter is a closure, you can write it as a **trailing closure** outside the parentheses; since Swift 5.3, **multiple trailing closures** with labels are supported too.",
+          "code": "let doubled = [1, 2, 3].map { $0 * 2 }\nUIView.animate(withDuration: 0.3) {\n    view.alpha = 0\n} completion: { _ in\n    view.removeFromSuperview()\n}"
+        },
+        {
+          "heading": "Escaping and non-escaping",
+          "body": "By default, closure parameters are **non-escaping**: the compiler knows they run before the function returns, so it can optimize them and doesn't require an explicit `self`. You need `@escaping` when the closure is stored in a property or runs after the function returns, for example in an asynchronous completion handler.\n\nInside a class, escaping closures require you to use `self` explicitly (or `[self]` in the capture list), precisely to make the risk of a retain cycle visible.",
+          "code": "var handlers: [() -> Void] = []\nfunc register(_ h: @escaping () -> Void) {\n    handlers.append(h)\n}"
+        },
+        {
+          "heading": "Capturing Variables",
+          "body": "A closure captures variables from its surrounding context **by reference**: if the variable changes after the closure is created, the closure sees the new value, even for value types. That's how counters built by factory functions work.\n\nA **capture list** `[x]`, on the other hand, copies the value at the moment the closure is created. For a reference type, what gets copied is the reference, so mutations to the object are still visible.",
+          "code": "var n = 1\nlet byRef = { print(n) }\nlet byValue = { [n] in print(n) }\nn = 2\nbyRef()    // 2\nbyValue()  // 1"
+        },
+        {
+          "heading": "Closures and retain cycles",
+          "body": "Closures are **reference types**: if an object holds on to a closure that captures `self` strongly, you get a cycle. You break it with `[weak self]` (self becomes an Optional) or `[unowned self]` (not Optional, crashes if the object has already been deallocated).\n\nSince Swift 5.7 you can write `guard let self else { return }`. Non-escaping closures, like the ones passed to `map` or `filter`, can't create cycles because they don't outlive the call.",
+          "code": "service.onUpdate = { [weak self] data in\n    guard let self else { return }\n    self.render(data)\n}"
+        },
+        {
+          "heading": "@autoclosure",
+          "body": "`@autoclosure` automatically wraps an expression passed as an argument in a closure with no parameters, deferring its evaluation. It's the mechanism behind `??`, `&&`, `||`, and `assert`: the right-hand expression is computed only if it's needed.\n\nUse it sparingly, because it hides from the caller the fact that the argument might never be evaluated.",
+          "code": "func log(_ msg: @autoclosure () -> String, enabled: Bool) {\n    if enabled { print(msg()) }\n}"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"When do you need `@escaping`, and why do you use `[weak self]`?\"** Concise answer: `@escaping` is needed when the closure outlives the function; in that case, if the object retains the closure and the closure retains the object, you get a retain cycle, which I break with `[weak self]`.\n\nMake the point that `[weak self]` isn't needed everywhere: in non-escaping closures, or in closures that aren't retained by `self`, it's unnecessary, although it can still shorten the object's lifetime.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "swift-closures-1",
+          "prompt": "What does this code print?",
+          "code": "var n = 1\nlet f = { print(n) }\nn = 2\nf()",
+          "options": [
+            "1",
+            "2",
+            "nil",
+            "Compile error"
+          ],
+          "answer": 1,
+          "explanation": "Without a capture list, the closure captures the variable by reference and reads its value at the time it runs.",
+          "difficulty": 1,
+          "whyWrong": [
+            "It would be 1 with `[n]` in the capture list. Without it, the closure captures the variable itself and reads 2 when `f()` runs.",
+            null,
+            "`n` is a non-optional `Int`: the closure always prints a number, here 2.",
+            "Capturing a `var` in a closure and modifying it afterward is perfectly legal."
+          ]
+        },
+        {
+          "id": "swift-closures-2",
+          "prompt": "When is `@escaping` required?",
+          "code": null,
+          "options": [
+            "When the closure throws errors",
+            "When the closure returns a value",
+            "When the closure may run after the function returns",
+            "Always, for closures that take parameters"
+          ],
+          "answer": 2,
+          "explanation": "For example, if it's stored in a property or passed to an asynchronous API.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Throwing closures need `throws` in their type, not `@escaping`: the two are independent concerns.",
+            "The return type doesn't matter: a `() -> Int` closure can be non-escaping. `@escaping` is only about the closure living beyond the function.",
+            null,
+            "Since Swift 3, closure parameters are non-escaping by default, with or without parameters; `@escaping` is needed only if the closure outlives the call."
+          ]
+        },
+        {
+          "id": "swift-closures-3",
+          "prompt": "What does this code print?",
+          "code": "let nums = [1, 2, 3]\nprint(nums.map { $0 * 2 })",
+          "options": [
+            "[1, 2, 3]",
+            "12",
+            "[[2], [4], [6]]",
+            "[2, 4, 6]"
+          ],
+          "answer": 3,
+          "explanation": "`map` applies the trailing closure to each element and returns a new array.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`map` doesn't return the original array but a new one, with the closure applied to each element: the values come out doubled.",
+            "12 is the sum of the doubled values, which is what a `reduce` would give you. `map` transforms element by element and returns an array.",
+            "The closure returns an `Int`, not an array: so `map` produces an `[Int]`, with no nesting.",
+            null
+          ]
+        },
+        {
+          "id": "swift-closures-4",
+          "prompt": "What does this code print?",
+          "code": "var n = 1\nlet f = { [n] in print(n) }\nn = 2\nf()",
+          "options": [
+            "2",
+            "nil",
+            "1",
+            "Compile error"
+          ],
+          "answer": 2,
+          "explanation": "The capture list `[n]` copies the value of `n` at the moment the closure is created.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Without a capture list it would be 2. With `[n]`, the closure copies its value at creation, when `n` is still 1.",
+            "The captured copy is a non-optional `Int` equal to 1: there's no nil involved.",
+            null,
+            "A capture list containing a variable name is valid syntax: `[n]` creates a local constant with the current value."
+          ]
+        },
+        {
+          "id": "swift-closures-5",
+          "prompt": "What does this code print?",
+          "code": "func log(_ msg: @autoclosure () -> String, enabled: Bool) {\n    if enabled { print(msg()) }\n}\nfunc build() -> String { print(\"build\"); return \"x\" }\nlog(build(), enabled: false)",
+          "options": [
+            "Nothing",
+            "build",
+            "build, then x",
+            "x"
+          ],
+          "answer": 0,
+          "explanation": "With `@autoclosure`, the argument `build()` is evaluated only if `msg()` is called, which doesn't happen here.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "With a regular parameter, `build()` would be evaluated before the call. With `@autoclosure` it becomes a closure, never invoked because `enabled` is false.",
+            "That would need `enabled: true`. Here `msg()` is never called, so neither `build()` nor the printing of x happens.",
+            "To print x you'd have to call `msg()`, but that's inside `if enabled`, which is false: nothing gets printed."
+          ]
+        },
+        {
+          "id": "swift-closures-6",
+          "prompt": "What does this code print?",
+          "code": "func makeCounter() -> () -> Int {\n    var c = 0\n    return { c += 1; return c }\n}\nlet a = makeCounter()\nlet b = makeCounter()\n_ = a()\nprint(a(), b())",
+          "options": [
+            "1 1",
+            "2 2",
+            "3 1",
+            "2 1"
+          ],
+          "answer": 3,
+          "explanation": "Each call to `makeCounter` creates a new captured `c`; `a` has been called twice, `b` once.",
+          "difficulty": 2,
+          "whyWrong": [
+            "This overlooks `_ = a()`: the result is discarded, but `a`'s counter still goes to 1, so the second call returns 2.",
+            "`a` and `b` don't share `c`: each `makeCounter()` creates a new variable, so `b()` returns 1 on its first call.",
+            "`a()` is called twice in total (once discarded and once inside `print`), so it returns 2, not 3.",
+            null
+          ]
+        },
+        {
+          "id": "swift-closures-7",
+          "prompt": "Are closures in Swift value types or reference types?",
+          "code": null,
+          "options": [
+            "Value types, like structs",
+            "Reference types",
+            "Value types with copy-on-write",
+            "It depends on what they capture"
+          ],
+          "answer": 1,
+          "explanation": "Assigning a closure to two variables shares the same captured context; that's why closures can create retain cycles.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Assigning a closure to another variable doesn't copy its context: both share the same captured values, just like with a class.",
+            null,
+            "Copy-on-write is a mechanism used by some value types, like Array. Closures aren't copied: they're references managed by ARC.",
+            "The nature of the type doesn't change with what's captured: a closure is always a reference type, even when it captures nothing."
+          ]
+        },
+        {
+          "id": "swift-closures-8",
+          "prompt": "Do you need `[weak self]` in `items.map { self.format($0) }`?",
+          "code": null,
+          "options": [
+            "No: the closure is non-escaping and can't create cycles",
+            "Yes, always when using self",
+            "Yes, otherwise it won't compile",
+            "Only if `self` is a struct"
+          ],
+          "answer": 0,
+          "explanation": "The closure passed to `map` runs and is released before the function returns, so it can't hold on to `self` over time.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`[weak self]` matters when an escaping closure is retained over time. The one passed to `map` finishes before the return: no cycle is possible.",
+            "It compiles just fine: in non-escaping closures you can use `self` freely, even without `[weak self]`.",
+            "You can't use `weak` with a struct at all; it applies only to reference types. And in any case, there's no cycle here."
+          ]
+        },
+        {
+          "id": "swift-closures-9",
+          "prompt": "What does this code print?",
+          "code": "class C { var v = 0 }\nlet c = C()\nlet f = { [c] in print(c.v) }\nc.v = 5\nf()",
+          "options": [
+            "0",
+            "nil",
+            "5",
+            "Compile error"
+          ],
+          "answer": 2,
+          "explanation": "The capture list copies the reference, not the object: the closure and the variable point to the same instance.",
+          "difficulty": 3,
+          "whyWrong": [
+            "The capture list copies the value of `c`, but that value is a reference: the closure points to the same instance and sees `v` = 5.",
+            "`[c]` captures a strong, non-optional reference; you'd only get nil with `weak` and an object that's already been deallocated.",
+            null,
+            "Putting a class-type constant in the capture list is legal: it creates a strong copy of the reference."
+          ]
+        },
+        {
+          "id": "swift-closures-10",
+          "prompt": "What happens if a closure with `[unowned self]` runs after self has been deallocated?",
+          "code": null,
+          "options": [
+            "`self` is nil and the code is skipped",
+            "The closure doesn't run",
+            "The object is recreated",
+            "Runtime crash"
+          ],
+          "answer": 3,
+          "explanation": "`unowned` isn't Optional: accessing an unowned reference to a deallocated object causes a trap.",
+          "difficulty": 3,
+          "whyWrong": [
+            "That's what happens with `[weak self]` and `self?`. `unowned` isn't Optional: accessing a deallocated object causes a trap.",
+            "The closure doesn't check self's state before it starts: it runs, and it's the access to `self` that crashes.",
+            "Swift never recreates deallocated objects: `unowned` assumes the object is alive, and if it isn't, the access terminates the program.",
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "id": "collections-functional",
+      "stage": "mid",
+      "title": "Collections & Functional",
+      "icon": "list.bullet.rectangle",
+      "summary": "Array, Set, Dictionary, higher-order functions, lazy, and complexity.",
+      "lesson": [
+        {
+          "heading": "Array, Set, and Dictionary",
+          "body": "`Array` is ordered and allows duplicates: index access is O(1), `append` is amortized O(1), while inserting or removing at the front and `contains` are O(n). `Set` is unordered with no duplicates, and `contains`, `insert`, and `remove` are O(1) on average. `Dictionary` maps keys to values with O(1) average lookup.\n\nSet elements and Dictionary keys must be `Hashable`. Iteration order for Set and Dictionary is not guaranteed and changes between runs, because hashing uses a random per-process seed.",
+          "code": "var seen = Set<String>()\nif seen.insert(id).inserted { process(id) }\nvar counts: [String: Int] = [:]\ncounts[word, default: 0] += 1"
+        },
+        {
+          "heading": "Equatable and Hashable",
+          "body": "For structs and enums, the compiler synthesizes `Equatable` and `Hashable` if all stored properties (or associated values) conform. If you implement them by hand, you must honor the contract: if `a == b`, their hashes must match too. The reverse isn't required, because collisions are allowed.\n\nIn `hash(into:)`, feed `hasher.combine` the same properties you compare in `==`.",
+          "code": "struct User: Hashable {\n    let id: UUID\n    var name: String\n    static func == (l: User, r: User) -> Bool { l.id == r.id }\n    func hash(into h: inout Hasher) { h.combine(id) }\n}"
+        },
+        {
+          "heading": "map, filter, reduce, and friends",
+          "body": "`map` transforms every element, `filter` keeps the ones that match a predicate, and `reduce` combines everything into a single value. `compactMap` transforms and drops the nils, and `flatMap` flattens a sequence of sequences.\n\n`reduce(into:)` mutates an `inout` accumulator instead of creating a new one at every step: when building arrays or dictionaries, it avoids repeated copies and quadratic cost.",
+          "code": "let ids = [\"1\", \"x\", \"3\"].compactMap { Int($0) }      // [1, 3]\nlet all = [[1, 2], [3]].flatMap { $0 }                  // [1, 2, 3]\nlet freq = words.reduce(into: [:]) { $0[$1, default: 0] += 1 }"
+        },
+        {
+          "heading": "lazy",
+          "body": "A `map`/`filter` chain on an Array creates an intermediate array at every step. With `.lazy`, the transformations are composed and evaluated **on demand**, one element at a time, and stop as soon as the result is known (for example with `first(where:)`).\n\nThe flip side: a lazy sequence evaluated multiple times repeats the work, and the closures run only when elements are accessed, which can be surprising if they have side effects.",
+          "code": "let firstBig = (1...1_000_000).lazy\n    .map { $0 * $0 }\n    .first { $0 > 1_000 }   // computes only 32 squares"
+        },
+        {
+          "heading": "Handy idioms",
+          "body": "`Dictionary(grouping:by:)` groups elements by key, `Dictionary(uniqueKeysWithValues:)` builds one from pairs, `zip` pairs up two sequences, and `enumerated()` gives you offset and value. `sorted(by:)` is O(n log n), and `min`/`max` are O(n).\n\nRemember that collections are value types with copy-on-write: passing them to a function is cheap as long as nobody mutates them.",
+          "code": "let byInitial = Dictionary(grouping: names) { $0.first! }\nfor (i, name) in names.enumerated() { print(i, name) }"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"Array or Set? What's the complexity of contains?\"**. Short answer: Array when order matters or you need duplicates, Set when you need uniqueness and O(1) average lookup instead of O(n); the price is `Hashable` conformance and losing the order.\n\nAlso be ready to explain the difference between `map`, `compactMap`, and `flatMap`, and to justify `reduce(into:)` and `lazy` in terms of allocations.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "swift-collections-functional-1",
+          "prompt": "What does this code print?",
+          "code": "let r = [\"1\", \"a\", \"3\"].compactMap { Int($0) }\nprint(r)",
+          "options": [
+            "[1, nil, 3]",
+            "[Optional(1), Optional(3)]",
+            "[\"1\", \"3\"]",
+            "[1, 3]"
+          ],
+          "answer": 3,
+          "explanation": "`compactMap` applies the transform and drops the nil results.",
+          "difficulty": 1,
+          "whyWrong": [
+            "That would be the result of `map`, which produces `[Int?]`. `compactMap` drops the nils and returns `[Int]`.",
+            "`compactMap` doesn't just filter out the nils, it also unwraps: the result is `[Int]`, printed without `Optional(...)`.",
+            "`compactMap` returns the transformed values, not the original elements: `Int(\"1\")` is `1`, an `Int`, not a string.",
+            null
+          ]
+        },
+        {
+          "id": "swift-collections-functional-2",
+          "prompt": "What does this code print?",
+          "code": "print([[1, 2], [3]].flatMap { $0 })",
+          "options": [
+            "[1, 2, 3]",
+            "[[1, 2], [3]]",
+            "[3, 3]",
+            "6"
+          ],
+          "answer": 0,
+          "explanation": "`flatMap` with a closure that returns a sequence concatenates the results into a flat array.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "With `map { $0 }` you'd get the array back unchanged. `flatMap` concatenates the returned sequences, flattening one level.",
+            "`flatMap` doesn't count the elements of the sub-arrays: it concatenates them into a single array.",
+            "Nothing gets summed: `flatMap` concatenates the sub-arrays. To sum them you'd need a `reduce(0, +)` on the result."
+          ]
+        },
+        {
+          "id": "swift-collections-functional-3",
+          "prompt": "What does this code print?",
+          "code": "let r = [1, 2, 3, 4].reduce(0) { $0 + $1 * 2 }\nprint(r)",
+          "options": [
+            "10",
+            "18",
+            "20",
+            "12"
+          ],
+          "answer": 2,
+          "explanation": "Each element is doubled and added to the accumulator: 2 + 4 + 6 + 8 = 20.",
+          "difficulty": 1,
+          "whyWrong": [
+            "10 is the plain sum of the elements. The closure doubles each one before adding it: 2 + 4 + 6 + 8 = 20.",
+            "No element is skipped: with an initial value of 0, the closure runs on all four, so 0 + 2 + 4 + 6 + 8 = 20.",
+            null,
+            "Watch the roles: `$0` is the accumulator and `$1` is the element, and only the element is doubled at each step. The total is 20."
+          ]
+        },
+        {
+          "id": "swift-collections-functional-4",
+          "prompt": "What is the average complexity of `contains` on a `Set`?",
+          "code": null,
+          "options": [
+            "O(n)",
+            "O(log n)",
+            "O(1)",
+            "O(n log n)"
+          ],
+          "answer": 2,
+          "explanation": "A Set is a hash table: lookup is constant on average, and O(n) only in the degenerate case of heavy collisions.",
+          "difficulty": 1,
+          "whyWrong": [
+            "O(n) applies to `contains` on an Array, which scans every element; a Set uses the hash to jump straight to the bucket.",
+            "O(log n) is typical of ordered structures like trees or binary search. `Set` is an unordered hash table: lookup is O(1) on average.",
+            null,
+            "O(n log n) is the cost of sorting, not searching: `Set.contains` is O(1) on average."
+          ]
+        },
+        {
+          "id": "swift-collections-functional-5",
+          "prompt": "What is the complexity of `array.insert(x, at: 0)`?",
+          "code": null,
+          "options": [
+            "O(1)",
+            "O(log n)",
+            "Amortized O(1)",
+            "O(n)"
+          ],
+          "answer": 3,
+          "explanation": "Inserting at the front shifts every existing element; only `append` is amortized O(1).",
+          "difficulty": 2,
+          "whyWrong": [
+            "An Array uses contiguous memory: inserting at the front means shifting every element by one position, so O(n).",
+            "There's no binary search involved: the cost comes from shifting all n existing elements.",
+            "Amortized O(1) applies to `append` at the end. At the front every element has to move, so each insertion costs O(n).",
+            null
+          ]
+        },
+        {
+          "id": "swift-collections-functional-6",
+          "prompt": "What does this code print?",
+          "code": "var c: [Character: Int] = [:]\nfor ch in \"banana\" { c[ch, default: 0] += 1 }\nprint(c[\"a\"]!)",
+          "options": [
+            "1",
+            "3",
+            "2",
+            "nil"
+          ],
+          "answer": 1,
+          "explanation": "The `default` subscript starts at 0 for missing keys; \"banana\" contains three `a`s.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The `default` subscript doesn't reset to 0 every time: it only uses it when the key is missing, then accumulates. \"banana\" has three `a`s.",
+            null,
+            "Count carefully: b-a-n-a-n-a contains three `a`s; it's the `n`s that appear twice.",
+            "After the loop the key `a` exists and `!` unwraps the Optional: it prints an `Int`, namely 3."
+          ]
+        },
+        {
+          "id": "swift-collections-functional-7",
+          "prompt": "Which rule must a `Hashable` implementation follow?",
+          "code": null,
+          "options": [
+            "If the hashes are equal, then `a == b`",
+            "The hash must be unique for every value",
+            "If `a == b`, then `a` and `b` have the same hash",
+            "The hash must stay the same across runs"
+          ],
+          "answer": 2,
+          "explanation": "Collisions are allowed, but equal values with different hashes would break Set and Dictionary.",
+          "difficulty": 2,
+          "whyWrong": [
+            "That's the implication reversed: collisions are allowed, so different values can share a hash. Only `a == b` ⇒ equal hashes holds.",
+            "Uniqueness is impossible in general, because there are more possible values than possible hashes: collisions are allowed and handled by Set and Dictionary.",
+            null,
+            "Swift uses a random per-process seed, so the hash changes between runs: never persist it or compare it across runs."
+          ]
+        },
+        {
+          "id": "swift-collections-functional-8",
+          "prompt": "What does `print(Set([3, 1, 2]))` print?",
+          "code": null,
+          "options": [
+            "Always [1, 2, 3]",
+            "Always [3, 1, 2]",
+            "Error: Set isn't printable",
+            "The three numbers in no guaranteed order"
+          ],
+          "answer": 3,
+          "explanation": "Set is unordered and hashing uses a random per-process seed: the order can change between runs.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`Set` doesn't sort its elements: the order depends on hashing with a random per-process seed. To get them sorted, use `sorted()`.",
+            "Insertion order isn't preserved: elements land in buckets based on their hash, and the order can change between runs.",
+            "`Set` is `CustomStringConvertible`: `print` works and shows the elements in square brackets, in no guaranteed order.",
+            null
+          ]
+        },
+        {
+          "id": "swift-collections-functional-9",
+          "prompt": "What do the `print` calls in the closure print?",
+          "code": "let r = [1, 2, 3, 4].lazy\n    .map { x -> Int in print(x); return x * 10 }\n    .first { $0 > 15 }",
+          "options": [
+            "1 and 2",
+            "1, 2, 3, and 4",
+            "Nothing",
+            "Only 2"
+          ],
+          "answer": 0,
+          "explanation": "With `.lazy`, `map` is evaluated on demand and `first(where:)` stops at 20, the first value greater than 15.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "That would be true without `.lazy`, because `map` would transform everything up front. With `.lazy`, elements are processed on demand and `first` stops at 20.",
+            "`.lazy` defers the work, but `first(where:)` asks for it right away: it consumes elements until it finds a match, so 1 and 2 get printed.",
+            "Elements are processed in order from the start: first 1 (10, not > 15), then 2 (20, match). So both 1 and 2 are printed."
+          ]
+        },
+        {
+          "id": "swift-collections-functional-10",
+          "prompt": "Why prefer `reduce(into:)` over `reduce(_:_:)` to build an array?",
+          "code": null,
+          "options": [
+            "It's the only one that supports Dictionary",
+            "It mutates the accumulator in place, avoiding a copy at every step",
+            "It runs in parallel",
+            "It doesn't need an initial value"
+          ],
+          "answer": 1,
+          "explanation": "With `reduce(_:_:)`, every iteration returns a new accumulator, risking O(n²) cost.",
+          "difficulty": 3,
+          "whyWrong": [
+            "`reduce(_:_:)` works with Dictionary too; the advantage of `into:` is in-place mutation, whatever the accumulator's type.",
+            null,
+            "`reduce(into:)` is just as sequential as the other one: the difference is that it mutates the accumulator instead of recreating it at every step.",
+            "You still need an initial value, for example `reduce(into: [])`: the only change is that the closure receives the accumulator as `inout`."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "protocols-generics",
+      "stage": "mid",
+      "title": "Protocols & Generics",
+      "icon": "curlybraces",
+      "summary": "Protocol-oriented programming, associated types, some/any, and extensions.",
+      "lesson": [
+        {
+          "heading": "Protocol-oriented programming",
+          "body": "In Swift, protocols define contracts that structs, enums, classes, and actors can adopt. **Protocol extensions** let you provide default implementations, giving you code reuse without inheritance, and therefore for value types too.\n\nThe idea is to favor composing small protocols over deep class hierarchies. `protocol P: AnyObject`, on the other hand, restricts adoption to classes only, which you need for `weak` delegates, for example.",
+          "code": "protocol Describable { var name: String { get } }\nextension Describable {\n    func describe() -> String { \"I'm \\(name)\" }\n}\nstruct Dog: Describable { let name = \"Fido\" }"
+        },
+        {
+          "heading": "Dispatch in protocol extensions",
+          "body": "A method declared as a protocol **requirement** uses dynamic dispatch through the witness table: calling it on `any P` runs the concrete type's implementation.\n\nA method defined **only** in the extension is instead resolved statically based on the declared type: if the concrete type has a method with the same name, calling it through `any P` still runs the extension's version. It's one of the most common trick questions.",
+          "code": "protocol P { func a() }\nextension P {\n    func a() { print(\"P.a\") }  // requirement default\n    func b() { print(\"P.b\") }  // not a requirement\n}"
+        },
+        {
+          "heading": "Generics and constraints",
+          "body": "Generic functions and types work on a placeholder `T` constrained with `T: Protocol` or `where` clauses. The compiler can **specialize** the code for each concrete type, giving you the performance of hand-written code.\n\nWith **conditional conformance**, a generic type adopts a protocol only if its parameters satisfy a constraint: for example, `Array` is `Equatable` when `Element: Equatable`.",
+          "code": "func largest<T: Comparable>(_ xs: [T]) -> T? {\n    xs.max()\n}\nextension Array: Describable where Element: Describable { ... }"
+        },
+        {
+          "heading": "Associated types",
+          "body": "An `associatedtype` is a placeholder inside a protocol, pinned down by each conforming type (for example `Collection.Element`). Protocols with associated types or `Self` requirements can't be used as a concrete type without `any`, and even with `any` some operations (like `==` between two `any Equatable`) aren't available.\n\nSince Swift 5.7 there are **primary associated types**: you can write `some Collection<Int>` or `any Sequence<String>`.",
+          "code": "protocol Store {\n    associatedtype Item\n    func save(_ item: Item)\n}\nfunc sum(_ xs: some Collection<Int>) -> Int { xs.reduce(0, +) }"
+        },
+        {
+          "heading": "some vs any",
+          "body": "`some P` is an **opaque type**: it stands for a single concrete type chosen by the implementation and hidden from the caller, but known to the compiler; it enables static dispatch and optimizations. Every `return` must return the same concrete type.\n\n`any P` is an **existential**: a box that can hold any conforming type, even a different one over time, at the cost of possible allocations and dynamic dispatch. Since Swift 6, `any` is required when you use a protocol as a type.",
+          "code": "func makeShape() -> some Shape { Circle() }\nvar shapes: [any Shape] = [Circle(), Square()]"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"What's the difference between `some` and `any`?\"**. Short answer: `some` is a fixed but hidden concrete type, resolved at compile time; `any` is a heterogeneous container with dynamic dispatch. I default to `some` or generics and reach for `any` only when I need heterogeneity.\n\nAlso be ready for the static-dispatch trap in extensions, and for how associated types prevent you from using a protocol as a plain type.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "swift-protocols-generics-1",
+          "prompt": "Where do you provide a default implementation for a protocol method?",
+          "code": null,
+          "options": [
+            "In the protocol declaration itself",
+            "In an abstract base class",
+            "With the `@default` attribute",
+            "In a protocol extension"
+          ],
+          "answer": 3,
+          "explanation": "Protocol extensions can implement requirements, which conforming types can then override.",
+          "difficulty": 1,
+          "whyWrong": [
+            "The protocol body can only declare requirements, not implement them: the default goes in an `extension`.",
+            "Swift has no abstract classes, and a base class would limit adoption to subclasses; protocol extensions work for structs and enums too.",
+            "`@default` doesn't exist in Swift: the mechanism is a protocol extension that implements the method.",
+            null
+          ]
+        },
+        {
+          "id": "swift-protocols-generics-2",
+          "prompt": "Which type can NOT conform to `protocol Delegate: AnyObject`?",
+          "code": null,
+          "options": [
+            "A `final` class",
+            "A struct",
+            "A subclass of `NSObject`",
+            "A generic class"
+          ],
+          "answer": 1,
+          "explanation": "The `AnyObject` constraint restricts adoption to class reference types, so the delegate can be `weak`.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`final` only prevents subclassing: it's still a class, so it satisfies the `AnyObject` constraint.",
+            null,
+            "A subclass of `NSObject` is a class in every sense, so it can adopt a protocol constrained to `AnyObject`.",
+            "Generic parameters don't matter: a generic class is still a reference type and can conform to `Delegate`."
+          ]
+        },
+        {
+          "id": "swift-protocols-generics-3",
+          "prompt": "What does this code print?",
+          "code": "protocol Greeter { func hi() }\nextension Greeter { func hi() { print(\"P\") } }\nstruct S: Greeter { func hi() { print(\"S\") } }\nlet g: any Greeter = S()\ng.hi()",
+          "options": [
+            "P",
+            "Compile error",
+            "S",
+            "Nothing"
+          ],
+          "answer": 2,
+          "explanation": "`hi()` is a protocol requirement, so the call through `any Greeter` goes through the witness table and reaches `S`'s implementation.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It would print P if `hi()` existed only in the extension. Since it's a requirement, the call goes through the witness table and uses `S`'s implementation.",
+            "`S` implements `hi()`, and even without it there'd be the extension's default: the conformance is complete and the code compiles.",
+            null,
+            "The call really happens: `S`'s witness table points to its `hi()`, which prints S."
+          ]
+        },
+        {
+          "id": "swift-protocols-generics-4",
+          "prompt": "What does the return type `some View` communicate?",
+          "code": null,
+          "options": [
+            "Any type conforming to View, different on every call",
+            "A single concrete type, chosen by the implementation and hidden",
+            "A boxed existential like `any View`",
+            "An Optional that can be nil"
+          ],
+          "answer": 1,
+          "explanation": "An opaque type has a fixed identity known to the compiler: the caller only sees the protocol.",
+          "difficulty": 2,
+          "whyWrong": [
+            "That describes `any View`. With `some View` there's exactly one concrete type for that function, the same on every call.",
+            null,
+            "An opaque type isn't boxed: the compiler knows the concrete type and can optimize, whereas `any View` uses an existential container with dynamic dispatch.",
+            "`some` here has nothing to do with `Optional.some`: it denotes an opaque type. An optional opaque type would be written `(some View)?`."
+          ]
+        },
+        {
+          "id": "swift-protocols-generics-5",
+          "prompt": "What is an `associatedtype` in a protocol for?",
+          "code": null,
+          "options": [
+            "To declare a generic parameter of the function",
+            "To make the protocol adoptable only by classes",
+            "To create a global typealias",
+            "To declare a placeholder type pinned down by the conforming type"
+          ],
+          "answer": 3,
+          "explanation": "Each conforming type picks the concrete type, explicitly or through inference (e.g. `Collection`'s `Element`).",
+          "difficulty": 2,
+          "whyWrong": [
+            "Generic function parameters are written `<T>` and chosen by the caller; an `associatedtype` is pinned down by the conforming type instead.",
+            "To restrict adoption to classes you use `: AnyObject`. `associatedtype` introduces a placeholder type, not a constraint on what kind of type adopts it.",
+            "It isn't global: it lives inside the protocol, and each conforming type binds it to its own concrete type, through inference or a local `typealias`.",
+            null
+          ]
+        },
+        {
+          "id": "swift-protocols-generics-6",
+          "prompt": "How do you declare that `Array` adopts `Printable` only if its elements do?",
+          "code": null,
+          "options": [
+            "`extension Array: Printable where Element: Printable`",
+            "`extension Array<Printable>: Printable`",
+            "`extension Array: Printable if Element: Printable`",
+            "`extension Printable where Self == Array`"
+          ],
+          "answer": 0,
+          "explanation": "This is conditional conformance (SE-0143): the `where` clause on the extension constrains the conformance.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "`Array<Printable>` would mean an array of existentials, not a constraint on the elements: conditional conformance is expressed with `where`.",
+            "Swift doesn't use `if` in type declarations: the condition is written with the `where Element: Printable` clause.",
+            "Extending the protocol adds implementations to types that already conform, but it doesn't declare any conformance of `Array` to `Printable`."
+          ]
+        },
+        {
+          "id": "swift-protocols-generics-7",
+          "prompt": "What happens when you compile this function (without a result builder)?",
+          "code": "func make(flag: Bool) -> some Shape {\n    if flag { return Circle() }\n    else { return Square() }\n}",
+          "options": [
+            "It compiles and returns `any Shape`",
+            "Error: the returns have different concrete types",
+            "It compiles, and the type is decided at runtime",
+            "It compiles only if `Shape` is a class"
+          ],
+          "answer": 1,
+          "explanation": "An opaque result type must correspond to a single concrete type across all return paths.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The compiler doesn't fall back to `any Shape` on its own: `some` promises a single concrete type, and `Circle` and `Square` are two different types.",
+            null,
+            "Opaque types are resolved at compile time: the concrete type must be known and unique, not picked at runtime.",
+            "Even with classes, an opaque type requires the same concrete type in every return. Here you need `any Shape` or a type eraser."
+          ]
+        },
+        {
+          "id": "swift-protocols-generics-8",
+          "prompt": "What does this code print?",
+          "code": "protocol Greeter {}\nextension Greeter { func hi() { print(\"P\") } }\nstruct S: Greeter { func hi() { print(\"S\") } }\nlet g: any Greeter = S()\ng.hi()",
+          "options": [
+            "P",
+            "S",
+            "Compile error",
+            "Nothing"
+          ],
+          "answer": 0,
+          "explanation": "`hi()` isn't a requirement; it lives only in the extension, so dispatch is static on the declared type `any Greeter`.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "It would be S if `hi()` were declared in the protocol. Here it lives only in the extension, so dispatch is static and uses the extension's implementation.",
+            "The code compiles: `any Greeter` sees `hi()` thanks to the extension, and `S`'s method is just an extra method, not an override.",
+            "The call does run: the compiler resolves it statically to the extension's implementation, which prints P."
+          ]
+        },
+        {
+          "id": "swift-protocols-generics-9",
+          "prompt": "Why doesn't this function compile?",
+          "code": "func same(_ a: any Equatable, _ b: any Equatable) -> Bool {\n    a == b\n}",
+          "options": [
+            "`Equatable` can't be used with `any`",
+            "The signature is missing `throws`",
+            "`==` requires both operands to have the same `Self` type",
+            "Existentials don't support static methods"
+          ],
+          "answer": 2,
+          "explanation": "`Equatable` has a `Self` requirement: two `any Equatable` values could hold different concrete types, so `==` isn't available.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Since Swift 5.7, `any Equatable` is a valid type (SE-0309). The only problem is that `==` requires two operands of the same `Self` type.",
+            "Neither `==` nor the function throws, so `throws` is irrelevant: the error comes from the `Self` requirement of `==`.",
+            null,
+            "The static nature of `==` isn't the point: the two arguments need the same `Self` type, and two separate existentials don't guarantee that."
+          ]
+        },
+        {
+          "id": "swift-protocols-generics-10",
+          "prompt": "What does this code print?",
+          "code": "func maxOf<T: Comparable>(_ a: T, _ b: T) -> T {\n    a > b ? a : b\n}\nprint(maxOf(3, 2.5))",
+          "options": [
+            "3.0",
+            "3",
+            "2.5",
+            "Compile error"
+          ],
+          "answer": 0,
+          "explanation": "`T` must be a single type: `2.5` forces `Double`, so the literal `3` becomes a `Double` too and `3.0` is printed.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "On its own `3` would be an `Int`, but `T` is a single type and `2.5` forces `Double`: the literal `3` becomes a `Double` and `3.0` is printed.",
+            "`maxOf` returns the larger value, and 3 > 2.5: the right value is 3, printed as `3.0` because it's a `Double`.",
+            "It looks like an `Int`/`Double` mix, but these are literals: Swift finds a single `T` compatible with both, `Double`, and the code compiles."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "error-handling",
+      "stage": "mid",
+      "title": "Error Handling",
+      "icon": "exclamationmark.triangle",
+      "summary": "throws, do/catch, Result, try?/try!, rethrows, and defer in practice.",
+      "lesson": [
+        {
+          "heading": "throws and do/catch",
+          "body": "Errors are values conforming to the `Error` protocol, often modeled as an `enum`. A `throws` function propagates the error to its caller, which must mark the call with `try` and either handle it with `do/catch` or propagate it in turn.\n\nThese aren't exceptions with expensive stack unwinding: technically it's an alternate return value, so throwing errors is cheap. `catch` clauses support pattern matching and `where` clauses.",
+          "code": "enum LoginError: Error { case invalidPassword, locked(minutes: Int) }\ndo {\n    try login(user, pwd)\n} catch LoginError.locked(let m) {\n    print(\"Try again in \\(m) minutes\")\n} catch {\n    print(error)\n}"
+        },
+        {
+          "heading": "try? and try!",
+          "body": "`try?` converts the error to `nil` and returns an Optional; since Swift 5 the result is flattened, so a function returning `Int?` still gives you `Int?`, not `Int??`. You do lose the information about the error, though.\n\n`try!` assumes the error can't happen and crashes the app if it does: acceptable only for guaranteed invariants, like a constant regex.",
+          "code": "let data = try? Data(contentsOf: url)  // Data?\nlet re = try! Regex(\"[0-9]+\")"
+        },
+        {
+          "heading": "Result",
+          "body": "`Result<Success, Failure: Error>` is an enum with `.success` and `.failure`, useful for storing an outcome or passing it to asynchronous callbacks. You convert it to throws with `get()`, and it offers `map`, `flatMap`, and `mapError`.\n\nWith async/await, Result is less necessary, but it's still useful for storing outcomes, for legacy APIs with completion handlers, and for collecting errors from multiple operations.",
+          "code": "func fetch(completion: @escaping (Result<User, APIError>) -> Void)\nlet user = try result.get()"
+        },
+        {
+          "heading": "rethrows and typed throws",
+          "body": "A `rethrows` function throws only if the closure it receives throws: that's why `map` requires `try` only when the transform is `throws`.\n\nSince Swift 6 there are **typed throws**: `func load() throws(LoadError)` declares the concrete error type, and inside `catch` the `error` variable has that type instead of `any Error`. They're useful in embedded code or in libraries where the set of errors is closed.",
+          "code": "func load() throws(LoadError) -> Data { ... }\ndo { _ = try load() }\ncatch { handle(error) }  // error: LoadError"
+        },
+        {
+          "heading": "defer",
+          "body": "A `defer` block runs when the current scope exits, however that happens: return, throw, or falling off the end. Multiple `defer`s in the same scope run in **reverse** order (LIFO).\n\nIt's ideal for cleanup: closing files, releasing locks, stopping loading indicators. It can't contain statements that transfer control out of it, like `return` or `throw`.",
+          "code": "func read() throws -> String {\n    let handle = try open(path)\n    defer { handle.close() }\n    return try handle.readAll()\n}"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"How do you handle errors in Swift? When do you use Result?\"**. Short answer: I model errors as enums conforming to `Error`, use `throws` and `do/catch` as the main path, `try?` when I don't care about the error, and `try!` only for invariants; Result when I need to store or pass along an outcome.\n\nAdd `defer` for guaranteed cleanup, and mention `rethrows` and Swift 6 typed throws to show you're up to date.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "swift-error-handling-1",
+          "prompt": "Given `func f() throws -> Int`, what is the type of `try? f()`?",
+          "code": null,
+          "options": [
+            "Int",
+            "Result<Int, Error>",
+            "Int??",
+            "Int?"
+          ],
+          "answer": 3,
+          "explanation": "`try?` wraps the result in an Optional and returns nil if an error is thrown.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`try?` has to be able to represent failure, so it wraps the result in an Optional: `Int?`, not `Int`.",
+            "To get a `Result` you write `Result { try f() }`. `try?` discards the error and returns just an Optional.",
+            "`f()` returns a non-optional `Int`, so `try?` adds only one level: `Int?`.",
+            null
+          ]
+        },
+        {
+          "id": "swift-error-handling-2",
+          "prompt": "What happens if the function called with `try!` throws an error?",
+          "code": null,
+          "options": [
+            "Runtime crash",
+            "It returns nil",
+            "The error is ignored",
+            "Compile error"
+          ],
+          "answer": 0,
+          "explanation": "`try!` disables error propagation: if an error occurs, the program stops.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "That's `try?`. With `try!` you're asserting the error won't happen: if it does, the program stops.",
+            "Errors are never silently ignored: with `try!`, a thrown error causes a runtime trap.",
+            "The compiler accepts `try!` on any throwing function: it can't know whether the error will happen, you only find out at runtime."
+          ]
+        },
+        {
+          "id": "swift-error-handling-3",
+          "prompt": "What does `result.get()` do on a `Result<Int, MyError>`?",
+          "code": null,
+          "options": [
+            "It always returns an `Int?`",
+            "It returns the value or throws the contained error",
+            "It returns the error or nil",
+            "It blocks until the result is available"
+          ],
+          "answer": 1,
+          "explanation": "`get()` is a `throws` method that bridges Result and the `throws` model.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`get()` doesn't convert to an Optional: if the Result is `.failure` it throws the error, so you have to call it with `try`.",
+            null,
+            "It's the other way around: `get()` returns the value on `.success` and throws the error on `.failure`.",
+            "A `Result` holds an outcome that's already complete: there's nothing to wait for, `get()` is synchronous."
+          ]
+        },
+        {
+          "id": "swift-error-handling-4",
+          "prompt": "Given `func g() throws -> Int?`, what is the type of `try? g()` in Swift 5+?",
+          "code": null,
+          "options": [
+            "Int?",
+            "Int??",
+            "Int",
+            "Optional<Error>"
+          ],
+          "answer": 0,
+          "explanation": "Since SE-0230, `try?` flattens nested Optionals, avoiding Swift 4's `Int??`.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "That was the case up to Swift 4. Since SE-0230 (Swift 5), `try?` flattens the nested Optional, so the type is `Int?`.",
+            "The Optional doesn't go away: both the error and a nil returned by `g()` become nil, so you need `Int?`.",
+            "`try?` discards the error and keeps the value: the type depends on what `g()` returns, not on `Error`."
+          ]
+        },
+        {
+          "id": "swift-error-handling-5",
+          "prompt": "What does this code print?",
+          "code": "func f() {\n    defer { print(\"1\") }\n    defer { print(\"2\") }\n    print(\"3\")\n}\nf()",
+          "options": [
+            "1, 2, 3",
+            "3, 2, 1",
+            "3, 1, 2",
+            "2, 1, 3"
+          ],
+          "answer": 1,
+          "explanation": "The body prints `3`, then the `defer`s run on exit in reverse declaration order.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`defer` blocks don't run where they're written but when the scope exits, so `3` comes first; they also run in reverse order.",
+            null,
+            "Having `3` first is right, but the `defer`s run in reverse declaration order, like a stack: 2 first, then 1.",
+            "The order between the two `defer`s is correct, but they run when the function exits, so after `print(\"3\")`."
+          ]
+        },
+        {
+          "id": "swift-error-handling-6",
+          "prompt": "What does this code print?",
+          "code": "enum E: Error { case fail }\nfunc f() throws {\n    defer { print(\"cleanup\") }\n    throw E.fail\n}\ndo { try f() } catch { print(\"caught\") }",
+          "options": [
+            "caught, then cleanup",
+            "Only caught",
+            "cleanup, then caught",
+            "Only cleanup"
+          ],
+          "answer": 2,
+          "explanation": "`defer` runs even when the scope ends with `throw`, before the error reaches the `catch`.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The `defer` belongs to `f()`'s scope and runs before the error leaves the function, so before the `catch`.",
+            "`defer` runs even when you exit with `throw`: it's designed precisely for cleanup on error.",
+            null,
+            "The error isn't lost: after the `defer` it propagates to the caller, and the `catch` prints caught."
+          ]
+        },
+        {
+          "id": "swift-error-handling-7",
+          "prompt": "What does `rethrows` mean in a signature?",
+          "code": null,
+          "options": [
+            "It always rethrows the errors it receives",
+            "It converts errors into Result",
+            "It throws only if the closure passed as a parameter throws",
+            "It retries the operation on error"
+          ],
+          "answer": 2,
+          "explanation": "That way a call with a non-throwing closure doesn't need `try`, as with `map`.",
+          "difficulty": 2,
+          "whyWrong": [
+            "A `rethrows` function throws only if the closure it receives throws; with a non-throwing closure the call doesn't even need `try`.",
+            "`rethrows` doesn't transform errors: it lets them propagate as they are. Converting them to `Result` takes explicit code.",
+            null,
+            "The name is misleading, but there's no automatic retry: `rethrows` only says the function can propagate the closure's errors."
+          ]
+        },
+        {
+          "id": "swift-error-handling-8",
+          "prompt": "What does this code print?",
+          "code": "enum NetErr: Error { case timeout, code(Int) }\ndo { throw NetErr.code(404) }\ncatch NetErr.code(let c) where c >= 500 { print(\"server\") }\ncatch NetErr.code(let c) { print(\"client \\(c)\") }\ncatch { print(\"other\") }",
+          "options": [
+            "client 404",
+            "server",
+            "other",
+            "Compile error"
+          ],
+          "answer": 0,
+          "explanation": "The first `catch` matches the case but its `where` condition is false; the second one catches code 404.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "The first `catch` matches the `.code` case, but the `where c >= 500` condition is false for 404, so it moves on to the next one.",
+            "The generic `catch` only kicks in if none of the previous ones match; the second one, `catch NetErr.code(let c)`, already catches the 404.",
+            "`catch` clauses with patterns and `where` are valid syntax, and the final `catch` makes them exhaustive: it compiles without issues."
+          ]
+        },
+        {
+          "id": "swift-error-handling-9",
+          "prompt": "With `func load() throws(LoadError)` (Swift 6), what is the type of `error` in the `catch`?",
+          "code": null,
+          "options": [
+            "any Error",
+            "Error?",
+            "NSError",
+            "LoadError"
+          ],
+          "answer": 3,
+          "explanation": "With typed throws the compiler knows the exact type, and the generic `catch` exposes it as `LoadError`.",
+          "difficulty": 3,
+          "whyWrong": [
+            "That would be the case with untyped throws. With `throws(LoadError)` the compiler knows the exact type and the `catch` exposes it as `LoadError`.",
+            "`error` in a `catch` is never optional: if you've entered the `catch`, there's definitely an error.",
+            "`NSError` is about bridging with Objective-C, but Swift doesn't convert errors that way in a `catch`: with typed throws you get `LoadError`.",
+            null
+          ]
+        },
+        {
+          "id": "swift-error-handling-10",
+          "prompt": "Which of these is NOT allowed in a `defer` block?",
+          "code": null,
+          "options": [
+            "Calling a function",
+            "A `return` or a `throw`",
+            "Modifying a local variable",
+            "Printing with `print`"
+          ],
+          "answer": 1,
+          "explanation": "A `defer` can't transfer control out of its own block, otherwise the exit flow would be ambiguous.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Calling functions in a `defer` is perfectly normal, for example `file.close()`. The only thing forbidden is leaving the block with `return` or `throw`.",
+            null,
+            "A `defer` can modify local variables that are still in scope; what it can't do is transfer control out of the block.",
+            "`print` is an ordinary function call and is allowed; `return` and `throw` are what's not permitted."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "memory-arc",
+      "stage": "senior",
+      "title": "Memory & ARC",
+      "icon": "memorychip",
+      "summary": "Reference counting, strong/weak/unowned, and how to find and break retain cycles.",
+      "lesson": [
+        {
+          "heading": "How ARC works",
+          "body": "**Automatic Reference Counting** keeps track of the strong references to every class instance (and to closure contexts). The compiler inserts retains and releases; when the count reaches zero, `deinit` runs and the memory is freed.\n\nUnlike a garbage collector, ARC is deterministic and has no pauses, but it **doesn't detect cycles**: two objects that reference each other will never be freed.",
+          "code": "class Session {\n    deinit { print(\"Session deallocated\") }\n}\nvar s: Session? = Session()\ns = nil  // prints \"Session deallocated\""
+        },
+        {
+          "heading": "strong, weak, and unowned",
+          "body": "A **strong** reference (the default) increments the count. A **weak** reference doesn't; it must be an Optional `var`, and it's zeroed to nil when the object is deallocated.\n\nAn **unowned** reference doesn't increment the count and isn't Optional: use it when the other object has the same or a longer lifetime. Using it after deallocation causes a deterministic trap; `unowned(unsafe)` removes even that check and leads to undefined behavior.",
+          "code": "class Customer { var card: CreditCard? }\nclass CreditCard {\n    unowned let owner: Customer\n    init(owner: Customer) { self.owner = owner }\n}"
+        },
+        {
+          "heading": "Retain cycles between objects",
+          "body": "The classic case is a parent and child referencing each other: one side has to be `weak` or `unowned`. In the **delegate pattern** the property is `weak var delegate`, and the protocol must be constrained to `AnyObject` because `weak` only applies to class reference types.",
+          "code": "protocol ListDelegate: AnyObject {\n    func didSelect(_ index: Int)\n}\nfinal class ListView {\n    weak var delegate: ListDelegate?\n}"
+        },
+        {
+          "heading": "Retain cycles with closures",
+          "body": "If an object stores a closure that captures `self` strongly, the object and the closure keep each other alive. The fix is `[weak self]` in the capture list.\n\nNot every closure that uses `self` creates a cycle: `DispatchQueue.main.async { self.update() }` retains self only until the block runs. Watch out, though, for repeating `Timer`s and block-based `NotificationCenter` observers: the run loop or the center holds on to the block until you invalidate or remove it.",
+          "code": "final class ViewModel {\n    var onChange: (() -> Void)?\n    func bind() {\n        onChange = { [weak self] in self?.reload() }\n    }\n    func reload() {}\n}"
+        },
+        {
+          "heading": "Diagnosing leaks",
+          "body": "The fastest tool is Xcode's **Memory Graph Debugger**, which shows the graph of live objects and flags cycles. Instruments offers **Leaks** and **Allocations** for analysis over time.\n\nA simple but effective trick is putting a `print` in your view controllers' `deinit`: if it doesn't show up when you close a screen, something is holding on to it.",
+          "code": null
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"What's a retain cycle and how do you avoid it?\"**. Short answer: two instances holding strong references to each other never reach a count of zero; I break the cycle by making `weak` the side that doesn't own the other (delegate, parent), or by using `[weak self]` in stored closures.\n\nExplain when you pick `unowned` (guaranteed lifetime, avoids the Optional) and mention how you verify with the Memory Graph and `deinit`: it shows hands-on experience, not just theory.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "swift-memory-arc-1",
+          "prompt": "What does ARC apply to?",
+          "code": null,
+          "options": [
+            "All types, structs included",
+            "Only Objective-C objects",
+            "Only global variables",
+            "Class instances and closure contexts"
+          ],
+          "answer": 3,
+          "explanation": "Value types don't have their own count; ARC manages referenced heap instances, meaning classes, actors, and closures.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Structs are copied by value and don't have their own count; ARC only counts heap instances, although a struct can contain references managed by ARC.",
+            "ARC was born with Objective-C, but in Swift it manages all class instances, native ones included, plus closure contexts.",
+            "The variable's scope doesn't matter: ARC manages class instances wherever they're referenced, in locals, properties, or globals.",
+            null
+          ]
+        },
+        {
+          "id": "swift-memory-arc-2",
+          "prompt": "Why must a `weak` property be Optional?",
+          "code": null,
+          "options": [
+            "Because weak only works with protocols",
+            "Because ARC sets it to nil when the object is freed",
+            "So it can be initialized later",
+            "It's a convention, not a requirement"
+          ],
+          "answer": 1,
+          "explanation": "Weak references are zeroing: after deallocation they must be able to hold nil.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`weak` applies to any class reference type, not just protocols; the Optional is there because the reference can become nil.",
+            null,
+            "For deferred initialization there's `lazy` or an IUO. The Optional on `weak` is there because ARC zeroes the reference when the object is freed.",
+            "It's a rule enforced by the compiler: `weak var x: Foo` doesn't compile, it has to be `Foo?`, precisely because ARC may zero it."
+          ]
+        },
+        {
+          "id": "swift-memory-arc-3",
+          "prompt": "Which Xcode tool shows retain cycles in the graph of live objects?",
+          "code": null,
+          "options": [
+            "Memory Graph Debugger",
+            "View Debugger",
+            "Time Profiler",
+            "Network Link Conditioner"
+          ],
+          "answer": 0,
+          "explanation": "The Memory Graph Debugger highlights retained objects and cycles; Instruments Leaks is the alternative.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "The View Debugger shows the view hierarchy and layout constraints, not the graph of references between objects.",
+            "Time Profiler measures where CPU time goes: useful for performance, but it doesn't show who's retaining whom.",
+            "The Network Link Conditioner simulates slow or unreliable networks: it has nothing to do with memory."
+          ]
+        },
+        {
+          "id": "swift-memory-arc-4",
+          "prompt": "What does this code print?",
+          "code": "class A { deinit { print(\"bye\") } }\nvar a: A? = A()\nweak var w = a\na = nil\nprint(w == nil)",
+          "options": [
+            "false",
+            "true, then bye",
+            "bye, then false",
+            "bye, then true"
+          ],
+          "answer": 3,
+          "explanation": "The only strong reference is `a`: setting it to nil triggers `deinit`, and the weak reference becomes nil.",
+          "difficulty": 2,
+          "whyWrong": [
+            "`w` is weak and doesn't keep the object alive: `a = nil` removes the only strong reference, `deinit` runs, and `w` becomes nil, so the comparison is true.",
+            "The order is reversed: `deinit` runs right away at the `a = nil` statement, before reaching the `print`.",
+            "After deallocation the weak reference is zeroed automatically, so `w == nil` is true, not false.",
+            null
+          ]
+        },
+        {
+          "id": "swift-memory-arc-5",
+          "prompt": "Why doesn't `weak var delegate: MyDelegate?` compile?",
+          "code": null,
+          "options": [
+            "The delegate must be `let`",
+            "`weak` doesn't allow Optional types",
+            "The protocol isn't constrained to `AnyObject`",
+            "The property needs `@objc`"
+          ],
+          "answer": 2,
+          "explanation": "`weak` only applies to class reference types: the protocol must be `protocol MyDelegate: AnyObject`.",
+          "difficulty": 2,
+          "whyWrong": [
+            "The delegate doesn't need to be `let`: a weak reference can be zeroed by ARC and is declared as `weak var`. The problem is the unconstrained protocol.",
+            "It's the opposite: `weak` actually requires an Optional type. The problem is that `MyDelegate` could be adopted by structs, which weak doesn't apply to.",
+            null,
+            "`@objc` on the property doesn't change what kind of type it is: the protocol needs to be constrained to `AnyObject` so only classes can adopt it."
+          ]
+        },
+        {
+          "id": "swift-memory-arc-6",
+          "prompt": "What's wrong with this class?",
+          "code": "class VM {\n    var onUpdate: (() -> Void)?\n    func bind() { onUpdate = { self.refresh() } }\n    func refresh() {}\n}",
+          "options": [
+            "Nothing, closures capture weakly by default",
+            "Retain cycle: VM retains the closure, which retains VM",
+            "It doesn't compile without `@escaping`",
+            "`refresh` is called twice"
+          ],
+          "answer": 1,
+          "explanation": "The closure stored in `onUpdate` captures `self` strongly; you need `[weak self]` to break the cycle.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Closures capture strongly by default: the closure retains `self` for as long as it exists, and here `self` itself retains the closure.",
+            null,
+            "`@escaping` applies to function parameters; a closure-typed property is already implicitly escaping, so the code compiles.",
+            "`refresh` isn't called here, it's only captured in the closure: the problem is the reference cycle, not a double invocation."
+          ]
+        },
+        {
+          "id": "swift-memory-arc-7",
+          "prompt": "Does `DispatchQueue.main.async { self.update() }` create a permanent retain cycle?",
+          "code": null,
+          "options": [
+            "No, the queue releases the block after it runs",
+            "Yes, you always need `[weak self]`",
+            "Yes, as long as the app is in the foreground",
+            "No, because the main queue uses weak"
+          ],
+          "answer": 0,
+          "explanation": "Self doesn't own the block: the object's lifetime is only extended until the block runs, then everything is released.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "A cycle requires `self` to own the closure. Here the queue owns it and releases it after running it: `[weak self]` only serves to avoid extending the object's lifetime.",
+            "The app's state doesn't matter: the block runs and is then released, and the reference to `self` goes with it.",
+            "The queue retains the block strongly and the block retains `self` strongly: there's no cycle only because the queue releases the block after running it."
+          ]
+        },
+        {
+          "id": "swift-memory-arc-8",
+          "prompt": "When is `unowned` appropriate instead of `weak`?",
+          "code": null,
+          "options": [
+            "When the object can become nil at any moment",
+            "When the referenced object lives at least as long as the referrer",
+            "For view delegates",
+            "When working with structs"
+          ],
+          "answer": 1,
+          "explanation": "`unowned` avoids the Optional but assumes a guaranteed lifetime; if that assumption is wrong, the access crashes.",
+          "difficulty": 2,
+          "whyWrong": [
+            "That's exactly the case for `weak`: if the object can disappear at any moment, `unowned` would lead to a crash. You need a guaranteed lifetime.",
+            null,
+            "Delegates usually use `weak`, because the delegate can be deallocated before the object that references it.",
+            "`unowned`, like `weak`, only applies to class reference types: you can't use it with structs."
+          ]
+        },
+        {
+          "id": "swift-memory-arc-9",
+          "prompt": "What's the difference between `unowned` and `unowned(unsafe)` if the object is already deallocated?",
+          "code": null,
+          "options": [
+            "`unowned` traps; `unsafe` is undefined behavior",
+            "Both return nil",
+            "`unowned` returns nil, `unsafe` crashes",
+            "None, they're synonyms"
+          ],
+          "answer": 0,
+          "explanation": "`unowned` checks validity at runtime via the unowned count; `unowned(unsafe)` is a raw pointer with no checks.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Neither one is Optional: returning nil is `weak`'s job. `unowned` traps, and `unowned(unsafe)` reads invalid memory.",
+            "`unowned` never returns nil, it performs a controlled trap; `unowned(unsafe)` checks nothing, and the result is undefined, not necessarily a crash.",
+            "They differ precisely in the checks: `unowned` verifies at runtime that the object is alive, while `unowned(unsafe)` is a raw pointer with no checks."
+          ]
+        },
+        {
+          "id": "swift-memory-arc-10",
+          "prompt": "With `[weak self]`, the controller gets freed. What's left to do?",
+          "code": "timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in\n    self?.tick()\n}",
+          "options": [
+            "Nothing, `[weak self]` solves everything",
+            "Replace it with `[unowned self]`",
+            "Invalidate the timer, which the RunLoop retains",
+            "Mark `tick()` as `@objc`"
+          ],
+          "answer": 2,
+          "explanation": "A repeating timer stays scheduled on the RunLoop and keeps firing until you call `invalidate()`.",
+          "difficulty": 3,
+          "whyWrong": [
+            "`[weak self]` keeps the timer from retaining the controller, but the timer stays scheduled on the RunLoop and keeps firing: you need to call `invalidate()`.",
+            "`unowned` would make things worse: the timer keeps firing after deallocation, and accessing `self` would crash.",
+            null,
+            "`@objc` is only needed for the selector-based API; the block-based variant doesn't require it, and it wouldn't stop the timer anyway."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "concurrency",
+      "stage": "senior",
+      "title": "Concurrency",
+      "icon": "bolt.horizontal",
+      "summary": "From GCD to async/await: Task, actors, @MainActor, Sendable, and structured concurrency.",
+      "lesson": [
+        {
+          "heading": "GCD vs async/await",
+          "body": "With **GCD** you dispatch blocks to serial or concurrent queues and handle results with callbacks. It's easy to end up with nested callbacks, completions that never get called, and thread explosion.\n\nWith **async/await** an `async` function can suspend at an `await` without blocking the thread, which goes back to the cooperative thread pool to do other work. The code stays linear, errors use `throws`, and the compiler checks isolation and data races.",
+          "code": "func loadUser() async throws -> User {\n    let (data, _) = try await URLSession.shared.data(from: url)\n    return try JSONDecoder().decode(User.self, from: data)\n}"
+        },
+        {
+          "heading": "Tasks and structured concurrency",
+          "body": "`async let` and `TaskGroup` create **child tasks** bound to the parent task: the parent waits for its children, cancellation propagates, and no work outlives the scope. `Task { }` creates an unstructured task that inherits the actor, priority, and task-local values; `Task.detached` inherits nothing.\n\nCancellation is **cooperative**: `cancel()` only sets a flag, and your code has to check `Task.isCancelled` or call `try Task.checkCancellation()`.",
+          "code": "async let profile = fetchProfile()\nasync let posts = fetchPosts()\nlet page = try await Page(profile: profile, posts: posts)"
+        },
+        {
+          "heading": "Actors",
+          "body": "An `actor` is a reference type that protects its mutable state by serializing access to it: from the outside, every call requires `await`. It eliminates data races on its internal state without manual locks.\n\nWatch out for **reentrancy**: while an actor method is suspended at an `await`, other calls can run on the actor, so any assumptions made before the `await` must be rechecked after it.",
+          "code": "actor ImageCache {\n    private var store: [URL: UIImage] = [:]\n    func image(for url: URL) -> UIImage? { store[url] }\n    func insert(_ img: UIImage, for url: URL) { store[url] = img }\n}"
+        },
+        {
+          "heading": "@MainActor",
+          "body": "`@MainActor` is a **global actor** that represents the main thread. When you annotate a class, method, or property with it, the compiler guarantees it's only accessed from the main actor. It's the right way to update the UI, replacing `DispatchQueue.main.async`.\n\nFrom nonisolated code you hop to the main actor with `await` or with `await MainActor.run { }`. In Swift 6.2 you can also make `MainActor` the default isolation for an entire module.",
+          "code": "@MainActor\nfinal class ProfileViewModel: ObservableObject {\n    @Published var name = \"\"\n    func load() async { name = try await api.name() }\n}"
+        },
+        {
+          "heading": "Sendable and Swift 6",
+          "body": "`Sendable` marks types that can safely cross isolation boundaries. Non-public structs and enums whose members are all Sendable conform implicitly; a class is Sendable if it's `final` and has only Sendable `let` properties. Actors are always Sendable.\n\nIn the **Swift 6 language mode**, data race checking is a compile error, no longer a warning. `@unchecked Sendable` is a manual promise (for example, for classes protected by a lock) and should be used with care.",
+          "code": "struct Point: Sendable { let x: Double; let y: Double }\nfinal class Config: Sendable { let baseURL: URL }"
+        },
+        {
+          "heading": "In the interview",
+          "body": "Typical question: **\"Why move from GCD to async/await, and what are actors?\"** Short answer: async/await makes asynchronous code linear, doesn't block threads, and with structured concurrency it handles cancellation and lifetimes; actors protect mutable state, and compiler-checked Sendable prevents data races.\n\nMention actor reentrancy and cooperative cancellation: those are the two points that set a senior candidate apart.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "swift-concurrency-1",
+          "prompt": "Does an `await` block the thread the function is running on?",
+          "code": null,
+          "options": [
+            "Yes, just like `DispatchQueue.sync`",
+            "Yes, but only on the main thread",
+            "It depends on the task's priority",
+            "No, the task suspends and the thread stays free"
+          ],
+          "answer": 3,
+          "explanation": "The task is suspended, and the cooperative pool's thread runs other work until the task resumes.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`sync` blocks the thread while it waits; `await` only suspends the task and leaves the thread free for other work.",
+            "Even on the main actor, `await` doesn't block: the task suspends and the main thread keeps handling events and UI.",
+            "Priority affects execution order, not blocking: at any priority, `await` suspends the task without blocking the thread.",
+            null
+          ]
+        },
+        {
+          "id": "swift-concurrency-2",
+          "prompt": "What happens when you compile this in an async context?",
+          "code": "actor Counter {\n    var value = 0\n    func inc() { value += 1 }\n}\nlet c = Counter()\nc.inc()",
+          "options": [
+            "It compiles and increments synchronously",
+            "It crashes with a data race",
+            "Error: calling `inc()` from outside requires `await`",
+            "It compiles only in Swift 5 mode"
+          ],
+          "answer": 2,
+          "explanation": "An actor's methods are isolated: from the outside they're asynchronous calls that require `await`.",
+          "difficulty": 1,
+          "whyWrong": [
+            "The actor protects its state from outside access: the call has to wait its turn, so it's asynchronous and requires `await`.",
+            "The problem is caught at compile time, not at runtime: preventing data races is exactly what actor isolation is for.",
+            null,
+            "Even in Swift 5 mode, calling an isolated method from outside without `await` is an error: the rule has existed as long as actors have."
+          ]
+        },
+        {
+          "id": "swift-concurrency-3",
+          "prompt": "What does annotating a class with `@MainActor` imply?",
+          "code": null,
+          "options": [
+            "It can only be instantiated once",
+            "Its methods automatically become async",
+            "It can only be used from SwiftUI",
+            "Its properties and methods are isolated to the main actor"
+          ],
+          "answer": 3,
+          "explanation": "The compiler guarantees the class's state is only read and written from the main thread.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`@MainActor` is about isolation, not the number of instances: you can create as many as you like. You get a singleton with a `static let`.",
+            "Synchronous methods stay synchronous; they only require `await` when called from a context that isn't isolated to the main actor.",
+            "`@MainActor` is a language feature you can use anywhere: UIKit, AppKit, or non-UI code, not just SwiftUI.",
+            null
+          ]
+        },
+        {
+          "id": "swift-concurrency-4",
+          "prompt": "How are `fetchA()` and `fetchB()` executed?",
+          "code": "async let a = fetchA()\nasync let b = fetchB()\nlet r = await (a, b)",
+          "options": [
+            "Sequentially, A first and then B",
+            "On a detached thread",
+            "Only at the `await`, sequentially",
+            "In parallel, as child tasks"
+          ],
+          "answer": 3,
+          "explanation": "`async let` starts a child task immediately; `await` waits for both results.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It looks sequential because the lines follow each other, but `async let` starts the child task right away without waiting: A and B start together.",
+            "They aren't detached: they're structured child tasks, bound to the current task, and they inherit its priority and cancellation.",
+            "The work starts at the `async let` declaration, not at the `await`: the `await` just waits for results that are already in flight.",
+            null
+          ]
+        },
+        {
+          "id": "swift-concurrency-5",
+          "prompt": "What does `Task.detached` NOT inherit, compared to `Task { }`?",
+          "code": null,
+          "options": [
+            "The ability to throw errors",
+            "Access to global variables",
+            "The actor, priority, and task-local values",
+            "The ability to be cancelled"
+          ],
+          "answer": 2,
+          "explanation": "`Task { }` inherits the caller's context; a detached task starts with no isolation and no task-local values.",
+          "difficulty": 2,
+          "whyWrong": [
+            "A detached task can throw too: the closure just needs to be throwing, and you get the error back with `try await task.value`.",
+            "Global variables are accessible from any task, detached or not: the difference is about the context inherited from the caller.",
+            null,
+            "A detached task is cancelled with `cancel()` like any other; it just doesn't receive cancellation propagated from a parent task."
+          ]
+        },
+        {
+          "id": "swift-concurrency-6",
+          "prompt": "What does `task.cancel()` do?",
+          "code": null,
+          "options": [
+            "Sets the cancellation flag, which the task must check",
+            "Immediately interrupts the task's thread",
+            "Throws an error in the caller",
+            "Removes the task from the queue without running it"
+          ],
+          "answer": 0,
+          "explanation": "Cancellation is cooperative: you need `Task.isCancelled` or `Task.checkCancellation()`.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Swift never forcibly interrupts a thread: cancellation is cooperative, and the task has to check for it itself.",
+            "`cancel()` doesn't throw anything in the caller. It's the task that may choose to throw `CancellationError` via `Task.checkCancellation()`.",
+            "The task isn't removed: if it hasn't started yet, it will still run, with the cancellation flag already set."
+          ]
+        },
+        {
+          "id": "swift-concurrency-7",
+          "prompt": "Which of these types is implicitly `Sendable`?",
+          "code": null,
+          "options": [
+            "`struct P { let x: Int; let name: String }`",
+            "`final class A { var x = 0 }`",
+            "`class B { let x = 0 }`, not final",
+            "`struct Q { let box: NSMutableArray }`"
+          ],
+          "answer": 0,
+          "explanation": "A non-public struct with only Sendable members gets implicit conformance; the others have shared mutable state.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Even though it's `final`, it has a mutable `var`: multiple tasks could modify it at the same time, so without synchronization it isn't Sendable.",
+            "Classes never get Sendable implicitly, and a non-`final` class could have subclasses with mutable state.",
+            "A struct is Sendable only if all its members are: `NSMutableArray` is a mutable, non-Sendable class, so `Q` isn't Sendable either."
+          ]
+        },
+        {
+          "id": "swift-concurrency-8",
+          "prompt": "What happens when you run `DispatchQueue.main.sync { }` from the main thread?",
+          "code": null,
+          "options": [
+            "The block runs immediately",
+            "The block is deferred to the next run loop cycle",
+            "Deadlock",
+            "A compile-time warning, then it runs"
+          ],
+          "answer": 2,
+          "explanation": "`sync` waits for the block to finish on the main queue, but the main queue is busy with the caller itself.",
+          "difficulty": 2,
+          "whyWrong": [
+            "It sounds reasonable since you're already on the main thread, but `sync` enqueues the block behind the current work and waits for it: the block can never start.",
+            "That's how `async` behaves. `sync` blocks the caller until the block finishes, but the block is waiting for the caller: deadlock.",
+            null,
+            "The compiler doesn't know which queue the code will run on, so it can't warn you: the problem only shows up at runtime, as a deadlock."
+          ]
+        },
+        {
+          "id": "swift-concurrency-9",
+          "prompt": "Why can this method drive the balance below zero?",
+          "code": "actor Bank {\n    var balance = 100\n    func withdraw(_ x: Int) async {\n        guard balance >= x else { return }\n        await log()\n        balance -= x\n    }\n}",
+          "options": [
+            "Actors don't protect `var` properties",
+            "Other calls to the actor can run during the `await`",
+            "`guard` doesn't work inside an actor",
+            "`balance` is copied on every call"
+          ],
+          "answer": 1,
+          "explanation": "That's reentrancy: the check happens before the suspension and the subtraction after it; you need to recheck the state after the `await`.",
+          "difficulty": 3,
+          "whyWrong": [
+            "The actor does protect its `var`s from concurrent access, but only between one suspension point and the next: the problem is reentrancy during the `await`.",
+            null,
+            "`guard` works normally: the check is correct at the moment it runs, but the state may have changed after the `await`.",
+            "The actor's state is shared across all calls, not copied: that's exactly why another call can modify it during the `await`."
+          ]
+        },
+        {
+          "id": "swift-concurrency-10",
+          "prompt": "In what order do results arrive in `for await r in group`?",
+          "code": null,
+          "options": [
+            "In the order the tasks were added",
+            "In the order the child tasks complete",
+            "In a random but deterministic order",
+            "All at once when the group finishes"
+          ],
+          "answer": 1,
+          "explanation": "The TaskGroup returns each result as soon as its child finishes; to keep the original order you need an index.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Child tasks run in parallel and the group delivers them as soon as they finish: to preserve the original order you have to carry an index along.",
+            null,
+            "The order depends on completion times, so it isn't deterministic: it can change from one run to the next.",
+            "`for await` consumes a stream: each result arrives as soon as its child finishes, without waiting for the whole group to end."
+          ]
+        }
+      ]
+    }
+  ]
+}

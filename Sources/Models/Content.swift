@@ -19,20 +19,20 @@ enum Track: String, Codable, CaseIterable, Identifiable, Hashable {
     /// Una riga sotto il nome: di che cosa parla questo percorso.
     var subtitle: String {
         switch self {
-        case .swift: "Il linguaggio"
-        case .uikit: "L'interfaccia iOS"
-        case .kotlin: "Android"
-        case .flutter: "Multipiattaforma"
+        case .swift: String(localized: "The language", bundle: .app)
+        case .uikit: String(localized: "iOS interface", bundle: .app)
+        case .kotlin: String(localized: "Android", bundle: .app)
+        case .flutter: String(localized: "Cross-platform", bundle: .app)
         }
     }
 
     /// Gli argomenti che si incontrano, per scegliere in onboarding.
     var blurb: String {
         switch self {
-        case .swift: "Optional, value e reference type, protocolli e generics, closure, ARC, concorrenza"
-        case .uikit: "Ciclo di vita delle view, Auto Layout, table e collection view, navigazione, architetture"
-        case .kotlin: "Null safety, coroutine, data class, collection, Jetpack e ciclo di vita Android"
-        case .flutter: "Widget e stato, Dart, isolate, architettura, integrazione nativa, deployment"
+        case .swift: String(localized: "Optionals, value and reference types, protocols and generics, closures, ARC, concurrency", bundle: .app)
+        case .uikit: String(localized: "View lifecycle, Auto Layout, table and collection views, navigation, architectures", bundle: .app)
+        case .kotlin: String(localized: "Null safety, coroutines, data classes, collections, Jetpack and Android lifecycle", bundle: .app)
+        case .flutter: String(localized: "Widgets and state, Dart, isolates, architecture, native integration, deployment", bundle: .app)
         }
     }
 
@@ -92,9 +92,9 @@ enum Stage: String, Codable, CaseIterable, Identifiable, Hashable, Comparable {
 
     var caption: String {
         switch self {
-        case .junior: "Le fondamenta: si parte da qui."
-        case .mid: "Quello che serve tutti i giorni."
-        case .senior: "I temi su cui si vede l'esperienza."
+        case .junior: String(localized: "The fundamentals: start here.", bundle: .app)
+        case .mid: String(localized: "What you need every day.", bundle: .app)
+        case .senior: String(localized: "Where experience shows.", bundle: .app)
         }
     }
 
@@ -136,20 +136,36 @@ struct QuizItem: Identifiable, Hashable {
     var id: String { question.id }
 }
 
-/// Carica i JSON dei contenuti dal bundle una volta sola.
+/// Carica i JSON dei contenuti della lingua scelta, e li ricarica quando cambia.
+/// Id, risposte e difficoltà sono identici nelle due lingue: progressi ed errori
+/// salvati restano validi dopo il cambio.
 final class ContentStore {
     static let shared = ContentStore()
 
     private(set) var byTrack: [Track: [Topic]] = [:]
+    private(set) var language: AppLanguage
 
     private init() {
+        language = .current
+        load()
+    }
+
+    func reload(for language: AppLanguage) {
+        guard language != self.language else { return }
+        self.language = language
+        load()
+    }
+
+    private func load() {
+        byTrack = [:]
         for track in Track.allCases {
-            guard let url = Bundle.main.url(forResource: track.rawValue, withExtension: "json"),
+            guard let url = Bundle.main.url(forResource: track.rawValue, withExtension: "json",
+                                            subdirectory: nil, localization: language.rawValue),
                   let data = try? Data(contentsOf: url) else { continue }
             do {
                 byTrack[track] = try JSONDecoder().decode(TrackContent.self, from: data).topics
             } catch {
-                assertionFailure("Contenuto \(track.rawValue) non valido: \(error)")
+                assertionFailure("Invalid content for \(language.rawValue)/\(track.rawValue): \(error)")
             }
         }
     }

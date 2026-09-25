@@ -1,0 +1,206 @@
+{
+  "title": "Performance, Platform, and Testing",
+  "summary": "Jank, rebuilds, RepaintBoundary, DevTools, hot reload, platform channels, and testing",
+  "lesson": [
+    {
+      "heading": "Frames and jank",
+      "body": "At 60 fps, each frame gets about **16 ms** (8 ms at 120 Hz). The work is split between the **UI thread** (build, layout, and creating the layer tree in Dart) and the **raster thread** (rasterization with Impeller, the default renderer on iOS and on recent Android versions).\n\nIf either one blows the budget, the frame is dropped: that's **jank**. In the Performance overlay, the top bar is the raster thread and the bottom one is the UI thread: knowing which one is red tells you where to act."
+    },
+    {
+      "heading": "Reducing rebuilds and repaints",
+      "body": "Use `const` constructors, split large builds into **small widgets** (not helper methods), push state down the tree, and listen only to what you need (`select`, `ValueListenableBuilder`). Don't do expensive work like parsing or sorting inside `build`.\n\n`RepaintBoundary` isolates a subtree's repaint on a separate layer, which is useful for frequently changing animations next to static content. Avoid animating `Opacity` and `saveLayer`, and pass static content as the `child` of `AnimatedBuilder`.",
+      "code": "AnimatedBuilder(\n  animation: controller,\n  builder: (context, child) => Transform.rotate(\n    angle: controller.value * 2 * pi,\n    child: child,\n  ),\n  child: const ExpensiveLogo(), // built only once\n)"
+    },
+    {
+      "heading": "DevTools, build modes, and hot reload",
+      "body": "Measure performance in **profile mode on a physical device**: debug mode uses the JIT and asserts, so it's much slower. In DevTools, use the Performance view (frame chart, rebuild tracking), the CPU profiler, and the Memory view for leaks.\n\n**Hot reload** injects the updated code while preserving state: it doesn't rerun `main()` or `initState`. **Hot restart** restarts the Dart app and resets state. Native changes (Swift, Kotlin, plugins, Info.plist) require a new build."
+    },
+    {
+      "heading": "Platform channels",
+      "body": "**Platform channels** let Dart and native code communicate through asynchronous messages serialized by a codec. `MethodChannel` is for request/response calls (`invokeMethod` in Dart, a handler in Swift or Kotlin); `EventChannel` exposes a **Stream** of native events (sensors, connectivity).\n\nFor typed APIs, use **Pigeon**, which generates the code for both sides; for C libraries, use `dart:ffi`. Native handlers run on the platform's main thread, so heavy work needs to be moved to the background.",
+      "code": "const channel = MethodChannel('app/battery');\n\nFuture<int?> batteryLevel() async {\n  try {\n    return await channel.invokeMethod<int>('getBatteryLevel');\n  } on PlatformException catch (e) {\n    debugPrint('Error: ${e.message}');\n    return null;\n  }\n}"
+    },
+    {
+      "heading": "Testing",
+      "body": "**Unit tests** (`package:test`) verify pure logic and are extremely fast. **Widget tests** (`testWidgets`) build a widget in a simulated environment: `pumpWidget`, `find`, `tap`, then `pump()` for one frame or `pumpAndSettle()` until animations finish. **Integration tests** (`integration_test`) run on a device or emulator and verify end-to-end flows.\n\nGolden tests compare against reference screenshots. Dependencies like repositories and HTTP clients should be injected so you can swap them for mocks or fakes.",
+      "code": "testWidgets('increments the counter', (tester) async {\n  await tester.pumpWidget(const MaterialApp(home: CounterPage()));\n  expect(find.text('0'), findsOneWidget);\n\n  await tester.tap(find.byIcon(Icons.add));\n  await tester.pump();\n\n  expect(find.text('1'), findsOneWidget);\n});"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"The app stutters while scrolling. How do you approach it?\"** Answer: I reproduce it in profile mode on a device, open DevTools, and check which thread is over budget. If it's the UI thread, I look for excessive rebuilds or work in build (non-lazy lists, missing const, state held too high); if it's the raster thread, I look for saveLayer, clips, shadows, and oversized images.\n\nFor platform channels, explain that they're asynchronous, that types go through a codec, and that Pigeon eliminates string and type errors."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What's the difference between hot reload and hot restart?",
+      "options": [
+        "There is none",
+        "Hot reload preserves state, hot restart resets it",
+        "Hot restart recompiles native code",
+        "Hot reload reruns `main()`"
+      ],
+      "answer": 1,
+      "explanation": "Hot reload updates the code in the VM and rebuilds the widgets while keeping State; hot restart restarts the Dart app. Neither recompiles native code.",
+      "whyWrong": [
+        "There is a difference: hot reload preserves State, while hot restart resets it by restarting the Dart app.",
+        null,
+        "Neither one recompiles native code: for that you have to stop the app and rebuild.",
+        "It's hot restart that reruns `main()`; hot reload injects the code and reruns only `build`."
+      ]
+    },
+    {
+      "prompt": "Where do you get reliable performance measurements?",
+      "options": [
+        "Debug mode on a simulator",
+        "Release mode with timing prints",
+        "Debug mode on a device",
+        "Profile mode on a physical device"
+      ],
+      "answer": 3,
+      "explanation": "Debug mode (JIT, asserts) isn't representative, and neither is the simulator; profile mode is AOT-compiled but keeps the DevTools tooling.",
+      "whyWrong": [
+        "In debug, Flutter uses the JIT and asserts, and the simulator doesn't reflect real hardware: the numbers are misleading.",
+        "Prints measure only a few points, and release mode drops DevTools: profile mode gives real numbers with tooling.",
+        "Even on a device, debug mode with the JIT and asserts is much slower than release: the measurements aren't representative.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does `RepaintBoundary` do?",
+      "options": [
+        "Isolates the subtree's repaint on a layer",
+        "Prevents children from rebuilding",
+        "Constrains the children's layout",
+        "Makes the widget const"
+      ],
+      "answer": 0,
+      "explanation": "It acts on the paint phase, not on build: a subtree that repaints often doesn't force its surroundings to repaint, and vice versa.",
+      "whyWrong": [
+        null,
+        "RepaintBoundary acts on paint, not build: the children are still rebuilt if something changes.",
+        "Layout isn't constrained: RepaintBoundary only isolates repainting on a separate layer.",
+        "`const` is a property of the Dart constructor, not an effect of RepaintBoundary."
+      ]
+    },
+    {
+      "prompt": "Why is `ExpensiveWidget` passed as `child` instead of being created in the builder?",
+      "code": "AnimatedBuilder(\n  animation: controller,\n  builder: (context, child) => Transform.rotate(\n    angle: controller.value,\n    child: child,\n  ),\n  child: const ExpensiveWidget(),\n)",
+      "options": [
+        "AnimatedBuilder requires it",
+        "So that only the child gets rotated",
+        "It's built once, not on every tick",
+        "To make it a RepaintBoundary"
+      ],
+      "answer": 2,
+      "explanation": "The builder runs on every animation tick; the `child` is built once and reused, so only the Transform is rebuilt.",
+      "whyWrong": [
+        "The `child` parameter is optional: you could create everything in the builder, it would just be slower.",
+        "The child would be rotated anyway, even if created in the builder: the point is to avoid rebuilding it.",
+        null,
+        "Passing it as `child` doesn't add a RepaintBoundary: it only avoids rerunning its `build` on every tick."
+      ]
+    },
+    {
+      "prompt": "How do you call a native iOS API from Dart?",
+      "options": [
+        "By importing UIKit in Dart",
+        "MethodChannel: invokeMethod in Dart, a handler in Swift",
+        "With a dedicated Isolate",
+        "With `compute()`"
+      ],
+      "answer": 1,
+      "explanation": "The MethodChannel sends an asynchronous message to the native side, which replies with a result or an error (`PlatformException`).",
+      "whyWrong": [
+        "Dart can't import Apple frameworks like UIKit: it talks to the native side through platform channels.",
+        null,
+        "An Isolate runs Dart code in parallel but can't call native APIs on its own: it needs channels too.",
+        "`compute` moves Dart work to another isolate; it doesn't give you access to iOS APIs."
+      ]
+    },
+    {
+      "prompt": "You want to continuously receive events from a native sensor. Which channel?",
+      "options": [
+        "MethodChannel with polling",
+        "BasicMessageChannel, necessarily",
+        "A `Timer.periodic` in Dart",
+        "EventChannel, exposed as a Stream"
+      ],
+      "answer": 3,
+      "explanation": "EventChannel is designed for event streams from native code to Dart, which receives them with `receiveBroadcastStream()`.",
+      "whyWrong": [
+        "Polling with a MethodChannel is inefficient and misses events between calls; continuous streams are EventChannel's job.",
+        "BasicMessageChannel isn't required and isn't designed for streams: EventChannel already exposes them as a Stream.",
+        "A `Timer.periodic` in Dart receives nothing from native code: it polls at intervals without a real event channel.",
+        null
+      ]
+    },
+    {
+      "prompt": "In a widget test, what's the difference between `pump()` and `pumpAndSettle()`?",
+      "options": [
+        "pump: one frame; pumpAndSettle: until no frames remain",
+        "There is none",
+        "pumpAndSettle only exists in integration tests",
+        "pump waits for network calls"
+      ],
+      "answer": 0,
+      "explanation": "`pumpAndSettle` keeps pumping frames until animations finish; with an infinite animation, it times out.",
+      "whyWrong": [
+        null,
+        "The difference is concrete: `pump` advances one frame, `pumpAndSettle` keeps going until no frames are scheduled.",
+        "`pumpAndSettle` is available in widget tests too; in fact, that's where it's used most.",
+        "`pump` doesn't wait for the network: in tests, calls should be mocked, and `pump` only advances frame time."
+      ]
+    },
+    {
+      "prompt": "Which kind of test runs on a real device and verifies end-to-end flows?",
+      "options": [
+        "Unit test",
+        "Widget test",
+        "Integration test (`integration_test`)",
+        "Golden test"
+      ],
+      "answer": 2,
+      "explanation": "Integration tests launch the full app on a device or emulator; widget tests run in a simulated environment with no device.",
+      "whyWrong": [
+        "Unit tests verify functions and classes in isolation, with no UI and no device.",
+        "Widget tests run in a simulated environment with no device: great for individual widgets, not for end-to-end flows.",
+        null,
+        "Golden tests compare widget screenshots against reference images, usually without a real device."
+      ]
+    },
+    {
+      "prompt": "A list of 10,000 items stutters while scrolling. What's the first fix?",
+      "options": [
+        "A Column inside a SingleChildScrollView",
+        "`ListView.builder` to build only what's visible",
+        "Adding `shrinkWrap: true`",
+        "Wrapping everything in a RepaintBoundary"
+      ],
+      "answer": 1,
+      "explanation": "The builder creates items lazily as they enter the viewport; a Column or shrinkWrap builds and measures everything up front.",
+      "whyWrong": [
+        "A Column in a SingleChildScrollView builds all 10,000 items up front: it makes the problem worse.",
+        null,
+        "`shrinkWrap` forces the whole content to be measured and loses lazy building: more work, not less.",
+        "RepaintBoundary helps with repaints, but the bottleneck here is building and laying out every item."
+      ]
+    },
+    {
+      "prompt": "You change the code in `initState` and hot reload. What happens?",
+      "options": [
+        "initState runs again",
+        "The app crashes",
+        "A hot restart kicks in automatically",
+        "It doesn't run again: you need a hot restart"
+      ],
+      "answer": 3,
+      "explanation": "Hot reload keeps existing State objects and only calls `build`; the new `initState` takes effect for new State objects or after a hot restart.",
+      "whyWrong": [
+        "Hot reload keeps existing State objects: `initState` isn't called again for them, only `build`.",
+        "Changing `initState` is an ordinary edit: hot reload applies it without crashing, but doesn't rerun it.",
+        "Flutter doesn't switch to hot restart on its own: you have to trigger it to see the new `initState`.",
+        null
+      ]
+    }
+  ]
+}

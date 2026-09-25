@@ -49,7 +49,7 @@ struct HomeView: View {
                 Text(greeting)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text("Pronto per oggi?")
+                Text("Ready for today?")
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
             }
             Spacer()
@@ -68,7 +68,8 @@ struct HomeView: View {
 
     private var greeting: String {
         let h = Calendar.current.component(.hour, from: .now)
-        return h < 13 ? "Buongiorno" : h < 18 ? "Buon pomeriggio" : "Buonasera"
+        return h < 13 ? String(localized: "Good morning", bundle: .app)
+             : h < 18 ? String(localized: "Good afternoon", bundle: .app) : String(localized: "Good evening", bundle: .app)
     }
 
     // MARK: Quiz del giorno
@@ -78,7 +79,7 @@ struct HomeView: View {
         let tracks = Track.allCases.filter { t in items.contains { $0.track == t } }
         return VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Label("Quiz del giorno", systemImage: "sparkles")
+                Label("Daily quiz", systemImage: "sparkles")
                     .font(.subheadline.weight(.bold))
                     .lineLimit(1)
                     .textCase(.uppercase)
@@ -91,16 +92,16 @@ struct HomeView: View {
 
             if let result = state.todayResult {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Fatto! \(result.correct)/\(result.total) giuste")
+                    Text("Done! \(result.correct)/\(result.total) correct")
                         .font(.system(.title, design: .rounded).weight(.bold))
-                    Text("Torna domani per le nuove domande. Intanto puoi ripassare.")
+                    Text("Come back tomorrow for new questions. Meanwhile you can review.")
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.85))
                 }
                 Button {
-                    session = QuizSession(mode: .practice, items: items, title: "Quiz di oggi")
+                    session = QuizSession(mode: .practice, items: items, title: String(localized: "Today's quiz", bundle: .app))
                 } label: {
-                    Label("Rifallo per allenarti", systemImage: "arrow.counterclockwise")
+                    Label("Take it again for practice", systemImage: "arrow.counterclockwise")
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
@@ -108,17 +109,17 @@ struct HomeView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("\(items.count) domande, circa 2 minuti")
+                    Text("\(items.count) questions, about 2 minutes")
                         .font(.system(.title2, design: .rounded).weight(.bold))
-                    Text("Livello \(state.tier.name) · " + tracks.map(\.name).formatted(.list(type: .and).locale(.app)))
+                    Text("Level \(state.tier.name) · \(tracks.map(\.name).formatted(.list(type: .and).locale(.app)))")
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.85))
                 }
                 Button {
-                    session = QuizSession(mode: .daily, items: items, title: "Quiz del giorno")
+                    session = QuizSession(mode: .daily, items: items, title: String(localized: "Daily quiz", bundle: .app))
                 } label: {
                     HStack {
-                        Text("Inizia")
+                        Text("Start")
                         Image(systemName: "arrow.right")
                     }
                     .font(.headline)
@@ -156,9 +157,9 @@ struct HomeView: View {
                     .font(.system(size: 34))
                     .foregroundStyle(Color.wrong)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("I tuoi errori")
+                    Text("Your mistakes")
                         .font(.headline)
-                    Text("\(state.mistakeItems.count) da ripassare, con la correzione")
+                    Text("\(state.mistakeItems.count) to review, with corrections")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -177,14 +178,14 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Il tuo percorso")
+                    Text("Your path")
                         .font(.title2.weight(.bold))
                     Spacer()
                     Text(state.activeTrack.name)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(theme.primary)
                 }
-                Text("Gli argomenti sono in ordine: ognuno dà per letto quello prima.")
+                Text("Topics are in order: each one builds on the one before.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -224,7 +225,7 @@ struct StageHeader: View {
                 Text(stage.tier.name)
                     .font(.subheadline.weight(.bold))
                 Text(reached ? stage.caption
-                             : "Entra nel quiz del giorno dal grado \(stage.tier.name)")
+                             : String(localized: "Enters the daily quiz from the \(stage.tier.name) rank", bundle: .app))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -274,8 +275,8 @@ struct TopicTile: View {
                 .font(.headline)
                 .lineLimit(2, reservesSpace: true)
                 .multilineTextAlignment(.leading)
-            Text(stat.completedRuns > 0 ? "Record \(stat.bestScore)%"
-                 : "\(ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier).count) domande")
+            Text(stat.completedRuns > 0 ? "Best \(stat.bestScore)%"
+                 : "\(ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier).count) questions")
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }
@@ -303,7 +304,7 @@ struct StreakCard: View {
                     .symbolEffect(.bounce, value: state.currentStreak)
                 Text("\(state.currentStreak)")
                     .font(.system(.title2, design: .rounded).weight(.heavy).monospacedDigit())
-                Text(state.currentStreak == 1 ? "giorno" : "giorni")
+                Text(state.currentStreak == 1 ? "day" : "days")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
             }

@@ -1,0 +1,207 @@
+{
+  "title": "Compose and Architecture",
+  "summary": "Recomposition, state, side effects, MVVM/MVI, Hilt and Clean Architecture.",
+  "lesson": [
+    {
+      "heading": "Compose and recomposition",
+      "body": "Jetpack Compose is declarative: the UI is a function of state. `@Composable` functions describe the UI and, when a `State` they read changes, Compose reruns (**recomposition**) only the scopes that read it.\n\nA composable can be **skipped** if its parameters haven't changed. With **Strong Skipping** (the default since the Kotlin 2.0.20 compiler), stable parameters are compared with `equals`, unstable ones by identity (`===`), and lambdas are remembered automatically. Composables must be free of side effects and fast."
+    },
+    {
+      "heading": "remember, rememberSaveable and state",
+      "body": "`mutableStateOf` creates observable state; without `remember` it would be recreated on every recomposition. `remember` keeps the value across recompositions but loses it on a configuration change; `rememberSaveable` saves it in the Bundle, surviving rotation and process death.\n\n`derivedStateOf` avoids recompositions when a state changes often but the derived value rarely does (for example, showing a button once the scroll index goes past 0).",
+      "code": "@Composable\nfun Counter() {\n    var count by rememberSaveable { mutableIntStateOf(0) }\n    Button(onClick = { count++ }) {\n        Text(\"Count: $count\")\n    }\n}"
+    },
+    {
+      "heading": "State hoisting and unidirectional data flow",
+      "body": "**State hoisting** moves state up to the caller: the composable becomes stateless and receives a `value` plus an `onValueChange` callback. It's more reusable, more testable, and has a single source of truth.\n\nAt the screen level, the ViewModel exposes a `StateFlow<UiState>` and receives events from the UI: state flows down, events flow up (**UDF**, unidirectional data flow).",
+      "code": "@Composable\nfun SearchBar(query: String, onQueryChange: (String) -> Unit) {\n    TextField(value = query, onValueChange = onQueryChange)\n}\n\n@Composable\nfun SearchScreen(vm: SearchViewModel = hiltViewModel()) {\n    val state by vm.state.collectAsStateWithLifecycle()\n    SearchBar(state.query, vm::onQueryChange)\n}"
+    },
+    {
+      "heading": "Side effects",
+      "body": "`LaunchedEffect(key)` launches a coroutine when it enters the composition, cancels it when it leaves, and restarts it if the key changes. `DisposableEffect` is for registering listeners and removing them in `onDispose`. `rememberCoroutineScope` gives you a scope for launching coroutines from callbacks like `onClick`.\n\n`SideEffect` publishes Compose state to non-Compose code after every successful recomposition, and `rememberUpdatedState` lets a long-running effect read the latest value without restarting.",
+      "code": "@Composable\nfun Tracker(owner: LifecycleOwner, onStart: () -> Unit) {\n    val current by rememberUpdatedState(onStart)\n    DisposableEffect(owner) {\n        val obs = LifecycleEventObserver { _, e ->\n            if (e == Lifecycle.Event.ON_START) current()\n        }\n        owner.lifecycle.addObserver(obs)\n        onDispose { owner.lifecycle.removeObserver(obs) }\n    }\n}"
+    },
+    {
+      "heading": "MVVM, MVI, Hilt and Clean Architecture",
+      "body": "In **MVVM** the ViewModel exposes observable state and methods; in **MVI** there's a single immutable state, and intents go through a reducer that produces the new state, which makes the flow more predictable.\n\n**Clean Architecture** separates UI, domain (use cases, models, repository interfaces) and data (implementations, network, database); the rule is that dependencies point toward the domain. **Hilt** provides the dependencies: `@HiltAndroidApp` on the Application, `@AndroidEntryPoint` on Activities, `@HiltViewModel` with `@Inject constructor`, and `@Module` with `@Provides`/`@Binds`.",
+      "code": "@HiltViewModel\nclass SearchViewModel @Inject constructor(\n    private val search: SearchUseCase\n) : ViewModel()\n\n@Module\n@InstallIn(SingletonComponent::class)\nabstract class DataModule {\n    @Binds\n    abstract fun repo(impl: RepoImpl): Repo\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"How do you structure a Compose screen?\"**. Short answer: stateless composables with state hoisting, a `@HiltViewModel` ViewModel exposing a `StateFlow<UiState>` collected with `collectAsStateWithLifecycle`, events flowing up as callbacks, and use cases and repositories behind interfaces.\n\nThen add `remember` vs `rememberSaveable`, the right effect for each side effect, and what makes a composable skippable."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "After a rotation, a value held in `remember { mutableStateOf(0) }`:",
+      "options": [
+        "Is preserved",
+        "Goes back to its initial value",
+        "Throws an exception",
+        "Is saved in the ViewModel"
+      ],
+      "answer": 1,
+      "explanation": "`remember` only survives recomposition; for a configuration change you need `rememberSaveable` or a ViewModel.",
+      "whyWrong": [
+        "`remember` survives recompositions, but not the Activity being recreated: for rotation you need `rememberSaveable`.",
+        null,
+        "No exception: the composition is recreated and `remember` reruns the block, going back to 0.",
+        "`remember` has no connection to the ViewModel: the state lives only in the composition."
+      ]
+    },
+    {
+      "prompt": "What happens when you tap the button?",
+      "code": "@Composable\nfun Counter() {\n    var count = 0\n    Button(onClick = { count++ }) {\n        Text(\"Count: $count\")\n    }\n}",
+      "options": [
+        "The text updates on every tap",
+        "It doesn't compile",
+        "It crashes at runtime",
+        "The text always stays \"Count: 0\""
+      ],
+      "answer": 3,
+      "explanation": "A plain variable isn't observable State: the change doesn't trigger recomposition, and it would be reset to 0 anyway.",
+      "whyWrong": [
+        "`count++` changes the variable, but without a `State`, Compose doesn't know it needs to recompose: the text stays \"Count: 0\".",
+        "Capturing and mutating a local `var` in a lambda is legal in Kotlin: the code compiles.",
+        "There's no crash: the tap changes a local variable and nothing happens in the UI.",
+        null
+      ]
+    },
+    {
+      "prompt": "When does the `LaunchedEffect(Unit)` block run?",
+      "options": [
+        "Once when it enters the composition, cancelled when it leaves",
+        "On every recomposition",
+        "Only after process death",
+        "On a dedicated background thread"
+      ],
+      "answer": 0,
+      "explanation": "With a constant key, the effect starts only once, and its coroutine is cancelled when the composable leaves the composition.",
+      "whyWrong": [
+        null,
+        "With a constant key like `Unit`, the effect doesn't restart on recomposition: it would only restart if the key changed.",
+        "Process death has nothing to do with it: the effect starts every time the composable enters the composition.",
+        "The coroutine uses the composition's dispatcher, i.e. the main thread: for background work you need to switch context with `withContext`."
+      ]
+    },
+    {
+      "prompt": "What does \"state hoisting\" mean?",
+      "options": [
+        "Saving state to disk",
+        "Using global variables",
+        "Moving state up to the caller, passing a value and a callback",
+        "Putting all the state in remember"
+      ],
+      "answer": 2,
+      "explanation": "The composable becomes stateless and the caller owns the state: a single source of truth, more reuse, easier testing.",
+      "whyWrong": [
+        "It's not about persistence: \"hoisting\" means lifting state up to the caller.",
+        "Global variables are the opposite: state is passed explicitly through parameters and callbacks.",
+        null,
+        "Putting everything in `remember` inside the composable makes it stateful: hoisting moves the state out instead."
+      ]
+    },
+    {
+      "prompt": "Which effect do you use to register a listener and remove it when the composable leaves?",
+      "options": [
+        "LaunchedEffect",
+        "DisposableEffect",
+        "SideEffect",
+        "derivedStateOf"
+      ],
+      "answer": 1,
+      "explanation": "DisposableEffect provides `onDispose`, called when leaving the composition or when the key changes.",
+      "whyWrong": [
+        "`LaunchedEffect` is meant for suspend work and doesn't offer `onDispose`: you'd have to improvise cleanup with try/finally.",
+        null,
+        "`SideEffect` runs after every successful recomposition and has no cleanup phase: there's no way to remove the listener.",
+        "`derivedStateOf` computes state derived from other states: it doesn't run side effects or cleanup."
+      ]
+    },
+    {
+      "prompt": "When is `derivedStateOf` useful?",
+      "options": [
+        "To launch a coroutine",
+        "To save state in the Bundle",
+        "To inject dependencies",
+        "When a state changes often but the derived value rarely does"
+      ],
+      "answer": 3,
+      "explanation": "Classic example: `listState.firstVisibleItemIndex > 0`; recomposition happens only when the boolean flips, not on every pixel of scroll.",
+      "whyWrong": [
+        "To launch coroutines you use `LaunchedEffect` or `rememberCoroutineScope`: `derivedStateOf` creates computed state.",
+        "For the Bundle you need `rememberSaveable` or `SavedStateHandle`: `derivedStateOf` doesn't persist anything.",
+        "Dependency injection is the job of Hilt or similar: `derivedStateOf` is for limiting recompositions.",
+        null
+      ]
+    },
+    {
+      "prompt": "How do you make a ViewModel injectable with Hilt?",
+      "options": [
+        "@HiltViewModel and @Inject constructor",
+        "@AndroidEntryPoint on the ViewModel",
+        "Only with a dedicated @Module",
+        "@Singleton on the class"
+      ],
+      "answer": 0,
+      "explanation": "`@HiltViewModel` plus `@Inject constructor`; `@AndroidEntryPoint` goes on Activities and Fragments, not on the ViewModel.",
+      "whyWrong": [
+        null,
+        "`@AndroidEntryPoint` is for Activities, Fragments, Views and Services: on the ViewModel you need `@HiltViewModel`.",
+        "A `@Module` is only needed for dependencies Hilt can't construct; the ViewModel requires `@HiltViewModel` and `@Inject constructor`.",
+        "`@Singleton` would give you a single global instance, at odds with the ViewModel lifecycle: use `@HiltViewModel`."
+      ]
+    },
+    {
+      "prompt": "What sets MVI apart from MVVM?",
+      "options": [
+        "MVI doesn't use ViewModels",
+        "MVI requires RxJava",
+        "A single immutable state, with intents reduced into a new state",
+        "MVI removes the data layer"
+      ],
+      "answer": 2,
+      "explanation": "MVI models the screen with a single state and a reducer; in MVVM, state can be spread across multiple observable properties.",
+      "whyWrong": [
+        "MVI often uses a ViewModel precisely to hold the state and the reducer: the difference is in the state model, not the class.",
+        "RxJava isn't required: MVI works perfectly well with coroutines and StateFlow.",
+        null,
+        "The data layer stays: MVI is about presentation and doesn't remove repositories or data sources."
+      ]
+    },
+    {
+      "prompt": "In Clean Architecture, what's the correct direction of dependencies?",
+      "options": [
+        "The domain depends on the data layer",
+        "The data layer depends on the UI",
+        "Every layer depends on Hilt",
+        "UI and data depend on the domain, the domain depends on nothing"
+      ],
+      "answer": 3,
+      "explanation": "The domain is pure Kotlin and defines the interfaces; the data layer implements them (dependency inversion).",
+      "whyWrong": [
+        "That's exactly the dependency to avoid: the domain defines the interfaces and the data layer implements them (dependency inversion).",
+        "The data layer must not know about the UI: it depends only on the domain, whose interfaces it implements.",
+        "Hilt is a wiring detail: the domain must stay pure Kotlin, without depending on a DI framework.",
+        null
+      ]
+    },
+    {
+      "prompt": "With Strong Skipping enabled, how is an unstable parameter treated?",
+      "options": [
+        "It always makes the composable non-skippable",
+        "Compared by identity (===), so skipping is possible",
+        "Compared with equals()",
+        "It causes a compilation error"
+      ],
+      "answer": 1,
+      "explanation": "With Strong Skipping (the default since Kotlin 2.0.20), unstable parameters are compared by instance, stable ones with equals.",
+      "whyWrong": [
+        "That was true before Strong Skipping: now composables with unstable parameters can be skipped too.",
+        null,
+        "`equals()` is used for stable parameters; unstable ones are compared by identity (`===`).",
+        "Unstable parameters never cause compilation errors: at most they affect skipping."
+      ]
+    }
+  ]
+}

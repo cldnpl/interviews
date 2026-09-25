@@ -1,0 +1,209 @@
+{
+  "title": "Collections",
+  "summary": "Read-only vs mutable, Sequence vs Iterable, and the most common functional operators.",
+  "lesson": [
+    {
+      "heading": "Read-only doesn't mean immutable",
+      "body": "Kotlin separates the read-only interfaces `List`, `Set`, `Map` from `MutableList`, `MutableSet`, `MutableMap`. But a `List` is just a **read-only view**: the underlying object can be an `ArrayList` that anyone holding a mutable reference, or casting, can modify.\n\nFor true immutability, use `kotlinx.collections.immutable` (`persistentListOf`, `ImmutableList`), which is also useful because Compose treats these types as stable.",
+      "code": "val source = mutableListOf(1, 2)\nval view: List<Int> = source\nsource.add(3)\nprintln(view) // [1, 2, 3]"
+    },
+    {
+      "heading": "Transformation operators",
+      "body": "`map` transforms each element, `filter` selects, `flatMap` flattens, and `mapNotNull` transforms while dropping nulls. `fold(initial) { acc, x -> }` reduces starting from an initial value, while `reduce` starts from the first element and throws on an empty collection.\n\n`groupBy` produces a `Map<K, List<V>>`; `associateBy` and `associate` produce a `Map` with a single value per key (with duplicates, the last one wins). `partition` splits into a `Pair` of lists.",
+      "code": "val words = listOf(\"apple\", \"avocado\", \"banana\")\nval byLetter = words.groupBy { it.first() }\n// {a=[apple, avocado], b=[banana]}\nval lengths = words.associateWith { it.length }\nval total = words.fold(0) { acc, w -> acc + w.length }"
+    },
+    {
+      "heading": "Sequence vs Iterable",
+      "body": "Operations on an `Iterable` are **eager**: every step creates a new intermediate list. A `Sequence` is **lazy**: elements go through the whole chain one at a time, and nothing runs until there's a terminal operation (`toList`, `first`, `sum`).\n\nSequences pay off with long chains over many elements or with short-circuiting (`first`, `take`); on small lists the overhead often makes them slower. They're also the only way to work with infinite sequences (`generateSequence`).",
+      "code": "val firstBig = (1..1_000_000).asSequence()\n    .map { it * 3 }\n    .filter { it % 7 == 0 }\n    .first()"
+    },
+    {
+      "heading": "Practical choices and performance",
+      "body": "For frequent lookups, use a `Set` or `Map` (O(1) lookup) instead of `contains` on a `List` (O(n)). Prefer the safe variants, `firstOrNull`, `getOrNull`, `getOrElse`, over `first` or direct access, which throw exceptions.\n\n`buildList { }` creates a read-only list by filling it imperatively; `sumOf`, `maxByOrNull`, and `count { }` avoid pointless `map` + aggregation chains.",
+      "code": "val ids = users.map { it.id }.toSet()\nval active = orders.filter { it.userId in ids }\nval top = buildList {\n    add(\"header\")\n    addAll(active.map { it.title })\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Classic question: **\"What's the difference between List and MutableList, and between Sequence and Iterable?\"** Short answer: `List` is a read-only interface, not a guarantee of immutability; `MutableList` adds the mutating methods. Iterable is eager with intermediate lists, Sequence is lazy and processes element by element.\n\nWrap up by explaining when a Sequence pays off (long chains, large datasets, short-circuiting) and bring up `groupBy` vs `associateBy`, which come up a lot in live coding."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What does this code print?",
+      "code": "println(listOf(1, 2, 3).map { it * 2 }.filter { it > 2 })",
+      "options": [
+        "[2, 4, 6]",
+        "[4, 6]",
+        "[6]",
+        "[3]"
+      ],
+      "answer": 1,
+      "explanation": "map produces [2, 4, 6], and filter keeps the elements greater than 2: [4, 6].",
+      "whyWrong": [
+        "[2, 4, 6] is the result of `map` alone: then `filter { it > 2 }` drops the 2.",
+        null,
+        "The filter is `it > 2`, not `it > 4`: it keeps both 4 and 6.",
+        "The filter works on the already-doubled values, not the originals: [2, 4, 6] becomes [4, 6]."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "sequenceOf(1, 2, 3)\n    .map { print(\"m$it \"); it }\n    .filter { print(\"f$it \"); it > 1 }\n    .first()",
+      "options": [
+        "m1 m2 m3 f1 f2 f3",
+        "Nothing: the sequence is lazy",
+        "m1 f1 m2 f2",
+        "m1 f1 m2 f2 m3 f3"
+      ],
+      "answer": 2,
+      "explanation": "The sequence processes one element at a time through the whole chain, and `first()` stops at the first match (2), so the 3 is never touched.",
+      "whyWrong": [
+        "That's the order of an eager List, which completes each step on all elements; a sequence carries each element through the whole chain before the next one.",
+        "It's lazy, but `first()` is a terminal operator: it kicks off processing, so the prints definitely happen.",
+        null,
+        "`first()` stops at the first element that passes the filter, which is 2: the 3 is never processed."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val r = listOf(1, 2, 3).fold(10) { acc, x -> acc + x }\nprintln(r)",
+      "options": [
+        "6",
+        "10",
+        "Doesn't compile",
+        "16"
+      ],
+      "answer": 3,
+      "explanation": "`fold` starts from the initial value 10 and adds 1, 2, 3: the result is 16.",
+      "whyWrong": [
+        "6 would be the sum without an initial value: `fold` starts from 10, so 10 + 6 = 16.",
+        "10 is just the initial accumulator: the lambda then adds each element, reaching 16.",
+        "The syntax is correct: `fold(initial) { acc, x -> ... }` with a trailing lambda compiles just fine.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does the `List<T>` type guarantee in Kotlin?",
+      "options": [
+        "It's a read-only view, with no guarantee of immutability",
+        "It's always deeply immutable",
+        "It's a fixed-size array",
+        "It's thread-safe by definition"
+      ],
+      "answer": 0,
+      "explanation": "`List` doesn't expose mutating methods, but the underlying implementation can be mutable and change.",
+      "whyWrong": [
+        null,
+        "`List` is just an interface without mutating methods: neither the underlying object nor its elements are guaranteed to be immutable.",
+        "`List` isn't an array: it's an interface, often implemented by `ArrayList`, and it doesn't imply any fixed size.",
+        "There's no thread-safety guarantee: if the implementation is mutable and someone modifies it, concurrent reads can see inconsistent data."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val m = listOf(\"apple\", \"avocado\", \"banana\")\n    .groupBy { it.first() }\nprintln(m['a']?.size)",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "null"
+      ],
+      "answer": 1,
+      "explanation": "`groupBy` creates a `Map<Char, List<String>>`; under key 'a' are apple and avocado.",
+      "whyWrong": [
+        "`groupBy` collects every element with the same key: both \"apple\" and \"avocado\" start with 'a'.",
+        null,
+        "\"banana\" starts with 'b' and ends up in a different group: only 2 elements remain under key 'a'.",
+        "Key 'a' exists in the map, so `m['a']` isn't null and `?.size` returns 2."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val list: List<Int> = mutableListOf(1, 2)\n(list as MutableList<Int>).add(3)\nprintln(list)",
+      "options": [
+        "[1, 2]",
+        "ClassCastException",
+        "UnsupportedOperationException",
+        "[1, 2, 3]"
+      ],
+      "answer": 3,
+      "explanation": "The actual object is an ArrayList: the cast succeeds and the modification goes through. Proof that read-only doesn't mean immutable.",
+      "whyWrong": [
+        "The declared type `List` doesn't make the object immutable: the cast to `MutableList` succeeds and `add(3)` really modifies the list.",
+        "The runtime type is an `ArrayList`, which implements `MutableList`: the cast succeeds and there's no `ClassCastException`.",
+        "`UnsupportedOperationException` comes from genuinely unmodifiable lists (e.g. `Collections.unmodifiableList`); here it's an `ArrayList`, which accepts `add`.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does `listOf(\"a\", \"ab\", \"b\").associateBy { it.first() }` return?",
+      "options": [
+        "{a=[a, ab], b=[b]}",
+        "IllegalArgumentException",
+        "{a=ab, b=b}",
+        "{a=a, b=b}"
+      ],
+      "answer": 2,
+      "explanation": "`associateBy` keeps a single value per key and, with duplicate keys, the last element wins. Lists are what `groupBy` produces.",
+      "whyWrong": [
+        "That's how `groupBy` behaves: `associateBy` produces a single value per key, not a list.",
+        "Duplicate keys aren't an error: `associateBy` overwrites and keeps the last element.",
+        null,
+        "With duplicate keys the last element wins, not the first: \"ab\" is what stays for 'a'."
+      ]
+    },
+    {
+      "prompt": "When should you use a Sequence instead of a List?",
+      "options": [
+        "Small lists with a single operation",
+        "When you need index-based access",
+        "Chains of several operations over many elements, or with first/take",
+        "Always: it's faster in every case"
+      ],
+      "answer": 2,
+      "explanation": "Lazy evaluation avoids intermediate lists and takes advantage of short-circuiting; on small collections the overhead can make it slower.",
+      "whyWrong": [
+        "On small lists with a single operation, the sequence overhead doesn't pay off: the eager List is simpler and often faster.",
+        "Sequences don't have efficient index-based access: `elementAt` has to walk the elements from the start.",
+        null,
+        "Not always: on small collections or with a single operation, the overhead of lazy iterators can make it slower."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val (even, odd) = (1..5).partition { it % 2 == 0 }\nprintln(odd)",
+      "options": [
+        "[1, 3, 5]",
+        "[2, 4]",
+        "3",
+        "[[2, 4], [1, 3, 5]]"
+      ],
+      "answer": 0,
+      "explanation": "`partition` returns a Pair: the first element holds the items matching the predicate, the second holds the rest (the odd numbers).",
+      "whyWrong": [
+        null,
+        "[2, 4] is the first component, `even`: destructuring assigns the elements matching the predicate to the first variable.",
+        "`odd` is a list, not its count: it contains the odd numbers [1, 3, 5].",
+        "That's the whole Pair; destructuring splits it and `odd` only gets the second list."
+      ]
+    },
+    {
+      "prompt": "What happens when you run this code?",
+      "code": "println(emptyList<Int>().reduce { a, b -> a + b })",
+      "options": [
+        "Prints 0",
+        "Prints null",
+        "Throws NoSuchElementException",
+        "Throws UnsupportedOperationException"
+      ],
+      "answer": 3,
+      "explanation": "`reduce` uses the first element as the accumulator and throws UnsupportedOperationException on an empty collection. Use `fold` or `reduceOrNull`.",
+      "whyWrong": [
+        "That would be the behavior of `fold(0)`: `reduce` has no initial value and has nothing to return on an empty list.",
+        "`reduce`'s return type is non-null: the variant that returns null on an empty collection is `reduceOrNull`.",
+        "Common trap: `NoSuchElementException` is what `first()` throws, while `reduce` on an empty collection throws `UnsupportedOperationException`.",
+        null
+      ]
+    }
+  ]
+}

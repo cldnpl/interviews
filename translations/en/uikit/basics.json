@@ -1,0 +1,207 @@
+{
+  "title": "Views and View Controllers",
+  "summary": "UIView, the view hierarchy, frame and bounds, UIViewController: the building blocks everything else in UIKit rests on.",
+  "lesson": [
+    {
+      "heading": "Everything is a UIView",
+      "body": "In UIKit, everything you see on screen is a `UIView` or one of its subclasses: `UILabel`, `UIButton`, `UIImageView`, `UIScrollView`, `UIStackView`. A UIView is a rectangle that knows how to draw itself, receive touches, and contain other views.\n\nThe view doesn't draw on its own, though: every UIView owns a **CALayer** (`view.layer`), and the layer is what handles the actual drawing and animation. That's where `cornerRadius`, `borderWidth`, and `shadowOpacity` live. On top of the layer, the UIView adds touch event handling and Auto Layout integration.",
+      "code": "let box = UIView()\nbox.backgroundColor = .systemBlue\nbox.layer.cornerRadius = 12      // drawing goes through the layer\n\nlet label = UILabel()            // a label is a UIView too\nlabel.text = \"Hello\""
+    },
+    {
+      "heading": "The view hierarchy",
+      "body": "Views form a **tree**: each one has a `superview` (its parent, optional) and an array of `subviews` (its children). You call `addSubview(_:)` on the parent, and it appends the child at the end; you call `removeFromSuperview()` on the child, and it detaches it from the tree.\n\nThe order of the `subviews` array is also the **drawing order**: later views draw on top. That's why the last view added is the one in front, and to change the order there's `bringSubviewToFront(_:)` and `insertSubview(_:at:)`.\n\nThe root of the tree is the `UIWindow`. If a view's `window` is `nil`, that view isn't on screen.",
+      "code": "container.addSubview(a)\ncontainer.addSubview(b)   // b draws ON TOP of a\n\ncontainer.subviews        // [a, b]\nb.superview               // container\n\ncontainer.bringSubviewToFront(a)   // now a is in front\na.removeFromSuperview()            // called on the child"
+    },
+    {
+      "heading": "frame, bounds, and center",
+      "body": "These are three ways of describing where a view is, and it's the most classic UIKit interview question.\n\n- **`frame`**: the view's position and size in the **superview's** coordinate system.\n- **`bounds`**: the same view seen from **its own** coordinate system. For a newly created view, `bounds.origin` is `(0, 0)` and the size matches the frame's.\n- **`center`**: the center of the frame, also in the superview's coordinates.\n\nThe distinction matters in two cases. With a **transform** (a rotation, for example), `bounds` stays the same while `frame` becomes the rectangle that encloses the rotated view, so it's larger: with a non-identity transform, the frame is no longer reliable. And in a `UIScrollView`, scrolling moves `bounds.origin` (that's exactly what `contentOffset` is) while the frame stays put.",
+      "code": "let v = UIView(frame: CGRect(x: 40, y: 60, width: 100, height: 50))\nv.frame     // (40, 60, 100, 50)  in the superview\nv.bounds    // ( 0,  0, 100, 50)  in itself\nv.center    // (90, 85)           in the superview\n\nv.transform = CGAffineTransform(rotationAngle: .pi / 4)\nv.bounds    // unchanged\nv.frame     // larger: the box that encloses the rotated view"
+    },
+    {
+      "heading": "UIViewController: who owns the screen",
+      "body": "A `UIViewController` manages a screen, or a portion of one. Its interface lives in the **`view`** property, the local root of the tree: everything the controller shows is a subview of it.\n\nThe `view` is **lazy**: it doesn't exist at the end of `init`, it's created the first time someone accesses the property. That's why `@IBOutlet`s are `nil` inside init and only set from `viewDidLoad` onward, and also why reading `self.view` too early can load the interface sooner than expected.\n\nControllers nest inside each other: a `UINavigationController` or a `UITabBarController` is a **container**, and the controllers it shows are its `children`.",
+      "code": "final class ProfileViewController: UIViewController {\n    private let nameLabel = UILabel()\n\n    override func viewDidLoad() {\n        super.viewDidLoad()          // always first\n        view.backgroundColor = .systemBackground\n        view.addSubview(nameLabel)   // 'view' exists from here on\n    }\n}"
+    },
+    {
+      "heading": "Building the interface: code, XIB, or Storyboard",
+      "body": "There are three approaches, and you can mix them freely.\n\n- **In code**: you create the views in `viewDidLoad` (or in `loadView` if you want to replace the root view) and constrain them by hand. Verbose but explicit, and it diffs cleanly in code review.\n- **XIB**: one file for a single view or a single controller.\n- **Storyboard**: several screens together, connected by `segue`s.\n\nWith XIBs and Storyboards, view references are declared as `@IBOutlet` and actions as `@IBAction`. The connections are resolved when the file loads: if you rename or disconnect an outlet without updating the nib, the app crashes when the screen opens with the classic *\"this class is not key value coding-compliant\"*.\n\nRule of thumb: `override func loadView()` is for **creating** the root view and must not call `super` if you assign it yourself; `viewDidLoad` is for **configuring** it and must always call `super`.",
+      "code": "final class CardViewController: UIViewController {\n    @IBOutlet private var titleLabel: UILabel!   // nil until viewDidLoad\n\n    @IBAction private func confirmTapped(_ sender: UIButton) {\n        print(\"confirmed\")\n    }\n\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        titleLabel.text = \"Ready\"   // the outlet is connected here\n    }\n}"
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Which of these is NOT a subclass of UIView?",
+      "options": [
+        "UIViewController",
+        "UILabel",
+        "UIStackView",
+        "UIImageView"
+      ],
+      "answer": 0,
+      "explanation": "`UIViewController` isn't a view: it's a controller, and it inherits from `UIResponder`. It owns a view in its `view` property, but it isn't one. Labels, stack views, and image views, on the other hand, are all subclasses of `UIView`.",
+      "whyWrong": [
+        null,
+        "`UILabel` is a full-fledged UIView: you add it to the hierarchy with `addSubview`, it has a frame, and it draws text.",
+        "`UIStackView` is a special UIView (it draws nothing of its own and lays out its arrangedSubviews), but it's still a subclass of UIView.",
+        "`UIImageView` is the UIView specialized in drawing a `UIImage`: it has a frame, bounds, and a superview like any other."
+      ]
+    },
+    {
+      "prompt": "Which view is in front after this code?",
+      "code": "let a = UIView()\nlet b = UIView()\ncontainer.addSubview(a)\ncontainer.addSubview(b)",
+      "options": [
+        "b, because it was added last",
+        "a, because it was added first",
+        "It depends on their zPosition, which is the same here",
+        "Neither: they overlap halfway"
+      ],
+      "answer": 0,
+      "explanation": "`addSubview` appends to the end of the `subviews` array, and that array is also the drawing order: later views draw on top. So `b` covers `a`. To swap them, use `bringSubviewToFront(a)` or `insertSubview(a, aboveSubview: b)`.",
+      "whyWrong": [
+        null,
+        "It's the other way around: the first one added ends up at the bottom of the stack. The `subviews` array is drawn from first to last, so the last one wins.",
+        "`zPosition` exists on the layer and can override the order, but it hasn't been touched here: with equal zPosition, the order in `subviews` decides.",
+        "The overlap is clean, not partial: `b` is drawn entirely on top of `a` wherever the two frames intersect."
+      ]
+    },
+    {
+      "prompt": "What is `v.bounds.origin`?",
+      "code": "let v = UIView(frame: CGRect(x: 40, y: 60, width: 100, height: 50))",
+      "options": [
+        "(0, 0)",
+        "(40, 60)",
+        "(90, 85)",
+        "(100, 50)"
+      ],
+      "answer": 0,
+      "explanation": "`bounds` describes the view in **its own** coordinate system, which always starts at zero for a newly created view. It's the `frame` that is `(40, 60, 100, 50)`, because it positions the view inside the superview.",
+      "whyWrong": [
+        null,
+        "(40, 60) is the origin of the **frame**, meaning the position in the superview. Bounds looks at the view from the inside and starts at zero.",
+        "(90, 85) is the `center`, the midpoint of the frame: 40 + 100/2 and 60 + 50/2. It's not an origin.",
+        "(100, 50) is the **size**, which lives in `bounds.size` (and `frame.size`), not in `bounds.origin`."
+      ]
+    },
+    {
+      "prompt": "How do you remove a view from the hierarchy?",
+      "options": [
+        "By calling `removeFromSuperview()` on the view to remove",
+        "By calling `removeSubview(_:)` on the superview",
+        "By setting its `superview` to `nil`",
+        "By setting its `frame` to `nil`"
+      ],
+      "answer": 0,
+      "explanation": "`removeFromSuperview()` is called on the **child**, unlike `addSubview(_:)`, which is called on the parent. It's the only one of the four that actually exists.",
+      "whyWrong": [
+        null,
+        "`removeSubview(_:)` doesn't exist in UIKit: the asymmetry with `addSubview(_:)` often trips people up, but removal goes through the child.",
+        "`superview` is a **read-only** property: you change the hierarchy with methods, not by assigning the parent by hand.",
+        "`frame` is a `CGRect`, not an optional: it can't be `nil`. And zeroing it out would just make the view invisible while leaving it in the tree."
+      ]
+    },
+    {
+      "prompt": "Where does the interface managed by a UIViewController live?",
+      "options": [
+        "In its `view` property, the root of all the others",
+        "Directly in the `UIWindow`, with nothing in between",
+        "In the controller's `subviews` array",
+        "In the controller's `layer` property"
+      ],
+      "answer": 0,
+      "explanation": "Every `UIViewController` owns a root view in its `view` property: everything the screen shows is a subview of it. The controller isn't a view and has neither `subviews` nor a `layer`.",
+      "whyWrong": [
+        null,
+        "The window is the root of the whole app, not of a single screen: between the window and the content there's always the controller's `view`.",
+        "`subviews` is a property of `UIView`, not `UIViewController`. The screen's subviews are in `controller.view.subviews`.",
+        "`layer` belongs to `UIView`. From the controller you get there through the view: `controller.view.layer`."
+      ]
+    },
+    {
+      "prompt": "You rotate a view 45 degrees with a transform. What happens to frame and bounds?",
+      "code": "v.transform = CGAffineTransform(rotationAngle: .pi / 4)",
+      "options": [
+        "Bounds stays the same, frame becomes the box that encloses the rotated view",
+        "Both change the same way",
+        "Frame stays the same, bounds grows",
+        "Neither changes: the transform only affects drawing"
+      ],
+      "answer": 0,
+      "explanation": "`bounds` is the view as seen from itself, and rotation doesn't touch it. `frame`, instead, is the **axis-aligned** rectangle that encloses the view in the superview, so it grows when the view rotates. Hence the rule: with a non-identity transform, the frame is no longer a value you can do math with.",
+      "whyWrong": [
+        null,
+        "Only the frame changes: bounds describes the view in its own coordinate system, which rotates along with it and therefore stays the same.",
+        "It's exactly the opposite: bounds is the one immune to rotation, frame is the one that grows to enclose the rotated view.",
+        "The transform really does change the reported geometry: reading `v.frame` after a rotation returns the new enclosing box, not the old one."
+      ]
+    },
+    {
+      "prompt": "When is a UIViewController's `view` created?",
+      "options": [
+        "The first time the `view` property is accessed",
+        "At the end of `init`",
+        "When the controller is deallocated",
+        "Only if the controller comes from a Storyboard"
+      ],
+      "answer": 0,
+      "explanation": "The `view` is loaded **lazily**: `loadView()` and then `viewDidLoad()` fire on the first access to the property. That's why `@IBOutlet`s are `nil` in init, and why touching `self.view` too early forces the screen to load ahead of time.",
+      "whyWrong": [
+        null,
+        "When `init` returns, the view doesn't exist yet: that's precisely why interface setup belongs in `viewDidLoad` and not in the initializer.",
+        "On deallocation the view is released, if anything, not created. Loading happens at the start of the controller's life, not the end.",
+        "Lazy loading works the same way for Storyboards, XIBs, and code: only *how* the view is built inside `loadView()` changes."
+      ]
+    },
+    {
+      "prompt": "Why is an `@IBOutlet` `nil` inside the view controller's `init`?",
+      "code": "final class CardViewController: UIViewController {\n    @IBOutlet private var titleLabel: UILabel!\n}",
+      "options": [
+        "Because outlets are connected when the view loads, which happens after init",
+        "Because outlets are always `weak` and die immediately without strong references",
+        "Because `private` prevents the nib from writing to them",
+        "Because the label hasn't been added to a superview yet"
+      ],
+      "answer": 0,
+      "explanation": "The nib or storyboard is deserialized inside `loadView()`, which fires on the first access to `view`, that is, after `init`. That's when the outlets get connected, and they're usable from `viewDidLoad` onward.",
+      "whyWrong": [
+        null,
+        "A `weak` outlet still stays alive as long as the view is in the hierarchy, which retains it. The problem is *when*, not the strength of the reference.",
+        "`private` limits visibility in Swift but doesn't block the connection: the nib uses the Objective-C runtime's key-value coding, which is why `@IBOutlet` alone makes it reachable.",
+        "The nib's label is born already inside the file's hierarchy. But in init that file hasn't been loaded yet, so the label doesn't exist at all."
+      ]
+    },
+    {
+      "prompt": "In a UIScrollView, what changes when you scroll the content down by 100 points?",
+      "options": [
+        "`bounds.origin.y` increases by 100: that's exactly what `contentOffset` is",
+        "`frame.origin.y` decreases by 100",
+        "`center.y` increases by 100",
+        "Nothing in the scroll view's geometry: only its subviews move"
+      ],
+      "answer": 0,
+      "explanation": "A scroll view doesn't move its content: it moves the **window** it looks through, meaning its own `bounds.origin`. `contentOffset` is just another name for that point. The `frame` stays put, because the scroll view always occupies the same space in its superview.",
+      "whyWrong": [
+        null,
+        "The frame is the scroll view's position **inside its superview**, and scrolling doesn't move it a single pixel: it stays where it is, only what it shows changes.",
+        "The `center` is derived from the frame, so it stays put too. Scrolling happens entirely in the internal coordinate system.",
+        "The geometry definitely changes: it's `bounds.origin` that moves, which is why the subviews appear to scroll even though their frames stay constant."
+      ]
+    },
+    {
+      "prompt": "What actually draws a UIView's content?",
+      "options": [
+        "Its `CALayer`: the UIView adds touches and layout on top",
+        "The UIView itself; the layer is only for animations",
+        "The `UIWindow`, which draws for every view in the tree",
+        "The `UIViewController` that owns the view"
+      ],
+      "answer": 0,
+      "explanation": "Every UIView owns a `CALayer` (`view.layer`), and Core Animation handles drawing and compositing. The UIView is a wrapper that adds touch event handling, Auto Layout, and the responder chain. That's why `cornerRadius`, `borderWidth`, and `shadowPath` live on the layer.",
+      "whyWrong": [
+        null,
+        "The layer isn't just for animating: it's what holds the drawn content (the backing store) and composites it on screen, animations or not.",
+        "The window is the root of the tree and doesn't draw on behalf of its children: each view contributes its own layer, and Core Animation composites them.",
+        "The controller coordinates, it doesn't draw: it has neither a layer nor any graphical content of its own."
+      ]
+    }
+  ]
+}

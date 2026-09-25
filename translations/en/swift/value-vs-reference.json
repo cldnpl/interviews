@@ -1,0 +1,213 @@
+{
+  "title": "Value vs Reference Types",
+  "summary": "Structs, enums, and classes: copying vs sharing, mutability, and copy-on-write.",
+  "lesson": [
+    {
+      "heading": "Value and reference semantics",
+      "body": "`struct`s, `enum`s, and tuples are **value types**: assignment creates an independent copy. `class`es (and `actor`s) are **reference types**: assignment copies the reference, so multiple variables point to the same instance.\n\nReference types have identity: `===` checks whether two references point to the same object, while `==` compares values through `Equatable`.",
+      "code": "struct P { var x = 0 }\nclass R { var x = 0 }\nvar p1 = P(); var p2 = p1; p2.x = 1  // p1.x == 0\nlet r1 = R(); let r2 = r1; r2.x = 1  // r1.x == 1"
+    },
+    {
+      "heading": "let, var, and mutating",
+      "body": "A struct declared with `let` is deeply immutable: you can't change any of its `var` properties. With a class, `let` only locks the reference: the instance's properties remain mutable.\n\nStruct and enum methods that modify `self` must be marked `mutating`, and they can only be called on `var` instances.",
+      "code": "struct Counter {\n    var value = 0\n    mutating func increment() { value += 1 }\n}"
+    },
+    {
+      "heading": "Copy-on-Write",
+      "body": "Array, Dictionary, Set, and String are structs that hold a buffer on the heap: copying is cheap because the buffer is shared, and it's duplicated only on the first **mutation** if it isn't uniquely referenced.\n\nYour own structs don't get COW automatically. To implement it, you wrap a storage class and, before mutating, use `isKnownUniquelyReferenced(&storage)` to decide whether to clone it.",
+      "code": "mutating func append(_ x: Int) {\n    if !isKnownUniquelyReferenced(&storage) {\n        storage = storage.copy()\n    }\n    storage.items.append(x)\n}"
+    },
+    {
+      "heading": "When to choose which",
+      "body": "The recommended default is `struct`: predictable semantics, simpler thread safety, and no ARC overhead for pure value fields. Use a `class` when you need **identity**, shared mutable state, inheritance, or Objective-C interop; mark it `final` if it isn't meant to be subclassed.\n\n`enum`s with associated values model mutually exclusive states; recursive types need `indirect`, which stores the payload in a box on the heap.",
+      "code": "indirect enum Expr {\n    case number(Int)\n    case add(Expr, Expr)\n}"
+    },
+    {
+      "heading": "Stack and heap myths",
+      "body": "\"Structs live on the stack and classes on the heap\" is an oversimplification. A struct can end up on the heap if it's captured by an escaping closure, stored in an existential that's too large for its inline buffer, or if it contains buffers like an Array.\n\nOn top of that, a struct that holds references to classes still performs retain/release when it's copied, and the reference field is shared between copies: value semantics apply only to the outer struct."
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"Struct or class? What are the differences?\"** Concise answer: structs are copied, classes are shared; structs have no inheritance and no deinit, they're the default in Swift, and they keep state local and predictable. I choose a class when I need identity or shared state.\n\nRound it out by mentioning **copy-on-write** in the collections and the case of a struct that contains a class: it shows you understand where value semantics really end."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What does this code print?",
+      "code": "struct P { var x = 0 }\nvar a = P()\nvar b = a\nb.x = 5\nprint(a.x)",
+      "options": [
+        "5",
+        "0",
+        "nil",
+        "Compile error"
+      ],
+      "answer": 1,
+      "explanation": "`P` is a struct: `b` is an independent copy, so modifying `b` doesn't touch `a`.",
+      "whyWrong": [
+        "It would be 5 with a class. `P` is a struct: `var b = a` creates an independent copy, so `b.x = 5` doesn't touch `a.x`, which stays 0.",
+        null,
+        "`x` is a non-optional `Int` initialized to 0: it can never be nil.",
+        "Both `a` and `b` are `var`, so modifying `b.x` is legal: the code compiles and prints 0."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "class P { var x = 0 }\nlet a = P()\nlet b = a\nb.x = 5\nprint(a.x)",
+      "options": [
+        "0",
+        "nil",
+        "5",
+        "Compile error"
+      ],
+      "answer": 2,
+      "explanation": "`P` is a class: `a` and `b` point to the same instance, so the change is visible through both.",
+      "whyWrong": [
+        "With a struct it would be 0, but `P` is a class: `let b = a` copies the reference, not the instance, so `a.x` sees the 5.",
+        "`x` is a non-optional `Int`: the result is always a number, here 5.",
+        null,
+        "With a class, `let` makes the reference constant, not the object: `var` properties can be modified even through a constant."
+      ]
+    },
+    {
+      "prompt": "What happens with this code?",
+      "code": "struct S { var v = 1 }\nlet s = S()\ns.v = 2\nprint(s.v)",
+      "options": [
+        "Compile error",
+        "Prints 2",
+        "Prints 1",
+        "Runtime crash"
+      ],
+      "answer": 0,
+      "explanation": "A struct declared with `let` is immutable in all of its properties, even the ones declared `var`.",
+      "whyWrong": [
+        null,
+        "It would work with `var s` or with a class. For a struct, `let` locks the entire value, so `s.v = 2` is rejected at compile time.",
+        "The program never gets as far as printing: `s.v = 2` on a `let` struct is a compile error, not a statement that gets ignored.",
+        "The problem is caught statically: the compiler rejects mutating a struct constant, so execution is never reached."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "class C { var v = 1 }\nlet c = C()\nc.v = 2\nprint(c.v)",
+      "options": [
+        "1",
+        "Compile error",
+        "2",
+        "Runtime crash"
+      ],
+      "answer": 2,
+      "explanation": "With a class, `let` only makes the reference constant: the instance's `var` properties remain mutable.",
+      "whyWrong": [
+        "The assignment `c.v = 2` isn't ignored: it really modifies the instance, so the print that follows shows 2.",
+        "With a struct it would be an error, but with a class `let` only pins the reference: the instance's `var` properties stay mutable.",
+        null,
+        "There's nothing dangerous here: `c` is a valid reference and `v` is a `var`, so the assignment succeeds and it prints 2."
+      ]
+    },
+    {
+      "prompt": "When is the array's buffer actually copied?",
+      "code": "var a = [1, 2, 3]\nvar b = a\nb.append(4)",
+      "options": [
+        "Immediately, on the assignment `var b = a`",
+        "On the first mutation of `b`, i.e. on `append`",
+        "Never: `a` and `b` always share the buffer",
+        "When `a` goes out of scope"
+      ],
+      "answer": 1,
+      "explanation": "Copy-on-write defers the copy until you modify a buffer that isn't uniquely referenced.",
+      "whyWrong": [
+        "The assignment only copies the reference to the buffer and bumps its reference count: the real copy is deferred by copy-on-write.",
+        null,
+        "Sharing forever would break value semantics: on `append`, `b` finds that the buffer isn't unique and makes its own copy.",
+        "The copy doesn't depend on `a`'s scope: it happens when `b` is mutated while the buffer is still shared, i.e. on `append`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "class Box { var v = 0 }\nstruct W { var box = Box() }\nvar a = W()\nvar b = a\nb.box.v = 9\nprint(a.box.v)",
+      "options": [
+        "0",
+        "nil",
+        "Compile error",
+        "9"
+      ],
+      "answer": 3,
+      "explanation": "The struct is copied, but the `box` property is a reference: both copies point to the same `Box` instance.",
+      "whyWrong": [
+        "The struct `W` is copied, but the `box` field is a reference: the copy points to the same `Box` instance, so `a.box.v` becomes 9.",
+        "`v` is a non-optional `Int` and `box` is never nil: the result is a number, here 9.",
+        "The code is valid: `b` is a `var`, and in any case `v` belongs to a class instance, so modifying it through `b.box` is legal.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does the `===` operator check?",
+      "options": [
+        "Whether two Equatable values are equal",
+        "Whether two structs have the same fields",
+        "Whether two types are identical",
+        "Whether two references point to the same instance"
+      ],
+      "answer": 3,
+      "explanation": "`===` compares the identity of class instances (`AnyObject`), regardless of `Equatable`.",
+      "whyWrong": [
+        "That's `==`. `===` ignores `Equatable` and compares identity: two objects with equal contents but different instances give `false`.",
+        "`===` doesn't apply to structs: it works on class instances (`AnyObject`), because value types have no identity.",
+        "To compare types you use metatypes, for example `type(of: a) == B.self`. `===` compares instances, not types.",
+        null
+      ]
+    },
+    {
+      "prompt": "Why does a recursive enum require `indirect`?",
+      "options": [
+        "Without indirection its size would be infinite",
+        "To enable pattern matching",
+        "To make it a reference type",
+        "To make it automatically Equatable"
+      ],
+      "answer": 0,
+      "explanation": "A value type must have a fixed size; `indirect` stores the payload in a box on the heap, breaking the layout recursion.",
+      "whyWrong": [
+        null,
+        "Pattern matching works on any enum, recursive or not. `indirect` solves a memory layout problem, not a syntax one.",
+        "The enum stays a value type: `indirect` puts the payload in a box on the heap, but the copy semantics remain value semantics.",
+        "`indirect` doesn't add any conformance: `Equatable` has to be declared, and automatic synthesis works if all the payloads are Equatable."
+      ]
+    },
+    {
+      "prompt": "Which function do you use to implement copy-on-write in a custom struct?",
+      "options": [
+        "`withUnsafeMutablePointer(to:_:)`",
+        "`ObjectIdentifier(_:)`",
+        "`CFGetRetainCount(_:)`",
+        "`isKnownUniquelyReferenced(_:)`"
+      ],
+      "answer": 3,
+      "explanation": "It checks whether the reference to the storage is unique: if it isn't, you clone the storage before mutating it.",
+      "whyWrong": [
+        "It gives you a temporary pointer to a value, but tells you nothing about how many references point to the storage, which is the key piece of information for CoW.",
+        "It identifies an instance, which is useful for comparisons or as a dictionary key, but it doesn't reveal whether the storage has other owners.",
+        "The retain count is unreliable (optimizations, autorelease) and isn't meant for this: the official, efficient check is `isKnownUniquelyReferenced`.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "struct P { var x = 0 }\nvar p = P()\nlet f = { print(p.x) }\np.x = 7\nf()",
+      "options": [
+        "0",
+        "Compile error",
+        "7",
+        "It depends on the optimizer"
+      ],
+      "answer": 2,
+      "explanation": "Closures capture variables by reference, even when they hold value types: the closure reads the updated value.",
+      "whyWrong": [
+        "You might picture the struct being copied into the closure, but without a capture list the variable `p` itself is captured: by the time `f()` runs, it's 7.",
+        "Capturing a `var` in a closure is legal even if it holds a struct: the code compiles, and the closure reads `p` at call time.",
+        null,
+        "Capture semantics are defined by the language, not by the optimizer: without a capture list you always read the current value, which is 7."
+      ]
+    }
+  ]
+}

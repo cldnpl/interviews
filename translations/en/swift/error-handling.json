@@ -1,0 +1,210 @@
+{
+  "title": "Error Handling",
+  "summary": "throws, do/catch, Result, try?/try!, rethrows, and defer in practice.",
+  "lesson": [
+    {
+      "heading": "throws and do/catch",
+      "body": "Errors are values conforming to the `Error` protocol, often modeled as an `enum`. A `throws` function propagates the error to its caller, which must mark the call with `try` and either handle it with `do/catch` or propagate it in turn.\n\nThese aren't exceptions with expensive stack unwinding: technically it's an alternate return value, so throwing errors is cheap. `catch` clauses support pattern matching and `where` clauses.",
+      "code": "enum LoginError: Error { case invalidPassword, locked(minutes: Int) }\ndo {\n    try login(user, pwd)\n} catch LoginError.locked(let m) {\n    print(\"Try again in \\(m) minutes\")\n} catch {\n    print(error)\n}"
+    },
+    {
+      "heading": "try? and try!",
+      "body": "`try?` converts the error to `nil` and returns an Optional; since Swift 5 the result is flattened, so a function returning `Int?` still gives you `Int?`, not `Int??`. You do lose the information about the error, though.\n\n`try!` assumes the error can't happen and crashes the app if it does: acceptable only for guaranteed invariants, like a constant regex.",
+      "code": "let data = try? Data(contentsOf: url)  // Data?\nlet re = try! Regex(\"[0-9]+\")"
+    },
+    {
+      "heading": "Result",
+      "body": "`Result<Success, Failure: Error>` is an enum with `.success` and `.failure`, useful for storing an outcome or passing it to asynchronous callbacks. You convert it to throws with `get()`, and it offers `map`, `flatMap`, and `mapError`.\n\nWith async/await, Result is less necessary, but it's still useful for storing outcomes, for legacy APIs with completion handlers, and for collecting errors from multiple operations.",
+      "code": "func fetch(completion: @escaping (Result<User, APIError>) -> Void)\nlet user = try result.get()"
+    },
+    {
+      "heading": "rethrows and typed throws",
+      "body": "A `rethrows` function throws only if the closure it receives throws: that's why `map` requires `try` only when the transform is `throws`.\n\nSince Swift 6 there are **typed throws**: `func load() throws(LoadError)` declares the concrete error type, and inside `catch` the `error` variable has that type instead of `any Error`. They're useful in embedded code or in libraries where the set of errors is closed.",
+      "code": "func load() throws(LoadError) -> Data { ... }\ndo { _ = try load() }\ncatch { handle(error) }  // error: LoadError"
+    },
+    {
+      "heading": "defer",
+      "body": "A `defer` block runs when the current scope exits, however that happens: return, throw, or falling off the end. Multiple `defer`s in the same scope run in **reverse** order (LIFO).\n\nIt's ideal for cleanup: closing files, releasing locks, stopping loading indicators. It can't contain statements that transfer control out of it, like `return` or `throw`.",
+      "code": "func read() throws -> String {\n    let handle = try open(path)\n    defer { handle.close() }\n    return try handle.readAll()\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"How do you handle errors in Swift? When do you use Result?\"**. Short answer: I model errors as enums conforming to `Error`, use `throws` and `do/catch` as the main path, `try?` when I don't care about the error, and `try!` only for invariants; Result when I need to store or pass along an outcome.\n\nAdd `defer` for guaranteed cleanup, and mention `rethrows` and Swift 6 typed throws to show you're up to date."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Given `func f() throws -> Int`, what is the type of `try? f()`?",
+      "options": [
+        "Int",
+        "Result<Int, Error>",
+        "Int??",
+        "Int?"
+      ],
+      "answer": 3,
+      "explanation": "`try?` wraps the result in an Optional and returns nil if an error is thrown.",
+      "whyWrong": [
+        "`try?` has to be able to represent failure, so it wraps the result in an Optional: `Int?`, not `Int`.",
+        "To get a `Result` you write `Result { try f() }`. `try?` discards the error and returns just an Optional.",
+        "`f()` returns a non-optional `Int`, so `try?` adds only one level: `Int?`.",
+        null
+      ]
+    },
+    {
+      "prompt": "What happens if the function called with `try!` throws an error?",
+      "options": [
+        "Runtime crash",
+        "It returns nil",
+        "The error is ignored",
+        "Compile error"
+      ],
+      "answer": 0,
+      "explanation": "`try!` disables error propagation: if an error occurs, the program stops.",
+      "whyWrong": [
+        null,
+        "That's `try?`. With `try!` you're asserting the error won't happen: if it does, the program stops.",
+        "Errors are never silently ignored: with `try!`, a thrown error causes a runtime trap.",
+        "The compiler accepts `try!` on any throwing function: it can't know whether the error will happen, you only find out at runtime."
+      ]
+    },
+    {
+      "prompt": "What does `result.get()` do on a `Result<Int, MyError>`?",
+      "options": [
+        "It always returns an `Int?`",
+        "It returns the value or throws the contained error",
+        "It returns the error or nil",
+        "It blocks until the result is available"
+      ],
+      "answer": 1,
+      "explanation": "`get()` is a `throws` method that bridges Result and the `throws` model.",
+      "whyWrong": [
+        "`get()` doesn't convert to an Optional: if the Result is `.failure` it throws the error, so you have to call it with `try`.",
+        null,
+        "It's the other way around: `get()` returns the value on `.success` and throws the error on `.failure`.",
+        "A `Result` holds an outcome that's already complete: there's nothing to wait for, `get()` is synchronous."
+      ]
+    },
+    {
+      "prompt": "Given `func g() throws -> Int?`, what is the type of `try? g()` in Swift 5+?",
+      "options": [
+        "Int?",
+        "Int??",
+        "Int",
+        "Optional<Error>"
+      ],
+      "answer": 0,
+      "explanation": "Since SE-0230, `try?` flattens nested Optionals, avoiding Swift 4's `Int??`.",
+      "whyWrong": [
+        null,
+        "That was the case up to Swift 4. Since SE-0230 (Swift 5), `try?` flattens the nested Optional, so the type is `Int?`.",
+        "The Optional doesn't go away: both the error and a nil returned by `g()` become nil, so you need `Int?`.",
+        "`try?` discards the error and keeps the value: the type depends on what `g()` returns, not on `Error`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "func f() {\n    defer { print(\"1\") }\n    defer { print(\"2\") }\n    print(\"3\")\n}\nf()",
+      "options": [
+        "1, 2, 3",
+        "3, 2, 1",
+        "3, 1, 2",
+        "2, 1, 3"
+      ],
+      "answer": 1,
+      "explanation": "The body prints `3`, then the `defer`s run on exit in reverse declaration order.",
+      "whyWrong": [
+        "`defer` blocks don't run where they're written but when the scope exits, so `3` comes first; they also run in reverse order.",
+        null,
+        "Having `3` first is right, but the `defer`s run in reverse declaration order, like a stack: 2 first, then 1.",
+        "The order between the two `defer`s is correct, but they run when the function exits, so after `print(\"3\")`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "enum E: Error { case fail }\nfunc f() throws {\n    defer { print(\"cleanup\") }\n    throw E.fail\n}\ndo { try f() } catch { print(\"caught\") }",
+      "options": [
+        "caught, then cleanup",
+        "Only caught",
+        "cleanup, then caught",
+        "Only cleanup"
+      ],
+      "answer": 2,
+      "explanation": "`defer` runs even when the scope ends with `throw`, before the error reaches the `catch`.",
+      "whyWrong": [
+        "The `defer` belongs to `f()`'s scope and runs before the error leaves the function, so before the `catch`.",
+        "`defer` runs even when you exit with `throw`: it's designed precisely for cleanup on error.",
+        null,
+        "The error isn't lost: after the `defer` it propagates to the caller, and the `catch` prints caught."
+      ]
+    },
+    {
+      "prompt": "What does `rethrows` mean in a signature?",
+      "options": [
+        "It always rethrows the errors it receives",
+        "It converts errors into Result",
+        "It throws only if the closure passed as a parameter throws",
+        "It retries the operation on error"
+      ],
+      "answer": 2,
+      "explanation": "That way a call with a non-throwing closure doesn't need `try`, as with `map`.",
+      "whyWrong": [
+        "A `rethrows` function throws only if the closure it receives throws; with a non-throwing closure the call doesn't even need `try`.",
+        "`rethrows` doesn't transform errors: it lets them propagate as they are. Converting them to `Result` takes explicit code.",
+        null,
+        "The name is misleading, but there's no automatic retry: `rethrows` only says the function can propagate the closure's errors."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "enum NetErr: Error { case timeout, code(Int) }\ndo { throw NetErr.code(404) }\ncatch NetErr.code(let c) where c >= 500 { print(\"server\") }\ncatch NetErr.code(let c) { print(\"client \\(c)\") }\ncatch { print(\"other\") }",
+      "options": [
+        "client 404",
+        "server",
+        "other",
+        "Compile error"
+      ],
+      "answer": 0,
+      "explanation": "The first `catch` matches the case but its `where` condition is false; the second one catches code 404.",
+      "whyWrong": [
+        null,
+        "The first `catch` matches the `.code` case, but the `where c >= 500` condition is false for 404, so it moves on to the next one.",
+        "The generic `catch` only kicks in if none of the previous ones match; the second one, `catch NetErr.code(let c)`, already catches the 404.",
+        "`catch` clauses with patterns and `where` are valid syntax, and the final `catch` makes them exhaustive: it compiles without issues."
+      ]
+    },
+    {
+      "prompt": "With `func load() throws(LoadError)` (Swift 6), what is the type of `error` in the `catch`?",
+      "options": [
+        "any Error",
+        "Error?",
+        "NSError",
+        "LoadError"
+      ],
+      "answer": 3,
+      "explanation": "With typed throws the compiler knows the exact type, and the generic `catch` exposes it as `LoadError`.",
+      "whyWrong": [
+        "That would be the case with untyped throws. With `throws(LoadError)` the compiler knows the exact type and the `catch` exposes it as `LoadError`.",
+        "`error` in a `catch` is never optional: if you've entered the `catch`, there's definitely an error.",
+        "`NSError` is about bridging with Objective-C, but Swift doesn't convert errors that way in a `catch`: with typed throws you get `LoadError`.",
+        null
+      ]
+    },
+    {
+      "prompt": "Which of these is NOT allowed in a `defer` block?",
+      "options": [
+        "Calling a function",
+        "A `return` or a `throw`",
+        "Modifying a local variable",
+        "Printing with `print`"
+      ],
+      "answer": 1,
+      "explanation": "A `defer` can't transfer control out of its own block, otherwise the exit flow would be ambiguous.",
+      "whyWrong": [
+        "Calling functions in a `defer` is perfectly normal, for example `file.close()`. The only thing forbidden is leaving the block with `return` or `throw`.",
+        null,
+        "A `defer` can modify local variables that are still in scope; what it can't do is transfer control out of the block.",
+        "`print` is an ordinary function call and is allowed; `return` and `throw` are what's not permitted."
+      ]
+    }
+  ]
+}

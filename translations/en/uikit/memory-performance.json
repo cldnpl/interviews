@@ -1,0 +1,207 @@
+{
+  "title": "Memory and Performance",
+  "summary": "Retain cycles, Instruments, offscreen rendering, frame vs bounds, and CALayer.",
+  "lesson": [
+    {
+      "heading": "ARC and retain cycles",
+      "body": "ARC deallocates an object when its retain count reaches zero. Two objects that reference each other strongly form a **retain cycle** and are never freed. That's why delegates are `weak` and protocols are constrained to `AnyObject`.\n\n`weak` is optional and becomes `nil` on deallocation; `unowned` is not optional, and accessing it after deallocation **crashes**: use it only when the referenced object is guaranteed to outlive the reference."
+    },
+    {
+      "heading": "Closures and timers",
+      "body": "A closure stored by `self` that captures `self` strongly creates a cycle: use `[weak self]`. You don't need it for closures that `self` doesn't retain, like `UIView.animate` or `DispatchQueue.main.async` blocks, which are released after they run.\n\n`Timer.scheduledTimer(target:selector:)` retains its target, and the run loop retains the timer: `deinit` is never called until you call `invalidate()`. Prefer the block-based version with `[weak self]`, and invalidate the timer when the screen goes away.",
+      "code": "timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in\n    self?.tick()\n}\n// in viewWillDisappear: timer?.invalidate()"
+    },
+    {
+      "heading": "Instruments and memory debugging",
+      "body": "The tools to mention: Xcode's **Memory Graph Debugger** to see who is retaining an object, **Leaks** and **Allocations** in Instruments for leaks and memory growth, **Time Profiler** for work on the main thread, and **Animation Hitches** for dropped frames.\n\nA quick trick: a `print` in your view controllers' `deinit` immediately reveals the ones that aren't deallocated after a pop or dismiss."
+    },
+    {
+      "heading": "Rendering and cell performance",
+      "body": "**Offscreen rendering** forces the GPU to draw into a separate buffer: it's caused by shadows without a `shadowPath`, masks, and in some cases `cornerRadius` with `masksToBounds` on the content. You mitigate it by setting `shadowPath`, using `cornerCurve`/`cornerRadius` without masks when possible, or `shouldRasterize` for static content.\n\nIn cells: no heavy work in `cellForRowAt`, images resized to their displayed size (downsampling with ImageIO or `preparingThumbnail(of:)`), and caching. A decoded image takes roughly `width × height × 4` bytes, regardless of the file size.",
+      "code": "card.layer.shadowOpacity = 0.2\ncard.layer.shadowRadius = 8\ncard.layer.shadowPath = UIBezierPath(\n    roundedRect: card.bounds, cornerRadius: 12).cgPath"
+    },
+    {
+      "heading": "frame, bounds, and CALayer",
+      "body": "`frame` is the view's rectangle in the **superview's** coordinate system; `bounds` is in **the view's own** coordinate system (origin usually zero, changes with scrolling). Once a `transform` is applied, `frame` becomes the bounding box and shouldn't be used to set the size.\n\nEvery `UIView` is backed by a `CALayer`, which handles rendering and animations; the view is its delegate and adds event handling and layout."
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"How do you find and fix a memory leak?\"** Short answer: I check that `deinit` gets called, use the Memory Graph Debugger to find the strong reference, then break the cycle with a `weak` delegate or `[weak self]` in the closure; for timers I use `invalidate()`. Mention Instruments (Leaks, Time Profiler) to show a method, not just theory."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What's the difference between `frame` and `bounds`?",
+      "options": [
+        "They're always identical",
+        "`bounds` is in window coordinates",
+        "`frame` uses the superview's coordinates, `bounds` the view's own",
+        "`frame` includes the transform, `bounds` includes the safe area"
+      ],
+      "answer": 2,
+      "explanation": "`bounds.origin` is normally zero but changes, for example, when a `UIScrollView` scrolls.",
+      "whyWrong": [
+        "They only match in special cases: a non-zero origin, a transform, or scrolling is enough to make them differ.",
+        "`bounds` uses the view's **own** coordinate system; neither of the two is expressed in window coordinates.",
+        null,
+        "`bounds` doesn't include the safe area, which you read from `safeAreaInsets`; it is true, though, that `frame` reflects the transform."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let v = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))\nv.transform = CGAffineTransform(rotationAngle: .pi / 4)\nprint(v.bounds.size, v.frame.size)",
+      "options": [
+        "(100, 100) and (100, 100)",
+        "About (141, 141) and (100, 100)",
+        "(0, 0) and (100, 100)",
+        "(100, 100) and about (141, 141)"
+      ],
+      "answer": 3,
+      "explanation": "The transform doesn't touch `bounds`, while `frame` becomes the bounding box of the rotated view.",
+      "whyWrong": [
+        "The transform doesn't change `bounds`, but it does change `frame`: the bounding box of a square rotated by 45° is larger.",
+        "You swapped the two values: it's `frame` that becomes the bounding box of about 141 pt, while `bounds` stays 100×100.",
+        "`bounds` isn't reset by the transform: it keeps its original 100×100 size.",
+        null
+      ]
+    },
+    {
+      "prompt": "Why are `delegate` properties usually `weak`?",
+      "options": [
+        "To improve dispatch performance",
+        "To avoid retain cycles between the object and its delegate",
+        "Because protocols don't support strong references",
+        "To make them thread-safe"
+      ],
+      "answer": 1,
+      "explanation": "The delegate often owns the object (the VC owns the table): a strong reference back would close the cycle.",
+      "whyWrong": [
+        "`weak` doesn't speed up dispatch: if anything, every access has to check that the object is still alive.",
+        null,
+        "Protocols support strong references just fine: `weak` is a choice to avoid cycles, and it requires an `AnyObject` protocol.",
+        "A `weak` reference isn't thread-safe by itself: it's there to avoid retain cycles, not to protect against concurrent access."
+      ]
+    },
+    {
+      "prompt": "After this VC is popped, `deinit` is never called. Why?",
+      "code": "override func viewDidLoad() {\n    super.viewDidLoad()\n    timer = Timer.scheduledTimer(timeInterval: 1, target: self,\n        selector: #selector(tick), userInfo: nil, repeats: true)\n}\ndeinit { timer?.invalidate() }",
+      "options": [
+        "`#selector` creates a circular reference with the class",
+        "The timer, retained by the run loop, retains `self`",
+        "The navigation controller retains the VC",
+        "`userInfo: nil` prevents deallocation"
+      ],
+      "answer": 1,
+      "explanation": "The `invalidate` in `deinit` is never reached: call it earlier (e.g. in `viewWillDisappear`) or use the block-based timer with `[weak self]`.",
+      "whyWrong": [
+        "`#selector` is just a method name, it retains nothing: the strong reference to `self` is held by the timer through `target`.",
+        null,
+        "After the pop, the navigation controller releases the VC: it's the timer, retained by the run loop, that keeps it alive.",
+        "`userInfo` is just an optional payload: with `nil` it retains nothing and has no effect on deallocation."
+      ]
+    },
+    {
+      "prompt": "Do you need `[weak self]` in this closure?",
+      "code": "UIView.animate(withDuration: 0.3) {\n    self.panel.alpha = 0\n}",
+      "options": [
+        "Yes, otherwise the VC is never deallocated",
+        "No: the closure isn't retained by `self`, so there's no cycle",
+        "Yes, because the closure is `@escaping`",
+        "No, because `self` is always `unowned` in animations"
+      ],
+      "answer": 1,
+      "explanation": "A cycle requires `self` to retain the closure; here UIKit retains it only until the animation ends.",
+      "whyWrong": [
+        "The VC doesn't retain the closure, so there's no cycle: UIKit holds it only for the duration of the animation and then releases it.",
+        null,
+        "`@escaping` means the closure can outlive the call, but unless `self` retains it, no cycle forms.",
+        "`self` never becomes `unowned` automatically: the capture is strong, but here it's harmless because it's temporary."
+      ]
+    },
+    {
+      "prompt": "A shadow on many cells makes scrolling choppy. What's the most effective fix?",
+      "options": [
+        "Set `layer.shadowPath`",
+        "Set `layer.masksToBounds = true`",
+        "Increase `shadowRadius`",
+        "Move the shadow into `draw(_:)`"
+      ],
+      "answer": 0,
+      "explanation": "Without a `shadowPath`, Core Animation has to compute the shape from the content in an offscreen pass on every frame.",
+      "whyWrong": [
+        null,
+        "`masksToBounds = true` clips everything outside the bounds, **shadow included**: the shadow disappears instead of getting faster.",
+        "A larger radius makes the shadow more expensive to compute, not less: it would make scrolling worse.",
+        "Drawing the shadow in `draw(_:)` moves the work to the CPU on every redraw: it's usually even slower."
+      ]
+    },
+    {
+      "prompt": "What happens when you access an `unowned` reference after the object has been deallocated?",
+      "options": [
+        "It returns `nil`",
+        "It returns the last valid value",
+        "Compile-time error",
+        "Runtime crash"
+      ],
+      "answer": 3,
+      "explanation": "`unowned` assumes the object is alive; if it isn't, the access is a fatal error. `weak`, on the other hand, becomes `nil`.",
+      "whyWrong": [
+        "That's how `weak` behaves: an `unowned` reference doesn't become `nil` and isn't even optional.",
+        "There's no \"last valid value\": the object is deallocated, and the runtime catches it with a fatal error.",
+        "The compiler can't know when the object will be deallocated: the problem only shows up at runtime.",
+        null
+      ]
+    },
+    {
+      "prompt": "Which Instruments tool do you use to find out what's slowing down the main thread while scrolling?",
+      "options": [
+        "Leaks",
+        "Allocations",
+        "Network",
+        "Time Profiler"
+      ],
+      "answer": 3,
+      "explanation": "Time Profiler samples stacks and shows where the main thread spends its time; Leaks and Allocations are about memory.",
+      "whyWrong": [
+        "Leaks looks for objects in memory that are no longer reachable, but it doesn't tell you where the main thread spends its time.",
+        "Allocations tracks how much memory you allocate and where, not how long code takes on the main thread.",
+        "Network analyzes network requests, which normally don't run on the main thread and don't explain scroll hitches.",
+        null
+      ]
+    },
+    {
+      "prompt": "A 4000×3000 pixel JPEG (2 MB file) is shown in a thumbnail. Roughly how much memory does it take once decoded?",
+      "options": [
+        "About 2 MB",
+        "About 12 MB",
+        "About 200 KB",
+        "About 48 MB"
+      ],
+      "answer": 3,
+      "explanation": "A decoded bitmap costs width × height × 4 bytes: you need to downsample to the displayed size.",
+      "whyWrong": [
+        "2 MB is the size of the **compressed** file: once decoded, the bitmap takes width × height × 4 bytes.",
+        "12 million is the pixel count: but each pixel takes 4 bytes in RGBA, so the total is about four times that.",
+        "Displaying it small doesn't reduce memory: without downsampling, the whole image is decoded at full resolution.",
+        null
+      ]
+    },
+    {
+      "prompt": "What's the relationship between `UIView` and `CALayer`?",
+      "options": [
+        "`CALayer` is a subclass of `UIView`",
+        "The layer only exists if you set `cornerRadius`",
+        "Every view has a layer for rendering and is its delegate",
+        "The view draws, the layer handles touches"
+      ],
+      "answer": 2,
+      "explanation": "The layer handles content and animations; the view adds events, the responder chain, and layout.",
+      "whyWrong": [
+        "`CALayer` comes from Core Animation and doesn't inherit from `UIView`: the view owns a layer, not the other way around.",
+        "Every view **always** has a layer: `cornerRadius` is just one of its properties.",
+        null,
+        "It's the other way around: the layer handles content and rendering, while the view handles touches and the responder chain."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,204 @@
+{
+  "title": "Events and Gestures",
+  "summary": "Responder chain, hit-testing, gesture recognizers, target-action, and UIControl.",
+  "lesson": [
+    {
+      "heading": "Responder chain",
+      "body": "Every `UIView`, `UIViewController`, `UIWindow`, and `UIApplication` is a `UIResponder`. An unhandled event travels up the chain via `next`: view → superview (or the VC, if the view is its root view) → … → window → application → app delegate.\n\nThe **first responder** receives keyboard events and `nil`-targeted actions. To dismiss the keyboard from anywhere, use `view.endEditing(true)` or send a `resignFirstResponder` action with a `nil` target.",
+      "code": "UIApplication.shared.sendAction(\n    #selector(UIResponder.resignFirstResponder),\n    to: nil, from: nil, for: nil)"
+    },
+    {
+      "heading": "Hit-testing",
+      "body": "To find the touched view, UIKit calls `hitTest(_:with:)` on the window, which recurses into subviews **in reverse order** (topmost first) using `point(inside:with:)`. Views with `isHidden`, `isUserInteractionEnabled = false`, or `alpha < 0.01` are skipped.\n\nA subview that extends outside its superview's `bounds` is visible (if `clipsToBounds` is `false`) but not tappable, because the superview fails the test. Overriding `point(inside:with:)` lets you enlarge the tap area.",
+      "code": "override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {\n    bounds.insetBy(dx: -12, dy: -12).contains(point)\n}"
+    },
+    {
+      "heading": "Gesture recognizers",
+      "body": "Gesture recognizers receive touches **before** the view: once they recognize, by default (`cancelsTouchesInView = true`) they send `touchesCancelled` to the view. They're either discrete (tap) or continuous (pan, pinch), with `.began`, `.changed`, and `.ended` states.\n\nTo resolve conflicts, use `require(toFail:)` or the delegate's `gestureRecognizer(_:shouldRecognizeSimultaneouslyWith:)`. Remember that `UIImageView` and `UILabel` have `isUserInteractionEnabled = false` by default.",
+      "code": "singleTap.require(toFail: doubleTap)\nimageView.isUserInteractionEnabled = true\nimageView.addGestureRecognizer(singleTap)"
+    },
+    {
+      "heading": "Target-action and UIControl",
+      "body": "`UIControl` (buttons, switches, sliders) sends actions for events like `.touchUpInside` and `.valueChanged`. With `addTarget(_:action:for:)`, the target **isn't retained**; since iOS 14 you can use closure-based `UIAction`s, which do retain whatever they capture.\n\nIf you pass `nil` as the target, the action travels the responder chain starting from the first responder. In custom controls, call `sendActions(for:)` to notify targets.",
+      "code": "button.addAction(UIAction { [weak self] _ in\n    self?.save()\n}, for: .touchUpInside)"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Classic question: **\"How does UIKit figure out which view received a touch?\"** Short answer: top-down hit-testing with `hitTest` and `point(inside:)`, skipping hidden, transparent, or non-interactive views; then, if the event isn't handled, it travels up the responder chain. Wrap up with a practical case: a button outside its superview's bounds, or an enlarged tap area."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "You add a `UITapGestureRecognizer` to a `UIImageView`, but the tap is never recognized. Most likely cause?",
+      "options": [
+        "Image views don't support gestures",
+        "You need `cancelsTouchesInView = false`",
+        "`isUserInteractionEnabled` is `false` by default",
+        "The target must be set to `nil`"
+      ],
+      "answer": 2,
+      "explanation": "`UIImageView` and `UILabel` disable interaction by default, so hit-testing skips them.",
+      "whyWrong": [
+        "Image views support gestures like any `UIView`; the problem is that interaction is disabled by default.",
+        "`cancelsTouchesInView` decides whether touches to the view get canceled, but it doesn't deliver touches to a view excluded from hit-testing.",
+        null,
+        "A `nil` target doesn't enable anything: the recognizer never gets the touches at all, because hit-testing skips the image view."
+      ]
+    },
+    {
+      "prompt": "A button extends outside its superview's bounds (`clipsToBounds = false`). The outer part is visible but doesn't respond. Why?",
+      "options": [
+        "The superview fails `point(inside:with:)` and hit-testing stops there",
+        "Buttons outside the bounds get disabled",
+        "You need `layer.masksToBounds = true`",
+        "The button must be brought forward with `bringSubviewToFront`"
+      ],
+      "answer": 0,
+      "explanation": "Hit-testing only descends into views that contain the point: if the superview says no, its subviews are never examined.",
+      "whyWrong": [
+        null,
+        "UIKit doesn't disable anything: the button is enabled, but hit-testing never gets to it because the superview rejects the point.",
+        "`masksToBounds = true` would clip the outer part away: it would make it invisible, not tappable.",
+        "Bringing the button forward changes the order among siblings, but doesn't fix the fact that the point is outside the superview."
+      ]
+    },
+    {
+      "prompt": "Which of these views still receives touches during hit-testing?",
+      "options": [
+        "A view with `alpha = 0.005`",
+        "A view with `backgroundColor = .clear`",
+        "A view with `isHidden = true`",
+        "A view with `isUserInteractionEnabled = false`"
+      ],
+      "answer": 1,
+      "explanation": "A transparent background doesn't matter: only hidden views, views with alpha below 0.01, or non-interactive views are excluded.",
+      "whyWrong": [
+        "It seems visible to hit-testing, but with alpha below **0.01** the view is excluded: 0.005 is under the threshold.",
+        null,
+        "Views with `isHidden = true` are skipped by hit-testing, so they don't receive touches.",
+        "`isUserInteractionEnabled = false` is exactly the flag that excludes the view (and its subviews) from hit-testing."
+      ]
+    },
+    {
+      "prompt": "Which `UIControl.Event` do you use for the standard tap on a `UIButton`?",
+      "options": [
+        "`.touchDown`",
+        "`.touchUpInside`",
+        "`.valueChanged`",
+        "`.primaryActionTriggered`, iPad only"
+      ],
+      "answer": 1,
+      "explanation": "The action fires when the finger lifts inside the button, so the user can cancel by dragging out.",
+      "whyWrong": [
+        "`.touchDown` fires as soon as the finger touches down: it doesn't let the user cancel by dragging out, so it's not the standard tap.",
+        null,
+        "`.valueChanged` is for controls with a value, like `UISwitch` or `UISlider`, not for a button tap.",
+        "`.primaryActionTriggered` isn't limited to iPad, but the standard tap event on `UIButton` is still `.touchUpInside`."
+      ]
+    },
+    {
+      "prompt": "What happens with this code when the button is tapped?",
+      "code": "button.addTarget(nil,\n                 action: #selector(copy(_:)),\n                 for: .touchUpInside)",
+      "options": [
+        "The action travels up the responder chain to whoever implements it",
+        "Crash: the target can't be `nil`",
+        "Nothing happens",
+        "Only `UIApplication` gets called"
+      ],
+      "answer": 0,
+      "explanation": "With a `nil` target, UIKit looks for the first responder in the chain that responds to the selector (a nil-targeted action).",
+      "whyWrong": [
+        null,
+        "A `nil` target is legal and intentional: it triggers a nil-targeted action, which searches the responder chain for a recipient.",
+        "Something does happen: UIKit walks up the responder chain and calls `copy(_:)` on the first responder that implements it.",
+        "`UIApplication` is just one of the last links: the search starts at the first responder and stops at the first one that responds."
+      ]
+    },
+    {
+      "prompt": "Two subviews overlap. You tap in the shared area: which one receives the touch?",
+      "code": "container.addSubview(viewA)\ncontainer.addSubview(viewB)   // same frame as viewA",
+      "options": [
+        "`viewA`, because it was added first",
+        "`viewB`, because it's on top and gets tested first",
+        "Both receive the touch",
+        "`container`, because the subviews cancel each other out"
+      ],
+      "answer": 1,
+      "explanation": "`hitTest` walks subviews in reverse order: the last one added is the topmost and wins.",
+      "whyWrong": [
+        "Insertion order matters the other way around: the first one added sits underneath, and `hitTest` checks the last subview first.",
+        null,
+        "Hit-testing returns **a single** view: the first one that contains the point, walking subviews from top to bottom.",
+        "Subviews don't cancel each other out: a view containing the point is found, and the container only gets the touch if none accepts it."
+      ]
+    },
+    {
+      "prompt": "A view has both a single tap and a double tap. On a double tap, the single tap fires too. How do you fix it?",
+      "options": [
+        "`doubleTap.require(toFail: singleTap)`",
+        "`singleTap.cancelsTouchesInView = false`",
+        "`singleTap.require(toFail: doubleTap)`",
+        "`singleTap.numberOfTouchesRequired = 2`"
+      ],
+      "answer": 2,
+      "explanation": "The single tap waits for the double tap to fail before recognizing, at the cost of a small delay.",
+      "whyWrong": [
+        "It's backwards: this way the double tap waits for the single tap, which still fires on the first tap.",
+        "`cancelsTouchesInView` is about touches forwarded to the view, not about two recognizers competing.",
+        null,
+        "`numberOfTouchesRequired` counts **fingers**, not taps: the single tap would then require two fingers at once."
+      ]
+    },
+    {
+      "prompt": "You add a tap gesture to the view containing a `UITableView` to dismiss the keyboard. Now `didSelectRowAt` is never called. Why?",
+      "options": [
+        "Table views don't receive touches when there's a gesture",
+        "The tap gesture becomes the first responder",
+        "`cancelsTouchesInView` is `true` and cancels the table's touches",
+        "`endEditing` disables selection"
+      ],
+      "answer": 2,
+      "explanation": "When the recognizer recognizes, the view receives `touchesCancelled`; setting `cancelsTouchesInView = false` makes selection work again.",
+      "whyWrong": [
+        "Table views receive touches normally; the point is that the recognizer, when it recognizes, cancels the touches meant for the table.",
+        "A gesture recognizer isn't a responder and never becomes first responder: the problem is `cancelsTouchesInView`.",
+        null,
+        "`endEditing` just dismisses the keyboard: it doesn't affect table selection, which is being canceled by the recognizer."
+      ]
+    },
+    {
+      "prompt": "What is the `next` responder of a `UIViewController`'s root view?",
+      "options": [
+        "The window",
+        "`UIApplication`",
+        "The view controller itself",
+        "The navigation controller's view"
+      ],
+      "answer": 2,
+      "explanation": "The root view forwards to its VC; from the VC, the chain continues to the view's superview or the parent.",
+      "whyWrong": [
+        "The window comes later in the chain: before the superview, the root view goes through its view controller.",
+        "`UIApplication` is near the end of the chain: from the root view you first go to the VC, then superview, window, and app.",
+        null,
+        "The root view forwards to the VC that owns it; only from the VC can the chain move up to a container, like the navigation controller."
+      ]
+    },
+    {
+      "prompt": "Which statement about memory in target-action is correct?",
+      "options": [
+        "`addTarget` doesn't retain the target; `UIAction` closures do",
+        "`addTarget` always retains the target",
+        "Neither `addTarget` nor `UIAction` retains anything",
+        "`UIAction` always uses weak references"
+      ],
+      "answer": 0,
+      "explanation": "The control doesn't hold on to the target, but a `UIAction` closure that captures `self` strongly can create a retain cycle.",
+      "whyWrong": [
+        null,
+        "The control doesn't hold on to the target: that's why, if the target is deallocated, the action simply stops being sent.",
+        "The `UIAction` closure is retained by the control: if it captures `self` strongly, it can create a retain cycle.",
+        "`UIAction` doesn't weaken anything on its own: captures are strong by default, and it's up to you to write `[weak self]`."
+      ]
+    }
+  ]
+}

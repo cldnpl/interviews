@@ -1,0 +1,209 @@
+{
+  "title": "Memory & ARC",
+  "summary": "Reference counting, strong/weak/unowned, and how to find and break retain cycles.",
+  "lesson": [
+    {
+      "heading": "How ARC works",
+      "body": "**Automatic Reference Counting** keeps track of the strong references to every class instance (and to closure contexts). The compiler inserts retains and releases; when the count reaches zero, `deinit` runs and the memory is freed.\n\nUnlike a garbage collector, ARC is deterministic and has no pauses, but it **doesn't detect cycles**: two objects that reference each other will never be freed.",
+      "code": "class Session {\n    deinit { print(\"Session deallocated\") }\n}\nvar s: Session? = Session()\ns = nil  // prints \"Session deallocated\""
+    },
+    {
+      "heading": "strong, weak, and unowned",
+      "body": "A **strong** reference (the default) increments the count. A **weak** reference doesn't; it must be an Optional `var`, and it's zeroed to nil when the object is deallocated.\n\nAn **unowned** reference doesn't increment the count and isn't Optional: use it when the other object has the same or a longer lifetime. Using it after deallocation causes a deterministic trap; `unowned(unsafe)` removes even that check and leads to undefined behavior.",
+      "code": "class Customer { var card: CreditCard? }\nclass CreditCard {\n    unowned let owner: Customer\n    init(owner: Customer) { self.owner = owner }\n}"
+    },
+    {
+      "heading": "Retain cycles between objects",
+      "body": "The classic case is a parent and child referencing each other: one side has to be `weak` or `unowned`. In the **delegate pattern** the property is `weak var delegate`, and the protocol must be constrained to `AnyObject` because `weak` only applies to class reference types.",
+      "code": "protocol ListDelegate: AnyObject {\n    func didSelect(_ index: Int)\n}\nfinal class ListView {\n    weak var delegate: ListDelegate?\n}"
+    },
+    {
+      "heading": "Retain cycles with closures",
+      "body": "If an object stores a closure that captures `self` strongly, the object and the closure keep each other alive. The fix is `[weak self]` in the capture list.\n\nNot every closure that uses `self` creates a cycle: `DispatchQueue.main.async { self.update() }` retains self only until the block runs. Watch out, though, for repeating `Timer`s and block-based `NotificationCenter` observers: the run loop or the center holds on to the block until you invalidate or remove it.",
+      "code": "final class ViewModel {\n    var onChange: (() -> Void)?\n    func bind() {\n        onChange = { [weak self] in self?.reload() }\n    }\n    func reload() {}\n}"
+    },
+    {
+      "heading": "Diagnosing leaks",
+      "body": "The fastest tool is Xcode's **Memory Graph Debugger**, which shows the graph of live objects and flags cycles. Instruments offers **Leaks** and **Allocations** for analysis over time.\n\nA simple but effective trick is putting a `print` in your view controllers' `deinit`: if it doesn't show up when you close a screen, something is holding on to it."
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"What's a retain cycle and how do you avoid it?\"**. Short answer: two instances holding strong references to each other never reach a count of zero; I break the cycle by making `weak` the side that doesn't own the other (delegate, parent), or by using `[weak self]` in stored closures.\n\nExplain when you pick `unowned` (guaranteed lifetime, avoids the Optional) and mention how you verify with the Memory Graph and `deinit`: it shows hands-on experience, not just theory."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What does ARC apply to?",
+      "options": [
+        "All types, structs included",
+        "Only Objective-C objects",
+        "Only global variables",
+        "Class instances and closure contexts"
+      ],
+      "answer": 3,
+      "explanation": "Value types don't have their own count; ARC manages referenced heap instances, meaning classes, actors, and closures.",
+      "whyWrong": [
+        "Structs are copied by value and don't have their own count; ARC only counts heap instances, although a struct can contain references managed by ARC.",
+        "ARC was born with Objective-C, but in Swift it manages all class instances, native ones included, plus closure contexts.",
+        "The variable's scope doesn't matter: ARC manages class instances wherever they're referenced, in locals, properties, or globals.",
+        null
+      ]
+    },
+    {
+      "prompt": "Why must a `weak` property be Optional?",
+      "options": [
+        "Because weak only works with protocols",
+        "Because ARC sets it to nil when the object is freed",
+        "So it can be initialized later",
+        "It's a convention, not a requirement"
+      ],
+      "answer": 1,
+      "explanation": "Weak references are zeroing: after deallocation they must be able to hold nil.",
+      "whyWrong": [
+        "`weak` applies to any class reference type, not just protocols; the Optional is there because the reference can become nil.",
+        null,
+        "For deferred initialization there's `lazy` or an IUO. The Optional on `weak` is there because ARC zeroes the reference when the object is freed.",
+        "It's a rule enforced by the compiler: `weak var x: Foo` doesn't compile, it has to be `Foo?`, precisely because ARC may zero it."
+      ]
+    },
+    {
+      "prompt": "Which Xcode tool shows retain cycles in the graph of live objects?",
+      "options": [
+        "Memory Graph Debugger",
+        "View Debugger",
+        "Time Profiler",
+        "Network Link Conditioner"
+      ],
+      "answer": 0,
+      "explanation": "The Memory Graph Debugger highlights retained objects and cycles; Instruments Leaks is the alternative.",
+      "whyWrong": [
+        null,
+        "The View Debugger shows the view hierarchy and layout constraints, not the graph of references between objects.",
+        "Time Profiler measures where CPU time goes: useful for performance, but it doesn't show who's retaining whom.",
+        "The Network Link Conditioner simulates slow or unreliable networks: it has nothing to do with memory."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "class A { deinit { print(\"bye\") } }\nvar a: A? = A()\nweak var w = a\na = nil\nprint(w == nil)",
+      "options": [
+        "false",
+        "true, then bye",
+        "bye, then false",
+        "bye, then true"
+      ],
+      "answer": 3,
+      "explanation": "The only strong reference is `a`: setting it to nil triggers `deinit`, and the weak reference becomes nil.",
+      "whyWrong": [
+        "`w` is weak and doesn't keep the object alive: `a = nil` removes the only strong reference, `deinit` runs, and `w` becomes nil, so the comparison is true.",
+        "The order is reversed: `deinit` runs right away at the `a = nil` statement, before reaching the `print`.",
+        "After deallocation the weak reference is zeroed automatically, so `w == nil` is true, not false.",
+        null
+      ]
+    },
+    {
+      "prompt": "Why doesn't `weak var delegate: MyDelegate?` compile?",
+      "options": [
+        "The delegate must be `let`",
+        "`weak` doesn't allow Optional types",
+        "The protocol isn't constrained to `AnyObject`",
+        "The property needs `@objc`"
+      ],
+      "answer": 2,
+      "explanation": "`weak` only applies to class reference types: the protocol must be `protocol MyDelegate: AnyObject`.",
+      "whyWrong": [
+        "The delegate doesn't need to be `let`: a weak reference can be zeroed by ARC and is declared as `weak var`. The problem is the unconstrained protocol.",
+        "It's the opposite: `weak` actually requires an Optional type. The problem is that `MyDelegate` could be adopted by structs, which weak doesn't apply to.",
+        null,
+        "`@objc` on the property doesn't change what kind of type it is: the protocol needs to be constrained to `AnyObject` so only classes can adopt it."
+      ]
+    },
+    {
+      "prompt": "What's wrong with this class?",
+      "code": "class VM {\n    var onUpdate: (() -> Void)?\n    func bind() { onUpdate = { self.refresh() } }\n    func refresh() {}\n}",
+      "options": [
+        "Nothing, closures capture weakly by default",
+        "Retain cycle: VM retains the closure, which retains VM",
+        "It doesn't compile without `@escaping`",
+        "`refresh` is called twice"
+      ],
+      "answer": 1,
+      "explanation": "The closure stored in `onUpdate` captures `self` strongly; you need `[weak self]` to break the cycle.",
+      "whyWrong": [
+        "Closures capture strongly by default: the closure retains `self` for as long as it exists, and here `self` itself retains the closure.",
+        null,
+        "`@escaping` applies to function parameters; a closure-typed property is already implicitly escaping, so the code compiles.",
+        "`refresh` isn't called here, it's only captured in the closure: the problem is the reference cycle, not a double invocation."
+      ]
+    },
+    {
+      "prompt": "Does `DispatchQueue.main.async { self.update() }` create a permanent retain cycle?",
+      "options": [
+        "No, the queue releases the block after it runs",
+        "Yes, you always need `[weak self]`",
+        "Yes, as long as the app is in the foreground",
+        "No, because the main queue uses weak"
+      ],
+      "answer": 0,
+      "explanation": "Self doesn't own the block: the object's lifetime is only extended until the block runs, then everything is released.",
+      "whyWrong": [
+        null,
+        "A cycle requires `self` to own the closure. Here the queue owns it and releases it after running it: `[weak self]` only serves to avoid extending the object's lifetime.",
+        "The app's state doesn't matter: the block runs and is then released, and the reference to `self` goes with it.",
+        "The queue retains the block strongly and the block retains `self` strongly: there's no cycle only because the queue releases the block after running it."
+      ]
+    },
+    {
+      "prompt": "When is `unowned` appropriate instead of `weak`?",
+      "options": [
+        "When the object can become nil at any moment",
+        "When the referenced object lives at least as long as the referrer",
+        "For view delegates",
+        "When working with structs"
+      ],
+      "answer": 1,
+      "explanation": "`unowned` avoids the Optional but assumes a guaranteed lifetime; if that assumption is wrong, the access crashes.",
+      "whyWrong": [
+        "That's exactly the case for `weak`: if the object can disappear at any moment, `unowned` would lead to a crash. You need a guaranteed lifetime.",
+        null,
+        "Delegates usually use `weak`, because the delegate can be deallocated before the object that references it.",
+        "`unowned`, like `weak`, only applies to class reference types: you can't use it with structs."
+      ]
+    },
+    {
+      "prompt": "What's the difference between `unowned` and `unowned(unsafe)` if the object is already deallocated?",
+      "options": [
+        "`unowned` traps; `unsafe` is undefined behavior",
+        "Both return nil",
+        "`unowned` returns nil, `unsafe` crashes",
+        "None, they're synonyms"
+      ],
+      "answer": 0,
+      "explanation": "`unowned` checks validity at runtime via the unowned count; `unowned(unsafe)` is a raw pointer with no checks.",
+      "whyWrong": [
+        null,
+        "Neither one is Optional: returning nil is `weak`'s job. `unowned` traps, and `unowned(unsafe)` reads invalid memory.",
+        "`unowned` never returns nil, it performs a controlled trap; `unowned(unsafe)` checks nothing, and the result is undefined, not necessarily a crash.",
+        "They differ precisely in the checks: `unowned` verifies at runtime that the object is alive, while `unowned(unsafe)` is a raw pointer with no checks."
+      ]
+    },
+    {
+      "prompt": "With `[weak self]`, the controller gets freed. What's left to do?",
+      "code": "timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in\n    self?.tick()\n}",
+      "options": [
+        "Nothing, `[weak self]` solves everything",
+        "Replace it with `[unowned self]`",
+        "Invalidate the timer, which the RunLoop retains",
+        "Mark `tick()` as `@objc`"
+      ],
+      "answer": 2,
+      "explanation": "A repeating timer stays scheduled on the RunLoop and keeps firing until you call `invalidate()`.",
+      "whyWrong": [
+        "`[weak self]` keeps the timer from retaining the controller, but the timer stays scheduled on the RunLoop and keeps firing: you need to call `invalidate()`.",
+        "`unowned` would make things worse: the timer keeps firing after deallocation, and accessing `self` would crash.",
+        null,
+        "`@objc` is only needed for the selector-based API; the block-based variant doesn't require it, and it wouldn't stop the timer anyway."
+      ]
+    }
+  ]
+}

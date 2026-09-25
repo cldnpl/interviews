@@ -1,0 +1,210 @@
+{
+  "title": "Auto Layout",
+  "summary": "Constraints, priorities, hugging, compression resistance, stack views, and the layout cycle.",
+  "lesson": [
+    {
+      "heading": "Constraints as equations",
+      "body": "Every constraint is a linear equation: `item1.attr = multiplier × item2.attr + constant`, with a `==`, `<=`, or `>=` relation. The layout must be **unambiguous** (exactly one solution) and **satisfiable** (no conflicts).\n\nFor views created in code, set `translatesAutoresizingMaskIntoConstraints = false`; otherwise UIKit generates constraints from the autoresizing mask that conflict with yours. Activate constraints in bulk with `NSLayoutConstraint.activate`.",
+      "code": "label.translatesAutoresizingMaskIntoConstraints = false\nNSLayoutConstraint.activate([\n    label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),\n    label.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),\n    label.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)\n])"
+    },
+    {
+      "heading": "Priorities",
+      "body": "Priorities range from 1 to 1000; `1000` (`.required`) must be satisfied. An optional constraint that can't be met is satisfied as closely as possible. If two required constraints conflict, Auto Layout **breaks** one of them at runtime and logs \"Unable to simultaneously satisfy constraints\" (symbolic breakpoint `UIViewAlertForUnsatisfiableConstraints`).\n\nCareful: you can't switch an already installed constraint from required to non-required (or vice versa): create it with priority 999 from the start."
+    },
+    {
+      "heading": "intrinsicContentSize, hugging, and compression resistance",
+      "body": "Controls like `UILabel`, `UIButton`, and `UIImageView` have an `intrinsicContentSize` that generates implicit constraints. **Content hugging** = resistance to growing larger than the content; **compression resistance** = resistance to shrinking smaller than it.\n\nWith two labels side by side, the one with the lower hugging priority stretches, and the one with the lower compression resistance gets truncated. In custom views, call `invalidateIntrinsicContentSize()` whenever the content changes.",
+      "code": "titleLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)\nvalueLabel.setContentCompressionResistancePriority(.required, for: .horizontal)"
+    },
+    {
+      "heading": "UIStackView",
+      "body": "`UIStackView` generates the constraints for its `arrangedSubviews` based on `axis`, `distribution`, `alignment`, and `spacing`. Setting `isHidden = true` on an arranged subview removes it from the layout, and the others take up its space (animatable).\n\nUse `addArrangedSubview`, not `addSubview`. Since iOS 14, stack views also render `backgroundColor`; before that they were a non-rendering layer."
+    },
+    {
+      "heading": "The layout cycle",
+      "body": "A layout pass has three phases: **update constraints**, **layout** (`layoutSubviews`), and **display** (`draw(_:)`). `setNeedsLayout()` marks the view as needing an update on the next run loop cycle (asynchronous, cheap); `layoutIfNeeded()` performs layout immediately if there are pending changes.\n\nTo animate a constraint, change its `constant` outside the animation and call `layoutIfNeeded()` on the superview inside the block.",
+      "code": "heightConstraint.constant = expanded ? 300 : 80\nUIView.animate(withDuration: 0.3) {\n    self.view.layoutIfNeeded()\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"What's the difference between content hugging and compression resistance?\"** Short answer: both act on the `intrinsicContentSize`; hugging keeps a view from growing, compression resistance keeps it from shrinking; between two views, the higher priority wins. Then give a concrete example (two labels in a row) and bring up `setNeedsLayout` vs `layoutIfNeeded` for animations."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Two labels in a row fill the horizontal space. Which one stretches?",
+      "code": "left.setContentHuggingPriority(.init(251), for: .horizontal)\nright.setContentHuggingPriority(.init(250), for: .horizontal)",
+      "options": [
+        "`left`, because it has higher hugging",
+        "Both, equally",
+        "Neither: the layout is ambiguous and crashes",
+        "`right`, because it has lower hugging"
+      ],
+      "answer": 3,
+      "explanation": "Lower hugging means less resistance to growing: that's the view that absorbs the extra space.",
+      "whyWrong": [
+        "Higher hugging is resistance to **growing**: `left` at 251 \"hugs\" its content and stays narrow, so the other one grows.",
+        "With different hugging priorities there's no tie: Auto Layout grows only the view with the lower hugging.",
+        "Different priorities exist precisely to remove ambiguity; and an ambiguous layout doesn't crash anyway, it just gives an unpredictable result.",
+        null
+      ]
+    },
+    {
+      "prompt": "You add constraints to a view created in code, but the console reports conflicts with `NSAutoresizingMaskLayoutConstraint`. What's the most likely cause?",
+      "options": [
+        "`translatesAutoresizingMaskIntoConstraints = false` is missing",
+        "You used `activate` instead of `isActive = true`",
+        "The view has no `intrinsicContentSize`",
+        "All the priorities are 1000"
+      ],
+      "answer": 0,
+      "explanation": "With the flag set to `true`, UIKit creates constraints from the frame/autoresizing mask, and they conflict with your explicit ones.",
+      "whyWrong": [
+        null,
+        "`NSLayoutConstraint.activate` and `isActive = true` are equivalent: neither one generates autoresizing constraints.",
+        "A missing `intrinsicContentSize` can make the layout ambiguous, but it doesn't produce `NSAutoresizingMaskLayoutConstraint` constraints.",
+        "Priorities of 1000 can cause conflicts among your own constraints, but `NSAutoresizingMaskLayoutConstraint` constraints only come from leaving the flag at `true`."
+      ]
+    },
+    {
+      "prompt": "What happens with this code?",
+      "code": "UIView.animate(withDuration: 0.3) {\n    self.topConstraint.constant = 200\n}",
+      "options": [
+        "The view animates correctly over 0.3 s",
+        "Crash: constraints can't be modified inside an animation",
+        "The animation starts only after `viewDidAppear`",
+        "No animation: the view jumps on the next layout pass"
+      ],
+      "answer": 3,
+      "explanation": "Changing `constant` doesn't animate anything: you need `layoutIfNeeded()` inside the block so the frames change during the animation.",
+      "whyWrong": [
+        "It seems natural, but changing `constant` only updates the constraint model: the frames change at layout time, outside the animation block.",
+        "No crash: modifying a constraint inside `animate` is perfectly legal. It's just missing `layoutIfNeeded()` to animate the frames.",
+        "`viewDidAppear` has nothing to do with it: the animation isn't deferred, there's simply nothing to animate in the block.",
+        null
+      ]
+    },
+    {
+      "prompt": "What's the difference between `setNeedsLayout()` and `layoutIfNeeded()`?",
+      "options": [
+        "They're equivalent",
+        "The first runs immediately, the second on the next cycle",
+        "The first marks for the next cycle, the second runs immediately",
+        "The first updates constraints, the second redraws"
+      ],
+      "answer": 2,
+      "explanation": "`setNeedsLayout` is asynchronous and coalesces requests; `layoutIfNeeded` forces a synchronous layout if there are pending changes.",
+      "whyWrong": [
+        "They aren't equivalent: one just flags the view as needing layout, the other performs layout **right away**, synchronously.",
+        "The behavior is reversed: `setNeedsLayout` defers to the next cycle, `layoutIfNeeded` runs immediately.",
+        null,
+        "You're thinking of `setNeedsUpdateConstraints` and `setNeedsDisplay`: both methods in the question are about layout, not drawing."
+      ]
+    },
+    {
+      "prompt": "Two labels don't fit in the row. Which one gets truncated?",
+      "code": "name.setContentCompressionResistancePriority(.init(750), for: .horizontal)\nprice.setContentCompressionResistancePriority(.init(751), for: .horizontal)",
+      "options": [
+        "`price`, it has higher compression resistance",
+        "Both, proportionally",
+        "`name`, it has lower compression resistance",
+        "Neither: it runs off the screen"
+      ],
+      "answer": 2,
+      "explanation": "Lower compression resistance means less resistance to shrinking: that label gives way and shows the ellipsis.",
+      "whyWrong": [
+        "Higher compression resistance means `price` **resists** shrinking: it's the other label that gives way.",
+        "With different priorities there's no proportional split: only the view with the lower compression resistance gives way.",
+        null,
+        "Auto Layout tries to honor the required constraints to the edges, sacrificing the lower priority: `name` gets truncated, it doesn't run off the screen."
+      ]
+    },
+    {
+      "prompt": "What happens when you run this line on an already active constraint created with required priority?",
+      "code": "widthConstraint.priority = .defaultHigh   // from 1000 to 750",
+      "options": [
+        "The priority changes and the layout updates",
+        "The change is silently ignored",
+        "An exception is raised at runtime",
+        "The constraint is deactivated"
+      ],
+      "answer": 2,
+      "explanation": "Switching an installed constraint from required to optional isn't supported: create it with 999 if you'll need to change it.",
+      "whyWrong": [
+        "The change would be legal between two optional priorities, but switching an installed constraint from required (1000) to optional isn't supported.",
+        "UIKit doesn't silently ignore it: this transition violates an internal assertion and raises an exception.",
+        null,
+        "Changing the priority doesn't deactivate the constraint (that takes `isActive = false`); what you get here is an exception."
+      ]
+    },
+    {
+      "prompt": "In a `UIStackView`, you set `isHidden = true` on an arranged subview. What happens?",
+      "options": [
+        "It becomes transparent but still takes up space",
+        "It leaves the layout and the others take up its space",
+        "It's removed from `arrangedSubviews`",
+        "The layout becomes ambiguous"
+      ],
+      "answer": 1,
+      "explanation": "The stack view observes `isHidden` and recalculates the layout; the view stays in `arrangedSubviews`.",
+      "whyWrong": [
+        "That's what happens with `alpha = 0`: with `isHidden = true` the stack view removes the view from the layout and the others take up its space.",
+        null,
+        "The view stays in `arrangedSubviews`: the stack view just skips it when computing the layout, as long as `isHidden` is `true`.",
+        "No ambiguity: the stack view manages its own constraints and recalculates the arrangement without the hidden view."
+      ]
+    },
+    {
+      "prompt": "A custom view computes its `intrinsicContentSize` from its text. After changing the text, the size doesn't update. What's missing?",
+      "options": [
+        "Calling `invalidateIntrinsicContentSize()`",
+        "Calling `setNeedsDisplay()`",
+        "Calling `sizeToFit()` on the superview",
+        "Setting `translatesAutoresizingMaskIntoConstraints = true`"
+      ],
+      "answer": 0,
+      "explanation": "Auto Layout caches the intrinsic size: you have to invalidate it explicitly when the content changes.",
+      "whyWrong": [
+        null,
+        "`setNeedsDisplay()` only asks for the content to be redrawn with `draw(_:)`: it doesn't tell Auto Layout that the intrinsic size has changed.",
+        "`sizeToFit()` resizes the frame of whatever receives it, here the superview, and doesn't invalidate your view's cached intrinsic size.",
+        "Setting the flag back to `true` generates constraints from the frame that conflict with the others; the intrinsic size would still be cached anyway."
+      ]
+    },
+    {
+      "prompt": "What does Auto Layout do at runtime if two required constraints conflict?",
+      "options": [
+        "It breaks one of the constraints and logs a warning to the console",
+        "It crashes immediately with an exception",
+        "It ignores all of the view's constraints",
+        "It always uses the last constraint added, without logging"
+      ],
+      "answer": 0,
+      "explanation": "The system picks a constraint to break so it can satisfy the others, and logs it; the app keeps running, but the layout may be wrong.",
+      "whyWrong": [
+        null,
+        "No crash: the conflict is resolved by breaking a constraint and logging \"Unable to simultaneously satisfy constraints\".",
+        "The engine doesn't throw everything away: it gives up **one** constraint and tries to honor all the others.",
+        "The order in which constraints are added decides nothing, and the system always logs to the console when it breaks a constraint."
+      ]
+    },
+    {
+      "prompt": "The superview is 320 pt wide. How wide will `box` be?",
+      "code": "let w = box.widthAnchor.constraint(equalToConstant: 300)\nw.priority = .defaultHigh\nNSLayoutConstraint.activate([w,\n    box.widthAnchor.constraint(\n        lessThanOrEqualTo: superview.widthAnchor, constant: -40)\n])",
+      "options": [
+        "300 pt",
+        "280 pt",
+        "320 pt",
+        "Ambiguous: it depends on the order"
+      ],
+      "answer": 1,
+      "explanation": "The required constraint caps it at 280; the optional one at 300 can't be satisfied, so it's met as closely as possible.",
+      "whyWrong": [
+        "300 pt would be honored only if the limit allowed it, but the required constraint caps it at 320 − 40 = 280 pt.",
+        null,
+        "The superview's width comes in with `constant: -40` and `lessThanOrEqualTo`: it can't reach 320.",
+        "Different priorities (750 vs. required) leave no ambiguity: the required constraint wins, and the other is satisfied as closely as possible."
+      ]
+    }
+  ]
+}

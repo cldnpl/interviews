@@ -1,0 +1,211 @@
+{
+  "title": "Null Safety",
+  "summary": "Nullable types, the ?. ?: !! operators, platform types, lateinit, and lazy.",
+  "lesson": [
+    {
+      "heading": "Nullable and non-null types",
+      "body": "In Kotlin, nullability is part of the type: a `String` can never hold `null`, while a `String?` can. The compiler won't let you assign `null` to a non-null type or access members of a nullable type without a check.\n\nThis turns most NullPointerExceptions into **compilation errors** instead of runtime crashes.",
+      "code": "var a: String = \"hello\"\n// a = null        // compilation error\nvar b: String? = null\n// b.length          // error: b might be null\nprintln(b?.length) // null"
+    },
+    {
+      "heading": "The ?. ?: and !! operators",
+      "body": "The **safe call** `?.` returns `null` if the receiver is null, instead of throwing. The **Elvis** operator `?:` provides a fallback value and also accepts `return` or `throw` on its right-hand side, which is handy for guard clauses.\n\nThe **not-null assertion** `!!` converts to a non-null type and throws `NullPointerException` if the value is null: use it only when you're certain it isn't, and in an interview it's worth saying it's a code smell.",
+      "code": "fun greet(user: User?) {\n    val name = user?.name ?: return\n    val city = user.address?.city ?: \"unknown\"\n    println(\"$name from $city\")\n}"
+    },
+    {
+      "heading": "Smart casts and let",
+      "body": "After an `if (x != null)` check, the compiler performs a **smart cast** to the non-null type, but only if the value can't change in the meantime: it works on local `val`s and on `val` properties without a custom getter in the same module, not on a class's `var` properties.\n\nIn those cases, use `x?.let { ... }` or copy the value into a local variable. Inside `let`, the value is available as `it`, already non-null.",
+      "code": "class Box(var item: String?)\n\nfun show(b: Box) {\n    b.item?.let { println(it.length) }\n    val local = b.item\n    if (local != null) println(local.length)\n}"
+    },
+    {
+      "heading": "Platform types and Java interop",
+      "body": "Types coming from Java without nullability annotations become **platform types**, shown by the IDE as `String!`. Kotlin doesn't know whether they can be null and lets you treat them as either `String` or `String?`: if you guess wrong, you get an NPE at runtime.\n\nThe best practice is to explicitly declare the Kotlin type at the Java boundary and annotate the Java code with `@Nullable`/`@NonNull` (for example JSpecify or AndroidX), which the compiler honors."
+    },
+    {
+      "heading": "lateinit vs lazy",
+      "body": "`lateinit var` defers the initialization of a non-null, mutable property: it doesn't work with primitive or nullable types, and accessing it before it's assigned throws `UninitializedPropertyAccessException`. You can check it with `this::prop.isInitialized`.\n\n`by lazy` is used on a `val`: the value is computed on first access and then cached. By default it's thread-safe (`LazyThreadSafetyMode.SYNCHRONIZED`). Typically: `lateinit` for injected dependencies, `lazy` for objects that are expensive to create.",
+      "code": "class Screen {\n    lateinit var adapter: ListAdapter\n    val formatter by lazy { DateTimeFormatter.ofPattern(\"dd/MM\") }\n\n    fun ready() = this::adapter.isInitialized\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"How does Kotlin handle nulls, and when would you use `!!`?\"** Short answer: nullability lives in the type system, so the compiler forces you to handle `T?` with `?.`, `?:`, smart casts, or `let`.\n\nAdd that `!!` should be avoided because it brings the NPE back, that platform types are the weak spot with Java, and close with the difference between `lateinit` (var, initialized later) and `lazy` (val, computed on first access)."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What does this code print?",
+      "code": "val s: String? = null\nprintln(s?.length ?: -1)",
+      "options": [
+        "null",
+        "-1",
+        "0",
+        "NullPointerException"
+      ],
+      "answer": 1,
+      "explanation": "`s?.length` returns null because s is null, so the Elvis operator supplies -1.",
+      "whyWrong": [
+        "You might think `?.` propagates the null all the way to the print, but the Elvis operator `?:` catches exactly that null and replaces it with -1.",
+        null,
+        "The length of a null string isn't 0: `s?.length` is null, not 0, so the right side of the Elvis kicks in, which is -1.",
+        "The safe call `?.` exists precisely to avoid the NPE: on null it doesn't invoke `length`, it returns null, and then the Elvis supplies -1."
+      ]
+    },
+    {
+      "prompt": "What happens if you apply `!!` to a null value?",
+      "options": [
+        "It returns null",
+        "It returns the type's default value",
+        "It throws IllegalStateException",
+        "It throws NullPointerException"
+      ],
+      "answer": 3,
+      "explanation": "`!!` asserts that the value isn't null and throws `NullPointerException` otherwise.",
+      "whyWrong": [
+        "That's how `?.` behaves, not `!!`: the not-null assertion never returns null; if the value is null, it throws an exception.",
+        "Kotlin has no implicit \"default values\" for types: `!!` doesn't substitute anything, it simply throws a `NullPointerException`.",
+        "`IllegalStateException` is what `checkNotNull` or `error()` throw; `!!` throws a `NullPointerException` instead.",
+        null
+      ]
+    },
+    {
+      "prompt": "Which `lateinit` declaration is valid?",
+      "options": [
+        "lateinit val name: String",
+        "lateinit var count: Int",
+        "lateinit var name: String",
+        "lateinit var name: String?"
+      ],
+      "answer": 2,
+      "explanation": "`lateinit` requires a `var` of a non-null, non-primitive type: no `val`, no `Int`, no nullable types.",
+      "whyWrong": [
+        "`lateinit` is for initializing later, so the property must be reassignable: with `val` the compiler reports an error, you need `var`.",
+        "`Int` is a primitive type on the JVM and has no representable \"uninitialized\" value: `lateinit` isn't allowed. For primitives there's `Delegates.notNull()`.",
+        null,
+        "`lateinit` makes no sense on a nullable type, because you can already initialize it to `null`: the compiler forbids it, the type must be non-null."
+      ]
+    },
+    {
+      "prompt": "What is the default thread-safety mode of `by lazy`?",
+      "options": [
+        "LazyThreadSafetyMode.SYNCHRONIZED",
+        "LazyThreadSafetyMode.PUBLICATION",
+        "LazyThreadSafetyMode.NONE",
+        "None: lazy isn't thread-safe"
+      ],
+      "answer": 0,
+      "explanation": "By default, `lazy` uses SYNCHRONIZED: only one thread computes the value. `NONE` is used only when access is single-threaded, to avoid the lock.",
+      "whyWrong": [
+        null,
+        "`PUBLICATION` lets multiple threads compute the value in parallel and keeps the first one published: it exists, but you have to request it explicitly, it's not the default.",
+        "`NONE` removes all synchronization and is an opt-in optimization for single-threaded access; the default is the safer `SYNCHRONIZED`.",
+        "Quite the opposite: `by lazy` is thread-safe by default, with a lock that guarantees the value is computed only once (`SYNCHRONIZED`)."
+      ]
+    },
+    {
+      "prompt": "What happens when you compile this code?",
+      "code": "class Box(var item: String?)\n\nfun f(b: Box) {\n    if (b.item != null) {\n        println(b.item.length)\n    }\n}",
+      "options": [
+        "It prints the length of item",
+        "Error: smart cast is impossible on a var property",
+        "It compiles with a warning",
+        "NullPointerException at runtime"
+      ],
+      "answer": 1,
+      "explanation": "`item` is a class `var`: it could change between the check and the use, so the smart cast isn't allowed. You need `?.let` or a local copy.",
+      "whyWrong": [
+        "It looks safe because you just checked `!= null`, but on a class `var` the compiler can't guarantee the value won't change in the meantime: it doesn't compile.",
+        null,
+        "It's not just a warning: the impossible smart cast is an error, because `b.item` stays `String?` and `.length` requires `?.` or `!!`.",
+        "The code never gets to runtime: the compiler stops it first, because you can't call `.length` directly on a `String?`."
+      ]
+    },
+    {
+      "prompt": "A Java method `String getName()` has no annotations. What type does Kotlin see for `obj.name`?",
+      "options": [
+        "String",
+        "String?",
+        "String! (platform type)",
+        "Any?"
+      ],
+      "answer": 2,
+      "explanation": "Without annotations, Kotlin doesn't know the nullability and uses a platform type `String!`, which you can treat as nullable or non-null at your own risk.",
+      "whyWrong": [
+        "Kotlin can't assume Java always returns a non-null value: without annotations like `@NonNull`, the type doesn't become a plain `String`.",
+        "That would be the safest choice, but it would make Java interop extremely awkward: without annotations, Kotlin uses the platform type `String!` instead.",
+        null,
+        "Java's `String` maps to Kotlin's `String`: only the nullability information is lost, not the type, so it doesn't become `Any?`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val name: String? = \"Kotlin\"\nname?.let { println(it.uppercase()) }",
+      "options": [
+        "KOTLIN",
+        "Kotlin",
+        "null",
+        "Prints nothing"
+      ],
+      "answer": 0,
+      "explanation": "name isn't null, so the `let` block runs with `it` = \"Kotlin\" and prints the uppercase version.",
+      "whyWrong": [
+        null,
+        "`it` is \"Kotlin\", but the block prints `it.uppercase()`, not `it`: the output is the all-caps version, KOTLIN.",
+        "`?.let` runs the block only if the value isn't null, and here name is \"Kotlin\": null is never printed.",
+        "The block would be skipped only if `name` were null; here it's \"Kotlin\", so `let` runs and prints KOTLIN."
+      ]
+    },
+    {
+      "prompt": "How do you check whether a `lateinit` property has been initialized?",
+      "options": [
+        "prop != null",
+        "prop.isInitialized()",
+        "Only with try/catch",
+        "this::prop.isInitialized"
+      ],
+      "answer": 3,
+      "explanation": "You use the property reference: `this::prop.isInitialized`. Comparing to null doesn't compile because the type is non-null.",
+      "whyWrong": [
+        "The type is non-null, so the comparison tells you nothing; in fact, reading `prop` before it's initialized throws `UninitializedPropertyAccessException`.",
+        "`isInitialized` isn't a method on the property but an extension on `KProperty0`: you need the `this::prop` reference, and it's used without parentheses.",
+        "A try/catch on `UninitializedPropertyAccessException` would work, but it's not the only way: Kotlin offers `this::prop.isInitialized`, which is much cleaner.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "fun len(s: String?): Int {\n    val v = s ?: return 0\n    return v.length\n}\n\nprintln(len(null) + len(\"ab\"))",
+      "options": [
+        "Doesn't compile",
+        "null",
+        "0",
+        "2"
+      ],
+      "answer": 3,
+      "explanation": "With null, the Elvis runs `return 0`; with \"ab\" it returns 2. The sum is 2. `return` on the right of `?:` is an idiomatic pattern.",
+      "whyWrong": [
+        "`return` is an expression of type `Nothing` and can sit on the right of `?:`: the code compiles, and it's actually an idiomatic pattern.",
+        "`len` returns a non-null `Int`: with null it runs `return 0`, so no null ever reaches the sum.",
+        "0 is only the result of `len(null)`: you have to add `len(\"ab\")`, which is 2, for a total of 2.",
+        null
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "val x: String? = null\nprintln(x + \"!\")",
+      "options": [
+        "!",
+        "null!",
+        "NullPointerException",
+        "Doesn't compile"
+      ],
+      "answer": 1,
+      "explanation": "There's a `String?.plus(Any?)` extension: a null receiver becomes the string \"null\". The trap is thinking it won't compile or will throw an NPE.",
+      "whyWrong": [
+        "The null doesn't disappear: the `String?.plus(Any?)` extension converts the null receiver into the string \"null\", so you get \"null!\".",
+        null,
+        "No NPE: `+` on a `String?` calls the `String?.plus` extension, which handles the null receiver by turning it into \"null\".",
+        "It looks like you'd need a safe call, but `String?.plus(Any?)` is defined precisely on the nullable type: the code compiles and prints \"null!\"."
+      ]
+    }
+  ]
+}

@@ -11,45 +11,61 @@
 		0C0B96F8698E97E06DD731C3 /* Content.swift in Sources */ = {isa = PBXBuildFile; fileRef = B82AAC82D30CFE7A42387AD8 /* Content.swift */; };
 		1267EFCD74761D6B78AE552F /* QuizView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7729009370C3301B94989538 /* QuizView.swift */; };
 		17EF3D59D59877A715EF387E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 278394872C2E624F711D1780 /* Assets.xcassets */; };
-		2B5A0DF377AE0F7DB60DE6CD /* flutter.json in Resources */ = {isa = PBXBuildFile; fileRef = F9E189C0E8940901279C65BF /* flutter.json */; };
 		2F70F634FD64F56548C6B91B /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F934489215AEA0AAEE8D671 /* OnboardingView.swift */; };
+		3D2576F6B347855FFE83706A /* LegalEN.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4714574B634C24B3B7B839D0 /* LegalEN.swift */; };
+		64D92090DB2D7A9A7DCC80F8 /* flutter.json in Resources */ = {isa = PBXBuildFile; fileRef = 2DF09B69C61CF70901F8512D /* flutter.json */; };
 		7E637E0B16EC45C58329F299 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E24A33113CCD5A4E8AB3E0B /* Theme.swift */; };
-		9B317CFA876478F62E02B90F /* uikit.json in Resources */ = {isa = PBXBuildFile; fileRef = E142A65C6EF1AD20FF4DE758 /* uikit.json */; };
+		86D1107C00A2AFA9659DEF80 /* kotlin.json in Resources */ = {isa = PBXBuildFile; fileRef = 28E07A00364A05A7AFC1BDE6 /* kotlin.json */; };
 		A0FA670A59CBADB7C059D175 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5B957A95670B5D9EC80C023 /* HomeView.swift */; };
 		A5F86E1A1911EA78D9B60C0E /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05B66A351DDA483A3D6D498A /* Components.swift */; };
 		AD6F99BA769BDB31619D8D3B /* InterviewsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5073F55EF22A8BA9241C2446 /* InterviewsApp.swift */; };
 		AF6FE9FCC42770FA56857670 /* CorrectionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E0BF72BB37BE5681E8FA9E5 /* CorrectionViews.swift */; };
+		B0EFA7DC8C9D7C3B7F489236 /* LegalIT.swift in Sources */ = {isa = PBXBuildFile; fileRef = E750EC1A55DD42D45A933A9D /* LegalIT.swift */; };
+		B30DB9FA28EED90F12FF1B35 /* LegalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B62002707098FD2348A1955 /* LegalView.swift */; };
 		BB128AD7B991BC343EDDC883 /* Rank.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0C798686966FFAEC9321B8 /* Rank.swift */; };
+		C8BC7635FB55C0F62C347828 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CED930DF86FE68486618F227 /* PrivacyInfo.xcprivacy */; };
 		CE5B58A144CF0E7BF8078FB8 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62D961CDAD24E9D5911EB6B /* Day.swift */; };
 		D75ED5C44C5296905ACAEF33 /* Reminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB617E6C22C19174024D25DF /* Reminders.swift */; };
-		DB24A5FBD65C32B17B582778 /* swift.json in Resources */ = {isa = PBXBuildFile; fileRef = C724A1EB6CB7E4E9A884800B /* swift.json */; };
 		DCA9918C170E3C3BD71F094D /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39B38CB4FD3FE89649B033AC /* ProfileView.swift */; };
-		E039817E78C64FC01D171D21 /* kotlin.json in Resources */ = {isa = PBXBuildFile; fileRef = DBCD5348D4C1E08E8AA92096 /* kotlin.json */; };
+		E1B8A2D33BBC2B2F4D36E5D9 /* Legal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0CD9348A293EF63E917A56F /* Legal.swift */; };
 		E9ED0DD37CACAB5F511EA4A0 /* TopicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9353310960A4F3945BC0FA1 /* TopicView.swift */; };
+		F3854E15394303915EC44302 /* uikit.json in Resources */ = {isa = PBXBuildFile; fileRef = CF947D2460B4DDC3AA8609DC /* uikit.json */; };
+		FAED87184401ADD44699FD37 /* swift.json in Resources */ = {isa = PBXBuildFile; fileRef = 1026B7833DA03FCF26BE134B /* swift.json */; };
 		FD40E519A3E061E5BBE2F32E /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8827FF8184DC7E47AD7C2C /* ReviewView.swift */; };
+		FFEDFF9BD194A271CE86FFFC /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F8370B876CE88CB318A84F0E /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		05B66A351DDA483A3D6D498A /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		0E0BF72BB37BE5681E8FA9E5 /* CorrectionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorrectionViews.swift; sourceTree = "<group>"; };
+		1BBD210A4390D34668D3FA10 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = it; path = it.lproj/kotlin.json; sourceTree = "<group>"; };
 		278394872C2E624F711D1780 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2F934489215AEA0AAEE8D671 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		39B38CB4FD3FE89649B033AC /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		3B62002707098FD2348A1955 /* LegalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalView.swift; sourceTree = "<group>"; };
 		3B8827FF8184DC7E47AD7C2C /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		3E9DF057BB4CB723C0133598 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = en; path = en.lproj/flutter.json; sourceTree = "<group>"; };
+		4714574B634C24B3B7B839D0 /* LegalEN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalEN.swift; sourceTree = "<group>"; };
 		5073F55EF22A8BA9241C2446 /* InterviewsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterviewsApp.swift; sourceTree = "<group>"; };
 		6A0C798686966FFAEC9321B8 /* Rank.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rank.swift; sourceTree = "<group>"; };
 		7729009370C3301B94989538 /* QuizView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuizView.swift; sourceTree = "<group>"; };
+		7CF3B5A474D9DAB5E8ECE425 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = it; path = it.lproj/uikit.json; sourceTree = "<group>"; };
+		8AD85342D6672FACCF49F28C /* it */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = it; path = it.lproj/swift.json; sourceTree = "<group>"; };
 		9E24A33113CCD5A4E8AB3E0B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A0CD9348A293EF63E917A56F /* Legal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Legal.swift; sourceTree = "<group>"; };
 		A5B957A95670B5D9EC80C023 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		AF65938DB5959045C45877D5 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = it; path = it.lproj/flutter.json; sourceTree = "<group>"; };
+		B6C00B3D49ED5B7D6A8913D3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = en; path = en.lproj/uikit.json; sourceTree = "<group>"; };
 		B82AAC82D30CFE7A42387AD8 /* Content.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Content.swift; sourceTree = "<group>"; };
 		BB617E6C22C19174024D25DF /* Reminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminders.swift; sourceTree = "<group>"; };
+		BE17DF9E5F6BF3F1D24B3437 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = en; path = en.lproj/kotlin.json; sourceTree = "<group>"; };
 		C5CB0448A8721AFA2D37D604 /* Interviews.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Interviews.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C724A1EB6CB7E4E9A884800B /* swift.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = swift.json; sourceTree = "<group>"; };
+		CED930DF86FE68486618F227 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		D62D961CDAD24E9D5911EB6B /* Day.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
-		DBCD5348D4C1E08E8AA92096 /* kotlin.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = kotlin.json; sourceTree = "<group>"; };
-		E142A65C6EF1AD20FF4DE758 /* uikit.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = uikit.json; sourceTree = "<group>"; };
+		E0C3A94DC4D7E3CCBD556C72 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = en; path = en.lproj/swift.json; sourceTree = "<group>"; };
+		E750EC1A55DD42D45A933A9D /* LegalIT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalIT.swift; sourceTree = "<group>"; };
 		E9353310960A4F3945BC0FA1 /* TopicView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopicView.swift; sourceTree = "<group>"; };
-		F9E189C0E8940901279C65BF /* flutter.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = flutter.json; sourceTree = "<group>"; };
+		F8370B876CE88CB318A84F0E /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FDD60D4BC38927E456EBE555 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -80,6 +96,9 @@
 				FDD60D4BC38927E456EBE555 /* AppState.swift */,
 				B82AAC82D30CFE7A42387AD8 /* Content.swift */,
 				D62D961CDAD24E9D5911EB6B /* Day.swift */,
+				A0CD9348A293EF63E917A56F /* Legal.swift */,
+				4714574B634C24B3B7B839D0 /* LegalEN.swift */,
+				E750EC1A55DD42D45A933A9D /* LegalIT.swift */,
 				6A0C798686966FFAEC9321B8 /* Rank.swift */,
 			);
 			path = Models;
@@ -91,6 +110,7 @@
 				05B66A351DDA483A3D6D498A /* Components.swift */,
 				0E0BF72BB37BE5681E8FA9E5 /* CorrectionViews.swift */,
 				A5B957A95670B5D9EC80C023 /* HomeView.swift */,
+				3B62002707098FD2348A1955 /* LegalView.swift */,
 				2F934489215AEA0AAEE8D671 /* OnboardingView.swift */,
 				39B38CB4FD3FE89649B033AC /* ProfileView.swift */,
 				7729009370C3301B94989538 /* QuizView.swift */,
@@ -116,17 +136,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		8BDD763DD251CB946025CB8A /* Content */ = {
-			isa = PBXGroup;
-			children = (
-				F9E189C0E8940901279C65BF /* flutter.json */,
-				DBCD5348D4C1E08E8AA92096 /* kotlin.json */,
-				C724A1EB6CB7E4E9A884800B /* swift.json */,
-				E142A65C6EF1AD20FF4DE758 /* uikit.json */,
-			);
-			path = Content;
-			sourceTree = "<group>";
-		};
 		E730A82DF9D4BE78575F1332 = {
 			isa = PBXGroup;
 			children = (
@@ -148,7 +157,12 @@
 			isa = PBXGroup;
 			children = (
 				278394872C2E624F711D1780 /* Assets.xcassets */,
-				8BDD763DD251CB946025CB8A /* Content */,
+				F8370B876CE88CB318A84F0E /* Localizable.xcstrings */,
+				CED930DF86FE68486618F227 /* PrivacyInfo.xcprivacy */,
+				2DF09B69C61CF70901F8512D /* flutter.json */,
+				28E07A00364A05A7AFC1BDE6 /* kotlin.json */,
+				1026B7833DA03FCF26BE134B /* swift.json */,
+				CF947D2460B4DDC3AA8609DC /* uikit.json */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -190,10 +204,11 @@
 				};
 			};
 			buildConfigurationList = D21C113503834B1C08A1EB49 /* Build configuration list for PBXProject "Interviews" */;
-			developmentRegion = it;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
+				en,
 				it,
 			);
 			mainGroup = E730A82DF9D4BE78575F1332;
@@ -214,10 +229,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				17EF3D59D59877A715EF387E /* Assets.xcassets in Resources */,
-				2B5A0DF377AE0F7DB60DE6CD /* flutter.json in Resources */,
-				E039817E78C64FC01D171D21 /* kotlin.json in Resources */,
-				DB24A5FBD65C32B17B582778 /* swift.json in Resources */,
-				9B317CFA876478F62E02B90F /* uikit.json in Resources */,
+				FFEDFF9BD194A271CE86FFFC /* Localizable.xcstrings in Resources */,
+				C8BC7635FB55C0F62C347828 /* PrivacyInfo.xcprivacy in Resources */,
+				64D92090DB2D7A9A7DCC80F8 /* flutter.json in Resources */,
+				86D1107C00A2AFA9659DEF80 /* kotlin.json in Resources */,
+				FAED87184401ADD44699FD37 /* swift.json in Resources */,
+				F3854E15394303915EC44302 /* uikit.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,6 +252,10 @@
 				CE5B58A144CF0E7BF8078FB8 /* Day.swift in Sources */,
 				A0FA670A59CBADB7C059D175 /* HomeView.swift in Sources */,
 				AD6F99BA769BDB31619D8D3B /* InterviewsApp.swift in Sources */,
+				E1B8A2D33BBC2B2F4D36E5D9 /* Legal.swift in Sources */,
+				3D2576F6B347855FFE83706A /* LegalEN.swift in Sources */,
+				B0EFA7DC8C9D7C3B7F489236 /* LegalIT.swift in Sources */,
+				B30DB9FA28EED90F12FF1B35 /* LegalView.swift in Sources */,
 				2F70F634FD64F56548C6B91B /* OnboardingView.swift in Sources */,
 				DCA9918C170E3C3BD71F094D /* ProfileView.swift in Sources */,
 				1267EFCD74761D6B78AE552F /* QuizView.swift in Sources */,
@@ -248,6 +269,45 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXVariantGroup section */
+		1026B7833DA03FCF26BE134B /* swift.json */ = {
+			isa = PBXVariantGroup;
+			children = (
+				E0C3A94DC4D7E3CCBD556C72 /* en */,
+				8AD85342D6672FACCF49F28C /* it */,
+			);
+			name = swift.json;
+			sourceTree = "<group>";
+		};
+		28E07A00364A05A7AFC1BDE6 /* kotlin.json */ = {
+			isa = PBXVariantGroup;
+			children = (
+				BE17DF9E5F6BF3F1D24B3437 /* en */,
+				1BBD210A4390D34668D3FA10 /* it */,
+			);
+			name = kotlin.json;
+			sourceTree = "<group>";
+		};
+		2DF09B69C61CF70901F8512D /* flutter.json */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3E9DF057BB4CB723C0133598 /* en */,
+				AF65938DB5959045C45877D5 /* it */,
+			);
+			name = flutter.json;
+			sourceTree = "<group>";
+		};
+		CF947D2460B4DDC3AA8609DC /* uikit.json */ = {
+			isa = PBXVariantGroup;
+			children = (
+				B6C00B3D49ED5B7D6A8913D3 /* en */,
+				7CF3B5A474D9DAB5E8ECE425 /* it */,
+			);
+			name = uikit.json;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
 		0F9675473857B8D2CBEF895C /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -256,6 +316,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Interviews;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -263,8 +324,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.interviews.app;
 				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
@@ -403,6 +466,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Interviews;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -410,8 +474,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.interviews.app;
 				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;

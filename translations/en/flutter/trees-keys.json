@@ -1,0 +1,207 @@
+{
+  "title": "Trees and Keys",
+  "summary": "The Widget, Element, and RenderObject trees, reconciliation, Keys, and InheritedWidget",
+  "lesson": [
+    {
+      "heading": "The three trees",
+      "body": "The **Widget tree** holds cheap, immutable configurations that are recreated on every build. The **Element tree** holds the live instances: it manages the lifecycle, holds the `State`, and connects widgets to render objects. The **RenderObject tree** handles layout, paint, and hit testing.\n\nElements and RenderObjects are expensive and get **reused** as much as possible: a rebuild creates new widgets, but usually just updates the existing objects."
+    },
+    {
+      "heading": "Rebuilds and reconciliation",
+      "body": "When a parent rebuilds, Flutter calls `Widget.canUpdate(old, new)` for each child: if `runtimeType` and `key` match, the existing Element is **updated** with the new widget and the State is preserved. Otherwise the Element is unmounted and a new one is created, losing its state.\n\nFor lists of children, the comparison happens by position unless there are keys: in that case Flutter matches children by key.",
+      "code": "static bool canUpdate(Widget oldWidget, Widget newWidget) {\n  return oldWidget.runtimeType == newWidget.runtimeType &&\n      oldWidget.key == newWidget.key;\n}"
+    },
+    {
+      "heading": "Local keys",
+      "body": "Keys matter when stateful **sibling children of the same type** are reordered, inserted, or removed. Without keys, the State stays tied to the position and \"slides\" onto the wrong item.\n\n`ValueKey` compares a value with `==` (typically an id), `ObjectKey` compares object identity, and `UniqueKey` is different from every other key and always forces a new Element. The key goes on the **root widget of each item**, at the sibling level.",
+      "code": "ListView(\n  children: [\n    for (final todo in todos)\n      TodoTile(key: ValueKey(todo.id), todo: todo),\n  ],\n)"
+    },
+    {
+      "heading": "GlobalKey",
+      "body": "A `GlobalKey` is unique across the entire app: it gives you access to a widget's `currentState` or `currentContext` (e.g. `FormState.validate()`) and lets you move a subtree to a different position **while keeping its state**.\n\nIt's more expensive than local keys and should be created **only once** (in a State field), never inside `build`: a new GlobalKey on every build recreates the subtree and loses its state.",
+      "code": "final _formKey = GlobalKey<FormState>();\n\nvoid _submit() {\n  if (_formKey.currentState!.validate()) {\n    _formKey.currentState!.save();\n  }\n}"
+    },
+    {
+      "heading": "InheritedWidget",
+      "body": "An `InheritedWidget` makes data available to its entire subtree. A descendant that calls `dependOnInheritedWidgetOfExactType` gets the data in O(1) and **registers itself as a dependent**: it will be rebuilt when the widget changes and `updateShouldNotify` returns true.\n\n`getInheritedWidgetOfExactType` reads without registering a dependency. `Theme.of`, `MediaQuery.of`, and Provider are all built on this mechanism.",
+      "code": "class AppConfig extends InheritedWidget {\n  const AppConfig({super.key, required this.env, required super.child});\n  final String env;\n\n  static AppConfig of(BuildContext c) =>\n      c.dependOnInheritedWidgetOfExactType<AppConfig>()!;\n\n  @override\n  bool updateShouldNotify(AppConfig old) => env != old.env;\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"When do you need keys?\"** Concise answer: when a collection of stateful widgets of the same type changes order or composition; without keys Flutter matches by position and the State ends up on the wrong item. Mention `canUpdate` (runtimeType + key).\n\nIf they ask about the three trees, explain that widgets are cheap blueprints, Elements are the bridge that preserves state, and RenderObjects do layout and paint: that's what keeps frequent rebuilds cheap."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Which tree handles layout and paint?",
+      "options": [
+        "Widget tree",
+        "RenderObject tree",
+        "Element tree",
+        "Semantics tree"
+      ],
+      "answer": 1,
+      "explanation": "RenderObjects compute size, position, and painting. Widgets are just configuration, and Elements manage the lifecycle.",
+      "whyWrong": [
+        "Widgets are just immutable descriptions of the UI: they don't compute sizes or paint anything.",
+        null,
+        "Elements manage the lifecycle and the link between widgets and RenderObjects, but layout and paint belong to RenderObjects.",
+        "The Semantics tree is for accessibility (screen readers), not for layout or painting."
+      ]
+    },
+    {
+      "prompt": "When does Flutter reuse an existing Element with the new widget?",
+      "options": [
+        "When the widgets are `==`",
+        "Always, if they're in the same position",
+        "When they have the same children",
+        "Same runtimeType and same key"
+      ],
+      "answer": 3,
+      "explanation": "That's the `Widget.canUpdate` rule. If the type or key changes, the Element is unmounted and recreated, and the State is lost.",
+      "whyWrong": [
+        "Flutter doesn't use `==` to decide on reuse; it uses `Widget.canUpdate`, which compares `runtimeType` and `key`.",
+        "Position isn't enough: if the type or key changes, the Element is unmounted and recreated even in the same spot.",
+        "Children aren't part of `canUpdate`: they're reconciled afterwards, one by one.",
+        null
+      ]
+    },
+    {
+      "prompt": "A list of Stateful tiles with checkboxes: you remove the first one and the \"checked\" state lands on the wrong tile. The fix?",
+      "options": [
+        "Give each tile a `ValueKey(item.id)`",
+        "A single GlobalKey for the list",
+        "Call setState twice",
+        "Make the tiles const"
+      ],
+      "answer": 0,
+      "explanation": "Without keys, Elements are matched by position. With a stable key tied to the id, each State follows its own item.",
+      "whyWrong": [
+        null,
+        "A GlobalKey identifies a single widget, not the items in a list: it doesn't fix how sibling tiles are matched.",
+        "Calling `setState` multiple times doesn't change how Elements are matched by position: you need a stable key.",
+        "`const` avoids unnecessary rebuilds but doesn't give the tiles an identity: without keys, the States stay tied to position."
+      ]
+    },
+    {
+      "prompt": "What happens on every rebuild with this code?",
+      "code": "@override\nWidget build(BuildContext context) {\n  return TextField(key: GlobalKey());\n}",
+      "options": [
+        "Nothing, the GlobalKey is reused",
+        "Error: duplicate GlobalKey",
+        "A new key: the TextField loses its text and focus",
+        "The TextField is just repainted"
+      ],
+      "answer": 2,
+      "explanation": "Every build creates a different GlobalKey, so `canUpdate` fails: the Element is recreated with a new State. GlobalKeys should be created only once.",
+      "whyWrong": [
+        "`GlobalKey()` creates a new object on every `build` call: the previous key isn't reused.",
+        "There's no duplicate, because only one GlobalKey exists in the tree at any moment; the problem is that it changes on every build.",
+        null,
+        "With a different key `canUpdate` fails: the Element and State are recreated, not just repainted."
+      ]
+    },
+    {
+      "prompt": "What's the difference between `ValueKey` and `ObjectKey`?",
+      "options": [
+        "ValueKey is global, ObjectKey is local",
+        "ValueKey uses `==`, ObjectKey uses `identical`",
+        "ObjectKey only accepts strings",
+        "There's no difference"
+      ],
+      "answer": 1,
+      "explanation": "Both are LocalKeys. ValueKey compares the value with `==`; ObjectKey compares object identity, which is useful when there's no unique id.",
+      "whyWrong": [
+        "Both are LocalKeys, compared among siblings; the global keys are GlobalKeys.",
+        null,
+        "ObjectKey accepts any object; what sets it apart is comparison by identity, not the type of the value.",
+        "There is a difference: ValueKey compares with `==`, ObjectKey with `identical`."
+      ]
+    },
+    {
+      "prompt": "What is `updateShouldNotify` for in an InheritedWidget?",
+      "options": [
+        "It forces the InheritedWidget to rebuild",
+        "It notifies a ChangeNotifier's listeners",
+        "It updates the associated RenderObject",
+        "It decides whether to rebuild the dependents"
+      ],
+      "answer": 3,
+      "explanation": "When the InheritedWidget is replaced, Flutter calls `updateShouldNotify(old)`: if it returns true, the widgets that depend on it are rebuilt.",
+      "whyWrong": [
+        "It doesn't force the InheritedWidget to rebuild: it's called once the widget has already been replaced, to decide whether to notify the dependents.",
+        "ChangeNotifier has its own mechanism with `notifyListeners`; `updateShouldNotify` is about the InheritedWidget's dependents.",
+        "An InheritedWidget has no RenderObject of its own: `updateShouldNotify` only decides whether to rebuild whatever depends on it.",
+        null
+      ]
+    },
+    {
+      "prompt": "Why is `dependOnInheritedWidgetOfExactType` O(1)?",
+      "options": [
+        "Every Element has a map of its ancestor InheritedElements",
+        "It walks the tree with an LRU cache",
+        "It uses an internal GlobalKey",
+        "Because the tree is balanced"
+      ],
+      "answer": 0,
+      "explanation": "Every Element inherits a type -> InheritedElement map from its parent, so the lookup doesn't need to walk up the tree.",
+      "whyWrong": [
+        null,
+        "No tree walk and no LRU cache: every Element inherits a type -> InheritedElement map from its parent.",
+        "GlobalKeys have nothing to do with it: the lookup uses the InheritedElement map inherited from the parent.",
+        "The widget tree isn't balanced, and even if it were the cost would be O(log n); the O(1) comes from the per-type map."
+      ]
+    },
+    {
+      "prompt": "Which tree is the cheapest to recreate on every build?",
+      "options": [
+        "Element tree",
+        "RenderObject tree",
+        "Widget tree",
+        "Layer tree"
+      ],
+      "answer": 2,
+      "explanation": "Widgets are lightweight, immutable objects: recreating them is cheap. Elements and RenderObjects are reused precisely because they're expensive.",
+      "whyWrong": [
+        "Elements are expensive to recreate because they carry the State and the lifecycle: Flutter goes out of its way to reuse them.",
+        "RenderObjects hold layout and paint information: recreating them is expensive, which is why they're updated in place.",
+        null,
+        "The Layer tree is for compositing during the paint phase; it's not what you recreate on every `build`."
+      ]
+    },
+    {
+      "prompt": "In a list, where does the key go?",
+      "options": [
+        "On the innermost child that holds the state",
+        "On the ListView",
+        "On the MaterialApp",
+        "On the root of each item, among the siblings"
+      ],
+      "answer": 3,
+      "explanation": "Keys are compared among siblings of the same parent. A key nested deeper doesn't help match the list's items.",
+      "whyWrong": [
+        "Keys are only compared among siblings: on a nested child they don't help match the list's items.",
+        "A key on the ListView identifies the whole list, not the individual items that need to be reconciled.",
+        "A key on the MaterialApp has no effect on how a list's items are reconciled.",
+        null
+      ]
+    },
+    {
+      "prompt": "What's the difference between `dependOnInheritedWidgetOfExactType` and `getInheritedWidgetOfExactType`?",
+      "options": [
+        "The second one is deprecated",
+        "The first registers a dependency, the second doesn't",
+        "The second also searches descendants",
+        "None, they're aliases"
+      ],
+      "answer": 1,
+      "explanation": "Only `dependOn...` subscribes the widget to changes and causes rebuilds. `get...` reads the value once, which is handy in callbacks.",
+      "whyWrong": [
+        "`getInheritedWidgetOfExactType` isn't deprecated: it's the right way to read without creating a dependency.",
+        null,
+        "Both search only among ancestors, never descendants.",
+        "They aren't aliases: only `dependOn...` subscribes the widget and causes a rebuild when the value changes."
+      ]
+    }
+  ]
+}

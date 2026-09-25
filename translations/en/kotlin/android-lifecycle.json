@@ -1,0 +1,205 @@
+{
+  "title": "Android Lifecycle",
+  "summary": "Activity and Fragment lifecycles, configuration changes, ViewModel, and process death.",
+  "lesson": [
+    {
+      "heading": "The Activity lifecycle",
+      "body": "The sequence is `onCreate` → `onStart` (visible) → `onResume` (in the foreground, interactive), then in reverse `onPause` → `onStop` → `onDestroy`. When A launches a full-screen B: `A.onPause`, then `B.onCreate/onStart/onResume`, and finally `A.onStop`.\n\n`onPause` has to be fast because it blocks the new Activity from appearing. Heavy save work belongs in `onStop` or, better yet, outside the callbacks with WorkManager."
+    },
+    {
+      "heading": "Fragments and the view lifecycle",
+      "body": "A Fragment has two lifecycles: the Fragment's own and that of its **view**, which gets destroyed and recreated (`onDestroyView`/`onCreateView`), for example when it goes onto the back stack, while the Fragment survives.\n\nThat's why UI-bound observations use `viewLifecycleOwner` instead of `this`, and the binding reference must be cleared in `onDestroyView` to avoid memory leaks.",
+      "code": "override fun onViewCreated(view: View, state: Bundle?) {\n    viewLifecycleOwner.lifecycleScope.launch {\n        viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {\n            vm.state.collect { render(it) }\n        }\n    }\n}\n\noverride fun onDestroyView() {\n    super.onDestroyView()\n    _binding = null\n}"
+    },
+    {
+      "heading": "Configuration changes",
+      "body": "Rotation, a language change, dark mode, or resizing in multi-window all cause the Activity to be **destroyed and recreated** by default. So UI state has to live outside the Activity.\n\nDeclaring `android:configChanges` to handle them yourself is discouraged except in specific cases (a video player, for example): it hides bugs and doesn't protect you from process death."
+    },
+    {
+      "heading": "ViewModel and SavedStateHandle",
+      "body": "A `ViewModel` survives configuration changes because it's kept in the `ViewModelStore`, and it's destroyed (`onCleared`) only when its scope truly ends. **It does not survive process death.**\n\n`SavedStateHandle` saves small pieces of data in a Bundle that the system restores even after process death: ids, search queries, the selected tab. Don't use it for large data, because the Bundle has size limits (TransactionTooLargeException).",
+      "code": "class SearchViewModel(\n    private val handle: SavedStateHandle\n) : ViewModel() {\n    val query: StateFlow<String> = handle.getStateFlow(\"q\", \"\")\n\n    fun onQuery(q: String) { handle[\"q\"] = q }\n}"
+    },
+    {
+      "heading": "Process death and Intents",
+      "body": "When the app is in the background, the system can kill the process to free up memory. When the user comes back, Android recreates the Activity with the saved Bundle: everything that lived only in memory (ViewModels, singletons) is gone. You test it by sending the app to the background and running `adb shell am kill <package>`.\n\n**Explicit Intents** name the component (`Intent(this, Detail::class.java)`), while **implicit** ones name an action (`ACTION_VIEW`, `ACTION_SEND`) that the system resolves. Starting with Android 12, a `PendingIntent` must declare `FLAG_IMMUTABLE` or `FLAG_MUTABLE`.",
+      "code": "val share = Intent(Intent.ACTION_SEND).apply {\n    type = \"text/plain\"\n    putExtra(Intent.EXTRA_TEXT, url)\n}\nstartActivity(Intent.createChooser(share, null))"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Classic question: **\"What happens when you rotate the screen, and how do you preserve state?\"** Short answer: the Activity is destroyed and recreated; the ViewModel survives and keeps the state in memory, while for process death you need `SavedStateHandle` or `rememberSaveable` for small data and a database for persistent data.\n\nShow that you know the difference between a configuration change and process death, and understand the Fragment view lifecycle."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "In what order are the callbacks called when an Activity starts?",
+      "options": [
+        "onCreate, onResume, onStart",
+        "onStart, onCreate, onResume",
+        "onCreate, onStart, onResume",
+        "onResume, onStart, onCreate"
+      ],
+      "answer": 2,
+      "explanation": "onCreate initializes, onStart makes it visible, and onResume brings it to the foreground and makes it interactive.",
+      "whyWrong": [
+        "`onResume` always comes after `onStart`: the Activity first becomes visible, then interactive.",
+        "`onCreate` is always the first callback: that's where you call `setContentView`, before the Activity becomes visible in `onStart`.",
+        null,
+        "The order is exactly reversed: it starts with creation (`onCreate`), then visibility (`onStart`), and finally interaction (`onResume`)."
+      ]
+    },
+    {
+      "prompt": "What happens to the Activity by default when you rotate the screen?",
+      "options": [
+        "Nothing, the layout is just recalculated",
+        "It's destroyed and recreated",
+        "The process is killed",
+        "Only onPause is called"
+      ],
+      "answer": 1,
+      "explanation": "A configuration change recreates the Activity, unless it's handled through configChanges.",
+      "whyWrong": [
+        "You handle rotation yourself only by declaring `android:configChanges`; by default the Activity is destroyed and recreated.",
+        null,
+        "Rotation doesn't kill the process: only the Activity is recreated, while the process and the ViewModel stay alive.",
+        "`onPause` does get called, but the rest follows: `onStop`, `onDestroy`, and the creation of a new instance."
+      ]
+    },
+    {
+      "prompt": "What does a ViewModel survive?",
+      "options": [
+        "Both rotation and process death",
+        "Only process death",
+        "Rotation but not process death",
+        "Nothing"
+      ],
+      "answer": 2,
+      "explanation": "The ViewModel stays in memory in the ViewModelStore during configuration changes, but that memory is lost along with the process.",
+      "whyWrong": [
+        "The ViewModel lives only in memory: if the system kills the process it's lost, and that case is what `SavedStateHandle` is for.",
+        "It's the opposite: process death wipes memory, ViewModel included, while rotation is exactly the case it exists for.",
+        null,
+        "It survives configuration changes like rotation: that's its whole reason for existing, thanks to the `ViewModelStore`."
+      ]
+    },
+    {
+      "prompt": "Why do you observe state in a Fragment with `viewLifecycleOwner` and not `this`?",
+      "options": [
+        "The view can be destroyed while the Fragment stays alive",
+        "Because `this` isn't a LifecycleOwner",
+        "To get faster updates",
+        "It's only required with Compose"
+      ],
+      "answer": 0,
+      "explanation": "On the back stack the view is destroyed but the Fragment isn't: observing with `this` would cause duplicate observers and updates to dead views.",
+      "whyWrong": [
+        null,
+        "A Fragment is a `LifecycleOwner`, so `this` compiles; the problem is that its lifecycle outlasts the view's.",
+        "Update speed doesn't change: what changes is when the observer is removed, namely when the view is destroyed.",
+        "It has nothing to do with Compose: the problem arises with any Fragment whose view is destroyed and recreated, for example on the back stack."
+      ]
+    },
+    {
+      "prompt": "What is appropriate to save in `SavedStateHandle`?",
+      "options": [
+        "Bitmaps and very large lists",
+        "Small UI state like ids and queries",
+        "References to a Context",
+        "Open network connections"
+      ],
+      "answer": 1,
+      "explanation": "It ends up in a Bundle with size limits and has to be serializable: only small data needed to rebuild the state.",
+      "whyWrong": [
+        "The state ends up in a Bundle with size limits (about 1 MB per transaction): Bitmaps and large lists risk a `TransactionTooLargeException`.",
+        null,
+        "A `Context` isn't serializable, and holding onto it would cause leaks: only simple data belongs in the Bundle.",
+        "An open connection can't be serialized or restored after process death: it has to be recreated, not saved."
+      ]
+    },
+    {
+      "prompt": "Activity A launches a full-screen B. When is `A.onStop` called?",
+      "options": [
+        "Before B.onCreate",
+        "Right after A.onPause",
+        "After B.onResume",
+        "Never, A stays in onPause"
+      ],
+      "answer": 2,
+      "explanation": "The sequence is A.onPause, B.onCreate, B.onStart, B.onResume, and only then A.onStop, once A is no longer visible.",
+      "whyWrong": [
+        "A isn't stopped before B exists: first A pauses, then B is created and becomes visible.",
+        "Between `A.onPause` and `A.onStop` come B's `onCreate`, `onStart`, and `onResume`: A stops only once it's no longer visible.",
+        null,
+        "It would stay in `onPause` only if B didn't fully cover it (a dialog or a transparent Activity); with a full-screen B, A becomes invisible and receives `onStop`."
+      ]
+    },
+    {
+      "prompt": "How do you reliably simulate process death?",
+      "options": [
+        "By rotating the screen",
+        "By pressing back",
+        "By calling finish()",
+        "App in the background, then `adb shell am kill <package>`"
+      ],
+      "answer": 3,
+      "explanation": "`am kill` kills the process the way the system would, and only if the app is in the background. Rotation, back, and finish() don't simulate it.",
+      "whyWrong": [
+        "Rotation recreates the Activity, but the process stays alive and the ViewModel with it: that's not process death.",
+        "Back closes the Activity with `onDestroy`, but the process stays alive: no process death.",
+        "`finish()` only destroys the Activity, discarding its saved state too: the process keeps running.",
+        null
+      ]
+    },
+    {
+      "prompt": "Which of these is an implicit Intent?",
+      "options": [
+        "Intent(this, DetailActivity::class.java)",
+        "Intent(Intent.ACTION_VIEW, Uri.parse(url))",
+        "Intent().setClass(this, X::class.java)",
+        "Intent().setComponent(component)"
+      ],
+      "answer": 1,
+      "explanation": "An implicit Intent declares an action and some data, and the system picks the component; the others name the class explicitly.",
+      "whyWrong": [
+        "Naming the `DetailActivity` class makes the Intent explicit: the target component is already decided.",
+        null,
+        "`setClass` sets the target component directly: the Intent is explicit.",
+        "`setComponent` specifies exactly which component to launch: this is an explicit Intent too."
+      ]
+    },
+    {
+      "prompt": "What is required when creating a `PendingIntent` with targetSdk 31+?",
+      "options": [
+        "Specifying FLAG_IMMUTABLE or FLAG_MUTABLE",
+        "Using FLAG_UPDATE_CURRENT",
+        "Requesting a runtime permission",
+        "Nothing, PendingIntents are deprecated"
+      ],
+      "answer": 0,
+      "explanation": "Starting with Android 12, mutability must be declared explicitly, or creation throws IllegalArgumentException. FLAG_IMMUTABLE is the default choice.",
+      "whyWrong": [
+        null,
+        "`FLAG_UPDATE_CURRENT` is for updating extras, but it isn't required: the Android 12 constraint is about mutability.",
+        "Creating a PendingIntent doesn't require any runtime permission: you only need to declare `FLAG_IMMUTABLE` or `FLAG_MUTABLE`.",
+        "PendingIntents aren't deprecated at all: they're still used for notifications, alarms, and widgets."
+      ]
+    },
+    {
+      "prompt": "In which callback do you clear a Fragment's binding to avoid leaks?",
+      "options": [
+        "onDestroy",
+        "onDetach",
+        "onStop",
+        "onDestroyView"
+      ],
+      "answer": 3,
+      "explanation": "The view dies in onDestroyView while the Fragment may survive: holding onto the binding would retain the entire view hierarchy.",
+      "whyWrong": [
+        "`onDestroy` is too late: between `onDestroyView` and `onDestroy` (on the back stack, for example) the binding would retain a view that's already dead.",
+        "`onDetach` comes even after `onDestroy`: for the whole time on the back stack, the binding would already have caused the leak.",
+        "In `onStop` the view still exists and can become visible again: clearing the binding there would lead to crashes when coming back in `onStart`.",
+        null
+      ]
+    }
+  ]
+}

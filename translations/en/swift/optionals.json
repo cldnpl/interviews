@@ -1,0 +1,210 @@
+{
+  "title": "Optionals",
+  "summary": "How Swift represents the absence of a value safely, with the compiler checking your work.",
+  "lesson": [
+    {
+      "heading": "What an optional really is",
+      "body": "An Optional is just a generic `enum` with two cases: `.none` and `.some(Wrapped)`. The `Int?` syntax is only sugar for `Optional<Int>`, and the `nil` literal corresponds to `.none`.\n\nThe payoff is that the absence of a value is encoded in the **type system**: a `String` can never be nil, and the compiler forces you to handle the empty case before you use a `String?`.",
+      "code": "enum Optional<Wrapped> {\n    case none\n    case some(Wrapped)\n}\nlet a: Int? = 5      // .some(5)\nlet b: Int? = nil    // .none"
+    },
+    {
+      "heading": "Safe Unwrapping",
+      "body": "The main tools are `if let`, `guard let`, and **optional chaining** `a?.b?.c`. With `guard let`, the unwrapped value stays available for the rest of the scope, and the `else` branch must exit (return, throw, break). Since Swift 5.7 you can write the shorthand `if let name` instead of `if let name = name`.\n\nOptional chaining always returns an Optional: if any link in the chain is nil, the whole expression is nil.",
+      "code": "func greet(_ name: String?) {\n    guard let name else { return }\n    print(\"Hello \\(name)\")\n}\nlet count = user?.address?.street.count  // Int?"
+    },
+    {
+      "heading": "Nil-coalescing and force unwrapping",
+      "body": "The `??` operator supplies a default value; its right-hand operand is an `@autoclosure`, so it's evaluated **only** if the left-hand side is nil. Force unwrapping with `!` crashes the app if the value is nil: in an interview you need to justify it (a guaranteed invariant), and never use it out of laziness.\n\n**Implicitly unwrapped optionals** (`String!`) are Optionals that the compiler unwraps automatically when a non-optional type is required; you mostly see them on `@IBOutlet`s.",
+      "code": "let port = Int(env[\"PORT\"] ?? \"\") ?? 8080\n@IBOutlet weak var titleLabel: UILabel!"
+    },
+    {
+      "heading": "map, flatMap, and Pattern Matching",
+      "body": "Optional has `map` and `flatMap` too: `map` transforms the value if there is one, and `flatMap` avoids a double Optional when the transformation itself returns an Optional. Without `flatMap`, it's easy to end up with an `Int??`.\n\nYou can also match Optionals against patterns: `if case let x? = value`, or a `switch` over `.some` and `.none`. A classic source of double Optionals is a `Dictionary` with optional values, where the subscript returns `Value??`.",
+      "code": "let s: String? = \"42\"\nlet a = s.map { Int($0) }      // Int??\nlet b = s.flatMap { Int($0) }  // Int?"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Typical question: **\"What is an Optional and how do you handle it?\"** Concise answer: it's an enum with `.none` and `.some` that makes the possible absence of a value explicit in the type; I unwrap it with `guard let` for early exits, `if let` for local branches, `??` for defaults, and optional chaining for chains of accesses.\n\nAdd that you avoid `!` except for documented invariants, and mention the double-Optional trap with `map` or with dictionaries: it shows you understand the type, not just the syntax."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "What does this code print?",
+      "code": "let a: Int? = nil\nprint(a ?? 5)",
+      "options": [
+        "5",
+        "nil",
+        "Optional(5)",
+        "Compile error"
+      ],
+      "answer": 0,
+      "explanation": "`??` returns the right-hand value when the left-hand side is nil, and the result has the non-optional type `Int`.",
+      "whyWrong": [
+        null,
+        "It's tempting to think nil because `a` is nil, but `??` exists precisely to replace it: when the left side is nil, it returns the right-hand value, `5`.",
+        "The result of `a ?? 5` isn't optional: with a default of type `Int`, `??` returns an `Int`, so `print` shows `5` with no wrapper.",
+        "The code is valid: `??` takes an `Int?` on the left and an `Int` on the right, which are compatible types. No error; it prints `5`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let s: String? = \"hello\"\nprint(s)",
+      "options": [
+        "hello",
+        "\"hello\"",
+        "Compile error",
+        "Optional(\"hello\")"
+      ],
+      "answer": 3,
+      "explanation": "Printing an Optional without unwrapping it shows the `Optional(...)` wrapper along with the debug description; the compiler only emits a warning.",
+      "whyWrong": [
+        "That's what you'd get with `s!` or `if let`: without unwrapping, `print` receives the Optional and shows `Optional(\"hello\")`.",
+        "The quotes really do appear, but inside the wrapper: `print` uses the Optional's debug description, which wraps the string in `Optional(...)`.",
+        "Passing an Optional to `print` is legal because the parameter is `Any`: the compiler only emits a warning about the implicit coercion, not an error.",
+        null
+      ]
+    },
+    {
+      "prompt": "How is `Optional` implemented in the standard library?",
+      "options": [
+        "A pointer that can be NULL",
+        "A generic enum with the cases `.none` and `.some(Wrapped)`",
+        "A class with a `value` property",
+        "A protocol adopted by every type"
+      ],
+      "answer": 1,
+      "explanation": "Optional is a plain enum: `nil` is `.none`, and the compiler only adds syntactic sugar (`?`, `!`, optional chaining).",
+      "whyWrong": [
+        "That's the C and Objective-C model, where nil is a null pointer. In Swift, Optional also works for value types like `Int`, and it's an enum, not a pointer.",
+        null,
+        "Optional is a value type: a class would have reference semantics and allocation costs. In reality it's an `enum` with `.none` and `.some`.",
+        "There's no protocol adopted by every type: `Optional<Wrapped>` is a generic type that wraps any `Wrapped`."
+      ]
+    },
+    {
+      "prompt": "What's the main difference between `guard let` and `if let`?",
+      "options": [
+        "With `guard let`, the constant stays visible after the guard",
+        "`guard let` is faster at runtime",
+        "`if let` doesn't work with properties",
+        "`guard let` only accepts reference types"
+      ],
+      "answer": 0,
+      "explanation": "`guard let` unwraps the value into the enclosing scope and forces the `else` branch to exit, which encourages early exits.",
+      "whyWrong": [
+        null,
+        "Performance is identical: both boil down to checking for the `.some` case. The difference is about scope and control flow, not speed.",
+        "`if let` works perfectly well with properties, for example `if let name = user.name`; since Swift 5.7 there's also the shorthand `if let name`.",
+        "`guard let` works with any Optional, value types included (`Int?`, `String?`): there's no restriction to reference types."
+      ]
+    },
+    {
+      "prompt": "`street` is a non-optional `String`. What is the type of `n`?",
+      "code": "let n = user?.address?.street.count",
+      "options": [
+        "Int",
+        "Int??",
+        "String?",
+        "Int?"
+      ],
+      "answer": 3,
+      "explanation": "Optional chaining flattens the chain: a single optional link is enough to make the result `Int?`, never a nested Optional.",
+      "whyWrong": [
+        "`count` is an `Int`, but the chain goes through `user?` and `address?`: if either one is nil the result is nil, so the type becomes `Int?`.",
+        "Optional chaining doesn't stack levels: multiple `?` in the same chain still produce a single Optional, `Int?`.",
+        "The last member of the chain is `.count`, not `street`: the final type is the type of `count` (`Int`) made optional, so `Int?`.",
+        null
+      ]
+    },
+    {
+      "prompt": "What is the type of `r`?",
+      "code": "let s: String? = \"42\"\nlet r = s.map { Int($0) }",
+      "options": [
+        "Int??",
+        "Int?",
+        "Int",
+        "String?"
+      ],
+      "answer": 0,
+      "explanation": "`Int(_:)` returns an `Int?`, and `map` wraps it in another Optional; `flatMap` would have given you `Int?`.",
+      "whyWrong": [
+        null,
+        "It would be `Int?` with `flatMap`. `map` wraps whatever the closure returns, and here the closure already returns `Int?`: the result is `Int??`.",
+        "`map` on an Optional always returns an Optional, and `Int(_:)` from a String is itself failable: neither level goes away.",
+        "`map` transforms the wrapped value and doesn't preserve the original type: the closure returns `Int?`, so you get `Int??`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "func fallback() -> Int {\n    print(\"fallback\")\n    return 0\n}\nlet v: Int? = 3\nprint(v ?? fallback())",
+      "options": [
+        "\"fallback\", then \"3\"",
+        "Only \"3\"",
+        "\"fallback\", then \"0\"",
+        "Optional(3)"
+      ],
+      "answer": 1,
+      "explanation": "The right-hand operand of `??` is an `@autoclosure`: it isn't evaluated if the left-hand side contains a value.",
+      "whyWrong": [
+        "That would be true if the right-hand side were evaluated like a normal argument; instead it's an `@autoclosure`, and since `v` is 3, `fallback()` is never called.",
+        null,
+        "`fallback()` only comes into play when `v` is nil. Here `v` contains 3, so there's no \"fallback\" and the printed value is `3`.",
+        "With a non-optional default (`Int`), `??` returns an `Int`: the wrapper goes away and it simply prints `3`."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let x: Int? = 5\nif case .some(let y) = x {\n    print(y)\n}",
+      "options": [
+        "Optional(5)",
+        "Nothing",
+        "5",
+        "Compile error"
+      ],
+      "answer": 2,
+      "explanation": "The `.some(let y)` pattern matches and binds the unwrapped value, so `y` is a non-optional `Int`.",
+      "whyWrong": [
+        "The `.some(let y)` pattern extracts the payload: `y` is the wrapped `Int`, not the Optional, so it prints `5`.",
+        "The match only fails if `x` is `.none`. Here `x` is 5, i.e. `.some(5)`, so the body of the `if` runs.",
+        null,
+        "`if case` with an enum pattern is valid syntax on Optionals too, which are exactly an enum with `.some` and `.none`; `case let y?` is the shorthand form."
+      ]
+    },
+    {
+      "prompt": "What is the inferred type of `copy`?",
+      "code": "var name: String! = \"Ada\"\nlet copy = name",
+      "options": [
+        "String",
+        "String!",
+        "String?",
+        "Compile error"
+      ],
+      "answer": 2,
+      "explanation": "Since SE-0054, an IUO is a regular Optional with an implicit force-unwrap flag; if the context doesn't require a `String`, inference produces `String?`.",
+      "whyWrong": [
+        "The implicit force unwrap only kicks in if the context requires a `String`. With `let copy = name` there's no annotation, so the inferred type stays `String?`.",
+        "Since SE-0054, `String!` is no longer a type of its own but a `String?` with an attribute on the declaration, and that attribute doesn't propagate through inference.",
+        null,
+        "Copying an IUO into a new constant is perfectly legal: the compiler infers `String?` with no errors."
+      ]
+    },
+    {
+      "prompt": "What does this code print?",
+      "code": "let dict: [String: Int?] = [\"a\": nil]\nprint(dict[\"a\"] == nil)",
+      "options": [
+        "true",
+        "false",
+        "nil",
+        "Compile error"
+      ],
+      "answer": 1,
+      "explanation": "The key exists with a nil value: the subscript returns `.some(nil)` of type `Int??`, which is different from `.none`.",
+      "whyWrong": [
+        "The stored value is nil, but the subscript returns `Int??`: the key exists, so you get `.some(nil)`, which is different from `nil` (`.none`).",
+        null,
+        "`==` always returns a `Bool`, never nil: comparing `.some(nil)` with `nil` produces `false`.",
+        "A dictionary with `Int?` values is legal, and comparing with nil works on nested Optionals: it compiles and prints `false`."
+      ]
+    }
+  ]
+}

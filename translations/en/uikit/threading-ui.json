@@ -1,0 +1,211 @@
+{
+  "title": "Threading and UI",
+  "summary": "Main thread, GCD, OperationQueue, DispatchGroup, and race conditions.",
+  "lesson": [
+    {
+      "heading": "The main thread rule",
+      "body": "UIKit isn't thread-safe: nearly all `UIView` and `UIViewController` APIs must be used **only from the main thread**, which also runs the rendering and event run loop. With Swift Concurrency these classes are annotated `@MainActor`, and Xcode's **Main Thread Checker** flags violations at runtime.\n\nHeavy work (networking, parsing, image decoding) belongs in the background; then you hop back to main to update the UI.",
+      "code": "URLSession.shared.dataTask(with: url) { data, _, _ in\n    let image = data.flatMap(UIImage.init(data:))\n    DispatchQueue.main.async {\n        self.imageView.image = image\n    }\n}.resume()"
+    },
+    {
+      "heading": "Grand Central Dispatch",
+      "body": "GCD offers **serial** queues (one task at a time, FIFO) and **concurrent** queues: `DispatchQueue.main` is serial, the `global(qos:)` queues are concurrent. `async` enqueues and returns immediately; `sync` blocks the caller until the task finishes.\n\nCalling `DispatchQueue.main.sync` from the main thread causes a **deadlock** (libdispatch detects it and crashes). For the reader/writer pattern, use a custom concurrent queue with `.barrier` on writes: on global queues, the barrier has no effect.",
+      "code": "let queue = DispatchQueue(label: \"cache\", attributes: .concurrent)\nfunc read(_ k: String) -> Data? { queue.sync { storage[k] } }\nfunc write(_ k: String, _ v: Data) {\n    queue.async(flags: .barrier) { self.storage[k] = v }\n}"
+    },
+    {
+      "heading": "OperationQueue",
+      "body": "`OperationQueue` sits one level above GCD: `Operation`s support **dependencies** (`addDependency`), **cancellation** (`cancel()` and checking `isCancelled`), priorities, and `maxConcurrentOperationCount` to limit parallelism.\n\nIt's handy for download or processing pipelines you need to be able to cancel, for example when a cell scrolls off screen."
+    },
+    {
+      "heading": "DispatchGroup",
+      "body": "`DispatchGroup` coordinates multiple async tasks: `enter()` before each one, `leave()` when it's done (**on every path**, including errors), and `notify(queue:)` when they've all finished. `wait()` blocks the current thread: never on main.\n\nWith Swift Concurrency, you get the same result with `async let` or `withTaskGroup`.",
+      "code": "let group = DispatchGroup()\nfor url in urls {\n    group.enter()\n    api.fetch(url) { result in\n        defer { group.leave() }\n        results.append(result)   // careful: serialize this!\n    }\n}\ngroup.notify(queue: .main) { self.reload() }"
+    },
+    {
+      "heading": "Race conditions and Swift Concurrency",
+      "body": "A **data race** happens when multiple threads access the same memory and at least one writes, without synchronization: the result is nondeterministic. You prevent it with a serial queue, a lock (`NSLock`, `OSAllocatedUnfairLock`), or an **actor**, and you catch it with the **Thread Sanitizer**.\n\nIn Swift Concurrency, a `Task {}` created from a `@MainActor` context (like a VC) inherits its isolation: the synchronous code inside it runs on the main thread.",
+      "code": "actor ImageCache {\n    private var images: [URL: UIImage] = [:]\n    func image(for url: URL) -> UIImage? { images[url] }\n    func insert(_ image: UIImage, for url: URL) { images[url] = image }\n}"
+    },
+    {
+      "heading": "In the interview",
+      "body": "Classic question: **\"Why does the UI have to be updated on the main thread?\"** Short answer: UIKit isn't thread-safe, and the main run loop handles events and rendering; updating from other threads leads to nondeterministic glitches or crashes. Then show how you get back to main (`DispatchQueue.main.async` or `@MainActor`) and how you protect shared state with serial queues or actors."
+    }
+  ],
+  "questions": [
+    {
+      "prompt": "Which thread does the `URLSession.shared.dataTask` completion run on?",
+      "options": [
+        "Always on the main thread",
+        "On a background queue: for UI work you have to hop back to main",
+        "On the thread that called `resume()`",
+        "On a `DispatchQueue.global()` thread with `.userInteractive` QoS"
+      ],
+      "answer": 1,
+      "explanation": "The shared session uses a serial background delegate queue, so UI updates have to be dispatched back to main.",
+      "whyWrong": [
+        "`URLSession.shared` doesn't automatically return to main: the completion runs on its background delegate queue.",
+        null,
+        "`resume()` starts the task and returns immediately: the completion doesn't run on the calling thread but on the session's queue.",
+        "The session uses its own delegate queue (a serial `OperationQueue`), not a specific global queue with `.userInteractive` QoS."
+      ]
+    },
+    {
+      "prompt": "What happens when you run this code from the main thread?",
+      "code": "DispatchQueue.main.sync {\n    label.text = \"Done\"\n}",
+      "options": [
+        "Deadlock: libdispatch detects it and the app crashes",
+        "The text updates immediately",
+        "The block runs on the next run loop iteration",
+        "It's automatically converted to `async`"
+      ],
+      "answer": 0,
+      "explanation": "`sync` waits for the block to finish, but the block can't start because main is busy waiting.",
+      "whyWrong": [
+        null,
+        "`sync` on main from main can't start: main is blocked waiting on itself, so the text never updates.",
+        "That would be the behavior of `async`: with `sync`, main stays blocked and the run loop never advances.",
+        "GCD doesn't convert `sync` to `async`: it detects the deadlock and crashes the app."
+      ]
+    },
+    {
+      "prompt": "What does this code print when run on the main thread?",
+      "code": "print(\"1\")\nDispatchQueue.main.async { print(\"2\") }\nprint(\"3\")",
+      "options": [
+        "1, 2, 3",
+        "1, 3, 2",
+        "2, 1, 3",
+        "The order is nondeterministic"
+      ],
+      "answer": 1,
+      "explanation": "The block is enqueued on main and runs only after the current code has finished.",
+      "whyWrong": [
+        "`async` doesn't run the block right away: it enqueues it on main, which is busy until the current code finishes.",
+        null,
+        "The block can't jump ahead of `print(\"1\")`, which already ran before the block was even enqueued.",
+        "Everything happens on the same serial queue, main: the order is deterministic, and the enqueued block runs last."
+      ]
+    },
+    {
+      "prompt": "In this code, `notify` sometimes never gets called. Why?",
+      "code": "group.enter()\napi.fetch { result in\n    guard case .success(let v) = result else { return }\n    values.append(v)\n    group.leave()\n}",
+      "options": [
+        "The error path is missing `group.leave()`",
+        "`enter` must be called inside the closure",
+        "`notify` must be called before `enter`",
+        "`DispatchGroup` doesn't work with closures"
+      ],
+      "answer": 0,
+      "explanation": "Every `enter` needs its `leave` on every path: use `defer { group.leave() }`.",
+      "whyWrong": [
+        null,
+        "`enter` must be called **before** starting the async work: inside the closure, the group might already look empty.",
+        "`notify` can be registered at any time; the problem is the missing `leave` on the error path.",
+        "`DispatchGroup` works just fine with closures; here it hangs only because `enter` isn't always balanced."
+      ]
+    },
+    {
+      "prompt": "What happens when you use `.barrier` on `DispatchQueue.global()`?",
+      "options": [
+        "No barrier effect: it behaves like a regular `async`",
+        "It blocks all global queues",
+        "It serializes only tasks with the same QoS",
+        "Runtime crash"
+      ],
+      "answer": 0,
+      "explanation": "Barriers only work on concurrent queues you create; global queues are shared with the system.",
+      "whyWrong": [
+        null,
+        "A barrier on a global queue doesn't block anything: global queues are shared with the system and ignore it.",
+        "QoS has nothing to do with barriers: on a global queue, the `.barrier` flag is simply ignored.",
+        "No crash: the flag is ignored and the block runs like a regular concurrent `async`."
+      ]
+    },
+    {
+      "prompt": "Why must UIKit updates happen on the main thread?",
+      "options": [
+        "The main thread has more memory available",
+        "UIKit isn't thread-safe and the main run loop handles rendering",
+        "Other threads can't allocate views",
+        "Only the simulator requires it"
+      ],
+      "answer": 1,
+      "explanation": "Concurrent access to UIKit state produces nondeterministic glitches and crashes.",
+      "whyWrong": [
+        "All threads share the same process memory: the reason is UIKit's lack of thread safety.",
+        null,
+        "Technically you can allocate a view on another thread; the problem is that accessing UIKit state concurrently isn't safe.",
+        "It applies on device too: UIKit isn't thread-safe anywhere, and the Main Thread Checker flags it in both."
+      ]
+    },
+    {
+      "prompt": "What advantage does `OperationQueue` offer over plain GCD?",
+      "options": [
+        "It's always faster than GCD",
+        "It runs tasks on the main thread by default",
+        "It automatically prevents race conditions",
+        "Dependencies between tasks, cancellation, and a concurrency limit"
+      ],
+      "answer": 3,
+      "explanation": "`addDependency`, `cancel()`, and `maxConcurrentOperationCount` are built in, whereas with GCD you have to build them by hand.",
+      "whyWrong": [
+        "`OperationQueue` is built on top of GCD and adds overhead: the advantage is in features, not speed.",
+        "An `OperationQueue()` you create runs in the background; only `OperationQueue.main` uses the main thread.",
+        "No queue prevents race conditions on its own: with multiple concurrent operations you still have to synchronize shared state.",
+        null
+      ]
+    },
+    {
+      "prompt": "What value does this code print?",
+      "code": "var count = 0\nDispatchQueue.concurrentPerform(iterations: 1000) { _ in\n    count += 1\n}\nprint(count)",
+      "options": [
+        "Always 1000",
+        "Always 0",
+        "Compile error in Swift 5",
+        "A nondeterministic value, often less than 1000"
+      ],
+      "answer": 3,
+      "explanation": "`count += 1` isn't atomic: concurrent reads and writes overlap (a data race).",
+      "whyWrong": [
+        "It seems obvious it would reach 1000, but the iterations run in parallel and `count += 1` isn't atomic: some increments get lost.",
+        "`concurrentPerform` is synchronous: by the time `print` runs, all iterations have finished, so the value doesn't stay at 0.",
+        "In Swift 5 it compiles without errors: the compiler doesn't detect the data race, which at most shows up at runtime.",
+        null
+      ]
+    },
+    {
+      "prompt": "What characterizes a serial queue?",
+      "options": [
+        "It always runs on the main thread",
+        "It runs tasks in parallel but in order",
+        "It runs one task at a time in FIFO order",
+        "It uses a single fixed thread for the app's entire lifetime"
+      ],
+      "answer": 2,
+      "explanation": "Serial means one task at a time; the underlying thread can change from one task to the next.",
+      "whyWrong": [
+        "Only the main queue is tied to the main thread: serial queues you create run on background threads.",
+        "Parallel and serial are mutually exclusive: a serial queue runs one task at a time, never two at once.",
+        null,
+        "GCD doesn't dedicate a fixed thread to the queue: the underlying thread can change from one task to the next."
+      ]
+    },
+    {
+      "prompt": "In a `UIViewController`, which thread does `heavyParse()` (a synchronous, nonisolated function) run on?",
+      "code": "override func viewDidLoad() {\n    super.viewDidLoad()\n    Task {\n        let items = heavyParse(data)\n        show(items)\n    }\n}",
+      "options": [
+        "On the main thread: the Task inherits `@MainActor` isolation",
+        "On a background thread from the cooperative pool",
+        "On a new thread created just for it",
+        "It depends on the device's QoS"
+      ],
+      "answer": 0,
+      "explanation": "A synchronous function runs on the caller's executor: to move the work off main you need `Task.detached` or a `@concurrent` function.",
+      "whyWrong": [
+        null,
+        "The `Task` inherits the VC's `@MainActor` isolation, and a synchronous function runs on the caller's executor: it stays on main.",
+        "`Task` doesn't create dedicated threads: it uses existing executors, and here it inherits the main actor's.",
+        "QoS affects priority, not isolation: the code runs on main because the `Task` inherits `@MainActor`."
+      ]
+    }
+  ]
+}
