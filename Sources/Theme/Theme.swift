@@ -49,10 +49,6 @@ extension Track {
     }
 }
 
-extension Platform {
-    var theme: Theme { tracks[0].theme }
-}
-
 /// Il colore del fuoco dello streak: uguale per tutti, arancio caldo.
 extension Color {
     static let flame = Color(hex: 0xFF7A00)

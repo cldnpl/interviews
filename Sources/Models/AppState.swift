@@ -100,10 +100,9 @@ final class AppState {
         set { saved.activeTrack = newValue }
     }
 
-    var platforms: Set<Platform> { Set(tracks.map(\.platform)) }
-
-    func completeOnboarding(platforms: Set<Platform>, tier: Tier, reminderEnabled: Bool, hour: Int, minute: Int) {
-        let chosen = Track.allCases.filter { platforms.contains($0.platform) }
+    func completeOnboarding(tracks: Set<Track>, tier: Tier, reminderEnabled: Bool, hour: Int, minute: Int) {
+        // L'ordine è sempre quello di Track.allCases, non quello in cui li hai toccati.
+        let chosen = Track.allCases.filter { tracks.contains($0) }
         saved.startingTier = tier
         // Chi dichiara di essere Mid o Senior parte dal primo gradino di quella fascia.
         saved.xp = max(saved.xp, Rank.start(of: tier).minXP)

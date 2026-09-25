@@ -28,7 +28,7 @@ struct ReviewView: View {
                                 .font(.headline)
                             Text(read == topics.count && !topics.isEmpty
                                  ? "Le hai lette tutte. Ora mettiti alla prova coi quiz."
-                                 : "Brevi, con codice e la risposta da dare al colloquio.")
+                                 : "In ordine, dalle fondamenta ai temi da senior.")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -37,14 +37,20 @@ struct ReviewView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .card()
 
-                    ForEach(Array(topics.enumerated()), id: \.element.id) { i, topic in
-                        NavigationLink {
-                            LessonView(track: track, topic: topic)
-                        } label: {
-                            LessonRow(number: i + 1, track: track, topic: topic,
-                                      read: state.isLessonRead(track, topic.id))
+                    ForEach(ContentStore.shared.stages(for: track)) { group in
+                        VStack(alignment: .leading, spacing: 12) {
+                            StageHeader(stage: group.stage, reached: group.stage.tier <= state.tier)
+                                .padding(.top, 6)
+                            ForEach(Array(group.topics.enumerated()), id: \.element.id) { i, topic in
+                                NavigationLink {
+                                    LessonView(track: track, topic: topic)
+                                } label: {
+                                    LessonRow(number: group.firstNumber + i, track: track, topic: topic,
+                                              read: state.isLessonRead(track, topic.id))
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 20)

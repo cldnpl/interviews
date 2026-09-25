@@ -1,6 +1,7 @@
 import Foundation
 
-/// Un linguaggio / framework su cui ci si prepara.
+/// Un percorso di preparazione. Ognuno è a sé: Swift e UIKit sono due
+/// percorsi distinti, non due facce dello stesso "iOS".
 enum Track: String, Codable, CaseIterable, Identifiable, Hashable {
     case swift, uikit, kotlin, flutter
 
@@ -15,11 +16,23 @@ enum Track: String, Codable, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    var platform: Platform {
+    /// Una riga sotto il nome: di che cosa parla questo percorso.
+    var subtitle: String {
         switch self {
-        case .swift, .uikit: .ios
-        case .kotlin: .android
-        case .flutter: .flutter
+        case .swift: "Il linguaggio"
+        case .uikit: "L'interfaccia iOS"
+        case .kotlin: "Android"
+        case .flutter: "Multipiattaforma"
+        }
+    }
+
+    /// Gli argomenti che si incontrano, per scegliere in onboarding.
+    var blurb: String {
+        switch self {
+        case .swift: "Optional, value e reference type, protocolli e generics, closure, ARC, concorrenza"
+        case .uikit: "Ciclo di vita delle view, Auto Layout, table e collection view, navigazione, architetture"
+        case .kotlin: "Null safety, coroutine, data class, collection, Jetpack e ciclo di vita Android"
+        case .flutter: "Widget e stato, Dart, isolate, architettura, integrazione nativa, deployment"
         }
     }
 
@@ -31,39 +44,6 @@ enum Track: String, Codable, CaseIterable, Identifiable, Hashable {
         case .flutter: "bird.fill"
         }
     }
-}
-
-/// Il tipo di sviluppatore scelto in onboarding: ognuno porta con sé uno o più track.
-enum Platform: String, Codable, CaseIterable, Identifiable, Hashable {
-    case ios, android, flutter
-
-    var id: String { rawValue }
-
-    var name: String {
-        switch self {
-        case .ios: "iOS"
-        case .android: "Android"
-        case .flutter: "Flutter"
-        }
-    }
-
-    var subtitle: String {
-        switch self {
-        case .ios: "Swift e UIKit"
-        case .android: "Kotlin e Jetpack"
-        case .flutter: "Dart e widget"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .ios: "apple.logo"
-        case .android: "smartphone"
-        case .flutter: "bird.fill"
-        }
-    }
-
-    var tracks: [Track] { Track.allCases.filter { $0.platform == self } }
 }
 
 struct LessonSection: Codable, Hashable {
@@ -92,13 +72,55 @@ struct Question: Codable, Hashable, Identifiable {
     }
 }
 
+/// A che punto del percorso sta un argomento. È anche l'ordine in cui si studia:
+/// prima le fondamenta, poi il mestiere di tutti i giorni, infine i temi da senior.
+/// Nei JSON è scritto per esteso ("junior"), perciò è un enum a stringa e non Tier,
+/// che ha invece un raw value intero.
+enum Stage: String, Codable, CaseIterable, Identifiable, Hashable, Comparable {
+    case junior, mid, senior
+
+    var id: String { rawValue }
+
+    /// La fascia corrispondente, da cui arrivano nome, simbolo e colori del grado.
+    var tier: Tier {
+        switch self {
+        case .junior: .junior
+        case .mid: .mid
+        case .senior: .senior
+        }
+    }
+
+    var caption: String {
+        switch self {
+        case .junior: "Le fondamenta: si parte da qui."
+        case .mid: "Quello che serve tutti i giorni."
+        case .senior: "I temi su cui si vede l'esperienza."
+        }
+    }
+
+    static func < (a: Stage, b: Stage) -> Bool { a.tier < b.tier }
+}
+
 struct Topic: Codable, Hashable, Identifiable {
     let id: String
+    /// Dove si trova nel percorso. Dentro il JSON gli argomenti sono già in ordine
+    /// di studio, e questo dice dove finisce uno stage e comincia il successivo.
+    let stage: Stage
     let title: String
     let icon: String
     let summary: String
     let lesson: [LessonSection]
     let questions: [Question]
+}
+
+/// Uno stage con i suoi argomenti, pronto da mostrare come sezione.
+struct StageGroup: Identifiable {
+    let stage: Stage
+    let topics: [Topic]
+    /// Il numero del primo argomento del gruppo nella numerazione continua del percorso.
+    let firstNumber: Int
+
+    var id: String { stage.rawValue }
 }
 
 struct TrackContent: Codable {
@@ -132,7 +154,26 @@ final class ContentStore {
         }
     }
 
+    /// Gli argomenti del percorso in ordine di studio: prima per stage, poi
+    /// nell'ordine in cui stanno nel JSON. Niente di casuale, mai.
     func topics(for track: Track) -> [Topic] { byTrack[track] ?? [] }
+
+    /// Gli argomenti divisi per stage, con la numerazione continua del percorso.
+    func stages(for track: Track) -> [StageGroup] {
+        var next = 1
+        return Stage.allCases.compactMap { stage in
+            let group = topics(for: track).filter { $0.stage == stage }
+            guard !group.isEmpty else { return nil }
+            defer { next += group.count }
+            return StageGroup(stage: stage, topics: group, firstNumber: next)
+        }
+    }
+
+    /// Gli argomenti che a questa fascia sono già stati incontrati nel percorso:
+    /// il quiz del giorno non pesca da lezioni che vengono dopo.
+    func topics(for track: Track, upTo tier: Tier) -> [Topic] {
+        topics(for: track).filter { $0.stage.tier <= tier }
+    }
 
     func topic(_ id: String, in track: Track) -> Topic? {
         topics(for: track).first { $0.id == id }
@@ -148,12 +189,15 @@ final class ContentStore {
 
     /// Le domande del giorno: stesse per tutta la giornata, diverse ogni giorno,
     /// pescate in modo equo fra i track scelti e dosate sulla fascia dell'utente.
+    /// Entrano solo gli argomenti già raggiunti nel percorso: salendo di grado
+    /// si sbloccano gli stage successivi.
     func dailyItems(for tracks: [Track], tier: Tier, day: Day, count: Int = 5) -> [QuizItem] {
         guard !tracks.isEmpty else { return [] }
         var rng = SeededGenerator(seed: UInt64(truncatingIfNeeded: day.ordinal &* 2_654_435_761 &+ tier.rawValue))
         // pools[track][difficoltà] = domande mescolate
         var pools = tracks.map { track in
-            Dictionary(grouping: allItems(for: [track]).shuffled(using: &rng), by: \.question.difficulty)
+            let reached = topics(for: track, upTo: tier).flatMap { items(for: track, topic: $0) }
+            return Dictionary(grouping: reached.shuffled(using: &rng), by: \.question.difficulty)
         }
         // Quote fisse per quiz (metodo dei resti più grandi): un Mid riceve sempre
         // 1 junior, 3 mid e 1 senior. Estrarre a caso ogni slot dava giornate da 3 senior e 0 mid.

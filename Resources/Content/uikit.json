@@ -2,7 +2,244 @@
   "track": "uikit",
   "topics": [
     {
+      "id": "basics",
+      "stage": "junior",
+      "title": "View e view controller",
+      "icon": "rectangle.stack",
+      "summary": "UIView, gerarchia, frame e bounds, UIViewController: i mattoni su cui poggia tutto il resto di UIKit.",
+      "lesson": [
+        {
+          "heading": "Tutto è una UIView",
+          "body": "In UIKit ogni cosa che si vede a schermo è una `UIView` o una sua sottoclasse: `UILabel`, `UIButton`, `UIImageView`, `UIScrollView`, `UIStackView`. Una UIView è un rettangolo che sa disegnarsi, ricevere tocchi e contenere altre view.\n\nLa view non disegna però da sola: ogni UIView possiede un **CALayer** (`view.layer`) ed è il layer a occuparsi del disegno vero e proprio e dell'animazione. È lì che vivono `cornerRadius`, `borderWidth`, `shadowOpacity`. La UIView aggiunge sopra il layer la gestione degli eventi touch e l'integrazione con Auto Layout.",
+          "code": "let box = UIView()\nbox.backgroundColor = .systemBlue\nbox.layer.cornerRadius = 12      // il disegno passa dal layer\n\nlet label = UILabel()            // anche una label è una UIView\nlabel.text = \"Ciao\""
+        },
+        {
+          "heading": "La gerarchia delle view",
+          "body": "Le view formano un **albero**: ognuna ha una `superview` (il genitore, opzionale) e un array di `subviews` (i figli). `addSubview(_:)` si chiama sul genitore e appende il figlio in fondo; `removeFromSuperview()` si chiama invece sul figlio e lo stacca dall'albero.\n\nL'ordine dell'array `subviews` è anche l'**ordine di disegno**: chi viene dopo si disegna sopra. Per questo l'ultima view aggiunta è quella che si vede davanti, e per cambiare l'ordine esistono `bringSubviewToFront(_:)` e `insertSubview(_:at:)`.\n\nLa radice dell'albero è la `UIWindow`. Se la `window` di una view è `nil`, quella view non è sullo schermo.",
+          "code": "container.addSubview(a)\ncontainer.addSubview(b)   // b si disegna SOPRA a\n\ncontainer.subviews        // [a, b]\nb.superview               // container\n\ncontainer.bringSubviewToFront(a)   // ora a sta davanti\na.removeFromSuperview()            // si chiama sul figlio"
+        },
+        {
+          "heading": "frame, bounds e center",
+          "body": "Sono tre modi di dire dov'è una view, ed è la domanda da colloquio più classica su UIKit.\n\n- **`frame`**: posizione e dimensione della view nel sistema di coordinate della **superview**.\n- **`bounds`**: la stessa view vista dal **suo** sistema di coordinate. Per una view appena creata `bounds.origin` è `(0, 0)` e la dimensione coincide con quella del frame.\n- **`center`**: il centro del frame, sempre in coordinate della superview.\n\nLa distinzione conta in due casi. Con una **trasformazione** (una rotazione, per esempio) il `bounds` resta identico mentre il `frame` diventa il rettangolo che contiene la view ruotata, quindi più grande: con un transform diverso dall'identità il frame non è più affidabile. E in una `UIScrollView` lo scorrimento sposta `bounds.origin` — `contentOffset` è esattamente quello — lasciando fermo il frame.",
+          "code": "let v = UIView(frame: CGRect(x: 40, y: 60, width: 100, height: 50))\nv.frame     // (40, 60, 100, 50)  nella superview\nv.bounds    // ( 0,  0, 100, 50)  in sé stessa\nv.center    // (90, 85)           nella superview\n\nv.transform = CGAffineTransform(rotationAngle: .pi / 4)\nv.bounds    // invariato\nv.frame     // più grande: è il riquadro che contiene la view ruotata"
+        },
+        {
+          "heading": "UIViewController: chi possiede la schermata",
+          "body": "Un `UIViewController` gestisce una schermata, o una porzione di schermata. La sua interfaccia sta nella proprietà **`view`**, la radice locale dell'albero: tutto quello che il controller mostra è una subview di quella.\n\nLa `view` è **lazy**: non esiste alla fine dell'`init`, viene creata la prima volta che qualcuno accede alla proprietà. È il motivo per cui gli `@IBOutlet` sono `nil` dentro l'init e valorizzati solo da `viewDidLoad` in poi — e anche il motivo per cui leggere `self.view` troppo presto può far caricare l'interfaccia prima del previsto.\n\nI controller si annidano fra loro: un `UINavigationController` o un `UITabBarController` sono **container**, e i controller che mostrano sono i loro `children`.",
+          "code": "final class ProfiloViewController: UIViewController {\n    private let nome = UILabel()\n\n    override func viewDidLoad() {\n        super.viewDidLoad()          // sempre per primo\n        view.backgroundColor = .systemBackground\n        view.addSubview(nome)        // 'view' esiste da qui in poi\n    }\n}"
+        },
+        {
+          "heading": "Costruire l'interfaccia: codice, XIB o Storyboard",
+          "body": "Ci sono tre strade e si mescolano liberamente.\n\n- **Da codice**: crei le view in `viewDidLoad` (o in `loadView` se vuoi rimpiazzare la view radice) e le vincoli a mano. Verboso ma esplicito, e si fa diff nelle code review.\n- **XIB**: un file per una singola view o un singolo controller.\n- **Storyboard**: più schermate insieme, collegate da `segue`.\n\nCon XIB e Storyboard i riferimenti alle view si dichiarano `@IBOutlet` e le azioni `@IBAction`. Il collegamento viene risolto al caricamento del file: se rinomini o scolleghi un outlet senza aggiornare il nib, l'app va in crash all'apertura della schermata con il classico *\"this class is not key value coding-compliant\"*.\n\nRegola pratica: `override func loadView()` serve a **creare** la view radice e non deve chiamare `super` se la assegni tu; `viewDidLoad` serve a **configurarla** e deve sempre chiamare `super`.",
+          "code": "final class CardViewController: UIViewController {\n    @IBOutlet private var titolo: UILabel!   // nil fino a viewDidLoad\n\n    @IBAction private func tapConferma(_ sender: UIButton) {\n        print(\"confermato\")\n    }\n\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        titolo.text = \"Pronto\"   // qui l'outlet è collegato\n    }\n}"
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-basics-1",
+          "prompt": "Quale di questi NON è una sottoclasse di UIView?",
+          "code": null,
+          "options": [
+            "UIViewController",
+            "UILabel",
+            "UIStackView",
+            "UIImageView"
+          ],
+          "answer": 0,
+          "explanation": "`UIViewController` non è una view: è un controller, e discende da `UIResponder`. Possiede una view nella sua proprietà `view`, ma non lo è. Label, stack view e image view sono invece tutte sottoclassi di `UIView`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "`UILabel` è una UIView a tutti gli effetti: si aggiunge alla gerarchia con `addSubview`, ha un frame e disegna del testo.",
+            "`UIStackView` è una UIView particolare — non disegna nulla di suo e dispone le arrangedSubviews — ma resta una sottoclasse di UIView.",
+            "`UIImageView` è la UIView specializzata nel disegnare una `UIImage`: ha frame, bounds e superview come tutte le altre."
+          ]
+        },
+        {
+          "id": "uikit-basics-2",
+          "prompt": "Quale view si vede davanti, dopo questo codice?",
+          "code": "let a = UIView()\nlet b = UIView()\ncontainer.addSubview(a)\ncontainer.addSubview(b)",
+          "options": [
+            "b, perché aggiunta per ultima",
+            "a, perché aggiunta per prima",
+            "Dipende dal loro zPosition, che qui è uguale",
+            "Nessuna delle due: si sovrappongono a metà"
+          ],
+          "answer": 0,
+          "explanation": "`addSubview` appende in fondo all'array `subviews`, e quell'array è anche l'ordine di disegno: chi sta dopo si disegna sopra. Quindi `b` copre `a`. Per invertirle si usa `bringSubviewToFront(a)` o `insertSubview(a, aboveSubview: b)`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "È il contrario: la prima aggiunta finisce in fondo alla pila. L'array `subviews` si disegna dal primo all'ultimo, quindi l'ultimo vince.",
+            "`zPosition` esiste sul layer e permette di scavalcare l'ordine, ma qui non è stato toccato: a parità di zPosition decide l'ordine in `subviews`.",
+            "La sovrapposizione è netta, non parziale: `b` è disegnata interamente sopra `a` nella zona in cui i due frame si intersecano."
+          ]
+        },
+        {
+          "id": "uikit-basics-3",
+          "prompt": "Quanto vale `v.bounds.origin`?",
+          "code": "let v = UIView(frame: CGRect(x: 40, y: 60, width: 100, height: 50))",
+          "options": [
+            "(0, 0)",
+            "(40, 60)",
+            "(90, 85)",
+            "(100, 50)"
+          ],
+          "answer": 0,
+          "explanation": "Il `bounds` descrive la view nel **suo** sistema di coordinate, che parte sempre da zero per una view appena creata. È il `frame` a valere `(40, 60, 100, 50)`, perché posiziona la view dentro la superview.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "(40, 60) è l'origine del **frame**, cioè la posizione nella superview. Il bounds guarda la view dall'interno e parte da zero.",
+            "(90, 85) è il `center`, cioè il punto medio del frame: 40 + 100/2 e 60 + 50/2. Non è un'origine.",
+            "(100, 50) è la **dimensione**, che si trova in `bounds.size` (e in `frame.size`), non in `bounds.origin`."
+          ]
+        },
+        {
+          "id": "uikit-basics-4",
+          "prompt": "Come si toglie una view dalla gerarchia?",
+          "code": null,
+          "options": [
+            "Chiamando `removeFromSuperview()` sulla view da togliere",
+            "Chiamando `removeSubview(_:)` sulla superview",
+            "Assegnando `nil` alla sua `superview`",
+            "Assegnando `nil` al suo `frame`"
+          ],
+          "answer": 0,
+          "explanation": "`removeFromSuperview()` si chiama sul **figlio**, al contrario di `addSubview(_:)` che si chiama sul genitore. È l'unica delle quattro che esista davvero.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "`removeSubview(_:)` non esiste in UIKit: l'asimmetria con `addSubview(_:)` confonde spesso, ma la rimozione passa dal figlio.",
+            "`superview` è una proprietà **in sola lettura**: la gerarchia si cambia con i metodi, non assegnando il genitore a mano.",
+            "Il `frame` è una `CGRect`, non un opzionale: non può valere `nil`. E comunque azzerarlo renderebbe la view invisibile, lasciandola però nell'albero."
+          ]
+        },
+        {
+          "id": "uikit-basics-5",
+          "prompt": "Dove si trova l'interfaccia gestita da un UIViewController?",
+          "code": null,
+          "options": [
+            "Nella sua proprietà `view`, radice di tutte le altre",
+            "Direttamente nella `UIWindow`, senza intermediari",
+            "Nell'array `subviews` del controller",
+            "Nella proprietà `layer` del controller"
+          ],
+          "answer": 0,
+          "explanation": "Ogni `UIViewController` possiede una view radice nella proprietà `view`: tutto ciò che la schermata mostra è una subview di quella. Il controller non è una view e non ha né `subviews` né `layer`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "La window è la radice dell'intera app, non della singola schermata: fra la window e i contenuti c'è sempre la `view` del controller.",
+            "`subviews` è una proprietà di `UIView`, non di `UIViewController`. Le subview della schermata stanno in `controller.view.subviews`.",
+            "`layer` appartiene a `UIView`. Dal controller ci si arriva passando dalla view: `controller.view.layer`."
+          ]
+        },
+        {
+          "id": "uikit-basics-6",
+          "prompt": "Ruoti una view di 45 gradi con un transform. Cosa succede a frame e bounds?",
+          "code": "v.transform = CGAffineTransform(rotationAngle: .pi / 4)",
+          "options": [
+            "Il bounds resta uguale, il frame diventa il riquadro che contiene la view ruotata",
+            "Cambiano entrambi allo stesso modo",
+            "Il frame resta uguale, il bounds si allarga",
+            "Non cambia nessuno dei due: il transform tocca solo il disegno"
+          ],
+          "answer": 0,
+          "explanation": "Il `bounds` è la view vista da sé stessa e la rotazione non lo tocca. Il `frame` invece è il rettangolo **allineato agli assi** che contiene la view nella superview, quindi ruotando si allarga. Da qui la regola: con un transform diverso dall'identità, il frame non è più un valore su cui fare conti.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Solo il frame cambia: il bounds descrive la view nel proprio sistema di coordinate, che ruota insieme a lei e quindi resta identico.",
+            "È l'esatto contrario: il bounds è quello immune alla rotazione, il frame è quello che si allarga per contenere la view ruotata.",
+            "Il transform cambia davvero la geometria riportata: leggere `v.frame` dopo una rotazione restituisce il nuovo riquadro contenitore, non quello di prima."
+          ]
+        },
+        {
+          "id": "uikit-basics-7",
+          "prompt": "Quando viene creata la `view` di un UIViewController?",
+          "code": null,
+          "options": [
+            "Alla prima volta che si accede alla proprietà `view`",
+            "Alla fine dell'`init`",
+            "Quando il controller viene deallocato",
+            "Solo se il controller arriva da uno Storyboard"
+          ],
+          "answer": 0,
+          "explanation": "La `view` è caricata in modo **lazy**: `loadView()` e poi `viewDidLoad()` scattano al primo accesso alla proprietà. Da qui il motivo per cui gli `@IBOutlet` sono `nil` nell'init, e il motivo per cui toccare `self.view` troppo presto forza il caricamento anticipato della schermata.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "All'uscita dall'`init` la view non esiste ancora: è proprio questa la ragione per cui la configurazione dell'interfaccia va in `viewDidLoad` e non nell'inizializzatore.",
+            "Alla deallocazione la view viene semmai rilasciata, non creata. Il caricamento avviene all'inizio della vita del controller, non alla fine.",
+            "Il caricamento lazy vale allo stesso modo per Storyboard, XIB e codice: cambia solo *come* la view viene costruita dentro `loadView()`."
+          ]
+        },
+        {
+          "id": "uikit-basics-8",
+          "prompt": "Perché un `@IBOutlet` vale `nil` dentro l'`init` del view controller?",
+          "code": "final class CardViewController: UIViewController {\n    @IBOutlet private var titolo: UILabel!\n}",
+          "options": [
+            "Perché gli outlet si collegano al caricamento della view, che avviene dopo l'init",
+            "Perché gli outlet sono sempre `weak` e senza referenze forti muoiono subito",
+            "Perché `private` impedisce al nib di scriverli",
+            "Perché la label non è ancora stata aggiunta a una superview"
+          ],
+          "answer": 0,
+          "explanation": "Il nib o lo storyboard viene deserializzato dentro `loadView()`, che scatta al primo accesso alla `view` — cioè dopo l'`init`. È in quel momento che gli outlet vengono collegati, ed è da `viewDidLoad` in poi che sono utilizzabili.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Un outlet `weak` resta comunque vivo finché la view è nella gerarchia, che la trattiene. Il problema è il *quando*, non la forza del riferimento.",
+            "`private` limita la visibilità in Swift ma non blocca il collegamento: il nib usa il key-value coding del runtime Objective-C, e per questo basta `@IBOutlet` a renderlo raggiungibile.",
+            "La label del nib nasce già dentro la gerarchia del file. Nell'init però quel file non è ancora stato caricato, quindi la label non esiste proprio."
+          ]
+        },
+        {
+          "id": "uikit-basics-9",
+          "prompt": "In una UIScrollView, scorrere il contenuto verso il basso di 100 punti cosa cambia?",
+          "code": null,
+          "options": [
+            "`bounds.origin.y` aumenta di 100: `contentOffset` è proprio quello",
+            "`frame.origin.y` diminuisce di 100",
+            "`center.y` aumenta di 100",
+            "Nulla nella geometria della scroll view: si muovono solo le sue subview"
+          ],
+          "answer": 0,
+          "explanation": "Una scroll view non sposta i suoi contenuti: sposta la **finestra** da cui li guarda, cioè il proprio `bounds.origin`. `contentOffset` non è altro che un altro nome per quel punto. Il `frame` resta immobile, perché la scroll view occupa sempre lo stesso spazio nella superview.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Il frame è la posizione della scroll view **dentro la sua superview**, e lo scorrimento non la sposta di un pixel: resta dov'è, cambia solo cosa mostra.",
+            "Il `center` è ricavato dal frame, quindi resta fermo anche lui. Lo scorrimento vive interamente nel sistema di coordinate interno.",
+            "La geometria cambia eccome: è `bounds.origin` a muoversi, ed è per questo che le subview sembrano scorrere pur avendo un frame costante."
+          ]
+        },
+        {
+          "id": "uikit-basics-10",
+          "prompt": "Chi disegna davvero il contenuto di una UIView?",
+          "code": null,
+          "options": [
+            "Il suo `CALayer`: la UIView gli aggiunge sopra tocchi e layout",
+            "La UIView stessa, e il layer serve solo alle animazioni",
+            "La `UIWindow`, che disegna per tutte le view dell'albero",
+            "Il `UIViewController` che possiede la view"
+          ],
+          "answer": 0,
+          "explanation": "Ogni UIView possiede un `CALayer` (`view.layer`) ed è Core Animation a gestire il disegno e la composizione. La UIView è un involucro che aggiunge la gestione degli eventi touch, Auto Layout e la catena dei responder. Per questo `cornerRadius`, `borderWidth` e `shadowPath` stanno sul layer.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "Il layer non serve solo ad animare: è il livello che tiene il contenuto disegnato — il backing store — e lo compone a schermo, animazioni o meno.",
+            "La window è la radice dell'albero e non disegna al posto dei figli: ogni view contribuisce con il proprio layer, e Core Animation li compone.",
+            "Il controller coordina, non disegna: non ha né un layer né un contenuto grafico proprio."
+          ]
+        }
+      ]
+    },
+    {
       "id": "view-lifecycle",
+      "stage": "junior",
       "title": "Ciclo di vita delle view",
       "icon": "arrow.triangle.2.circlepath",
       "summary": "Da loadView a viewDidDisappear, fino al ciclo di vita di app e scene.",
@@ -243,6 +480,7 @@
     },
     {
       "id": "auto-layout",
+      "stage": "junior",
       "title": "Auto Layout",
       "icon": "rectangle.3.group",
       "summary": "Constraint, priorità, hugging, compression resistance, stack view e ciclo di layout.",
@@ -483,6 +721,7 @@
     },
     {
       "id": "table-collection",
+      "stage": "mid",
       "title": "Table e Collection View",
       "icon": "square.grid.3x3",
       "summary": "Riuso delle celle, data source, diffable, compositional layout e prefetching.",
@@ -723,6 +962,7 @@
     },
     {
       "id": "navigation",
+      "stage": "mid",
       "title": "Navigazione",
       "icon": "arrow.right.square",
       "summary": "Navigation stack, modali, segue vs codice, coordinator e passaggio dati indietro.",
@@ -963,6 +1203,7 @@
     },
     {
       "id": "events-gestures",
+      "stage": "mid",
       "title": "Eventi e gesture",
       "icon": "hand.tap",
       "summary": "Responder chain, hit-testing, gesture recognizer, target-action e UIControl.",
@@ -1197,247 +1438,8 @@
       ]
     },
     {
-      "id": "architecture",
-      "title": "Architetture",
-      "icon": "building.columns",
-      "summary": "MVC, MVVM, VIPER, coordinator e pattern di comunicazione tra oggetti.",
-      "lesson": [
-        {
-          "heading": "MVC e Massive View Controller",
-          "body": "Nel MVC di Apple il `UIViewController` fa da mediatore tra model e view, ma è molto accoppiato alla view (ne gestisce il ciclo di vita). Il rischio è il **Massive View Controller**: networking, formattazione, validazione, navigazione e data source tutti nello stesso file.\n\nSi alleggerisce con child view controller, data source separati, servizi iniettati e l'estrazione della navigazione.",
-          "code": null
-        },
-        {
-          "heading": "MVVM",
-          "body": "Il **ViewModel** trasforma i dati del model in stato pronto per la view (stringhe formattate, flag di loading) ed espone input come metodi. Non importa UIKit e non ha riferimenti alla view, quindi si testa con semplici unit test.\n\nIl binding si realizza con closure, Combine (`@Published`) oppure `@Observable`. Da iOS 26 UIKit traccia automaticamente le proprietà `@Observable` lette in metodi come `layoutSubviews` (in iOS 18 serve una chiave in Info.plist).",
-          "code": "final class ProfileViewModel {\n    @Published private(set) var title = \"\"\n    func load() async {\n        let user = try? await service.fetchUser()\n        title = user.map { \"Ciao, \\($0.name)\" } ?? \"Errore\"\n    }\n}"
-        },
-        {
-          "heading": "VIPER e Clean Architecture",
-          "body": "VIPER divide un modulo in **View**, **Interactor** (business logic), **Presenter** (logica di presentazione), **Entity** e **Router** (navigazione). Ogni parte comunica tramite protocol, quindi tutto è mockabile.\n\nIl costo è molto boilerplate: ha senso in team grandi con moduli indipendenti, è eccessivo per app piccole. In colloquio conta saper valutare il trade-off, non recitare l'acronimo.",
-          "code": null
-        },
-        {
-          "heading": "Coordinator",
-          "body": "Il coordinator estrae la navigazione dai view controller: i VC (o i ViewModel) segnalano l'intenzione, per esempio \"utente selezionato\", e il coordinator decide cosa mostrare. Combinato con MVVM si parla di **MVVM-C**.\n\nVantaggi: VC riutilizzabili, deep link centralizzati, flussi testabili. Attenzione a gestire il ciclo di vita dei coordinator figli.",
-          "code": null
-        },
-        {
-          "heading": "Pattern di comunicazione",
-          "body": "**Delegation**: uno-a-uno, adatta a più callback correlate o a metodi che restituiscono valori. **Closure**: uno-a-uno leggera, per una singola callback. **NotificationCenter**: uno-a-molti, disaccoppiata ma poco tipizzata. **KVO**: osserva proprietà `@objc dynamic` di sottoclassi di `NSObject`. **Combine**: stream dichiarativi, con subscription da conservare in `AnyCancellable`.\n\nIn tutti i casi attenzione alla memoria: delegate `weak`, `[weak self]` nelle closure, token e cancellable conservati per il tempo giusto.",
-          "code": "viewModel.$title\n    .receive(on: DispatchQueue.main)\n    .sink { [weak self] in self?.titleLabel.text = $0 }\n    .store(in: &cancellables)"
-        },
-        {
-          "heading": "In colloquio",
-          "body": "Domanda tipica: **\"Che architettura useresti e perché?\"** Risposta concisa: non esiste quella giusta in assoluto; MVVM con coordinator è un buon default per testabilità e separazione, VIPER solo se team e dominio giustificano il costo. Motiva sempre con testabilità, dimensione del team e manutenzione, e mostra di sapere perché MVC tende a degenerare.",
-          "code": null
-        }
-      ],
-      "questions": [
-        {
-          "id": "uikit-architecture-1",
-          "prompt": "Qual è la causa tipica di un Massive View Controller?",
-          "code": null,
-          "options": [
-            "Il VC accumula networking, formattazione, navigazione e data source",
-            "L'uso di storyboard invece del codice",
-            "Troppe subview nella gerarchia",
-            "L'uso di Auto Layout"
-          ],
-          "answer": 0,
-          "explanation": "Il VC diventa il posto di default per ogni responsabilità perché è il punto d'incontro tra model e view.",
-          "difficulty": 1,
-          "whyWrong": [
-            null,
-            "Gli storyboard spostano la costruzione della UI fuori dal codice: se mai alleggeriscono il VC, non lo rendono massive.",
-            "Molte subview rendono pesante la gerarchia, ma il problema del Massive VC è il numero di **responsabilità**, non di view.",
-            "Auto Layout è solo un sistema di layout; il VC si gonfia quando accumula networking, logica e navigazione."
-          ]
-        },
-        {
-          "id": "uikit-architecture-2",
-          "prompt": "In MVVM, quale di queste caratteristiche deve avere il ViewModel?",
-          "code": null,
-          "options": [
-            "Possiede un riferimento strong alla view",
-            "Estende `UIViewController`",
-            "Gestisce direttamente le constraint",
-            "Non dipende da UIKit ed espone stato già formattato"
-          ],
-          "answer": 3,
-          "explanation": "Senza UIKit e senza riferimenti alla view il ViewModel si testa con semplici unit test.",
-          "difficulty": 2,
-          "whyWrong": [
-            "È la view a osservare il ViewModel, non il contrario: un riferimento strong alla view lo accoppierebbe a UIKit.",
-            "Un ViewModel che estende `UIViewController` torna a essere un view controller e perde tutta la testabilità.",
-            "Le constraint appartengono alla view: il ViewModel espone stato, non gestisce layout né oggetti UIKit.",
-            null
-          ]
-        },
-        {
-          "id": "uikit-architecture-3",
-          "prompt": "In VIPER, quale componente contiene la business logic?",
-          "code": null,
-          "options": [
-            "Il Presenter",
-            "Il Router",
-            "L'Interactor",
-            "L'Entity"
-          ],
-          "answer": 2,
-          "explanation": "L'Interactor esegue i casi d'uso; il Presenter prepara i dati per la view e il Router gestisce la navigazione.",
-          "difficulty": 2,
-          "whyWrong": [
-            "Il Presenter fa da ponte: prepara i dati per la view e reagisce agli input, ma delega i casi d'uso all'Interactor.",
-            "Il Router si occupa solo della navigazione tra moduli, non della logica di business.",
-            null,
-            "L'Entity è il modello dei dati, di solito semplici struct senza logica: i casi d'uso stanno nell'Interactor."
-          ]
-        },
-        {
-          "id": "uikit-architecture-4",
-          "prompt": "Devi avvisare più schermate indipendenti che l'utente ha fatto logout. Quale meccanismo è più adatto?",
-          "code": null,
-          "options": [
-            "Un delegate",
-            "`NotificationCenter`",
-            "Una closure di callback",
-            "KVO su `UIApplication`"
-          ],
-          "answer": 1,
-          "explanation": "Delegate e closure sono uno-a-uno; `NotificationCenter` è pensato per broadcast uno-a-molti.",
-          "difficulty": 1,
-          "whyWrong": [
-            "Un delegate collega un oggetto a **un solo** destinatario: per avvisare molte schermate servirebbero tanti delegate.",
-            null,
-            "Una closure di callback è uno-a-uno come il delegate: non si presta a un broadcast verso schermate indipendenti.",
-            "`UIApplication` non espone una property di logout da osservare, e KVO richiede `@objc dynamic`: non è lo strumento giusto."
-          ]
-        },
-        {
-          "id": "uikit-architecture-5",
-          "prompt": "Quando un delegate è preferibile a una closure?",
-          "code": null,
-          "options": [
-            "Quando serve una sola callback",
-            "Quando i destinatari sono molti",
-            "Mai: le closure sono sempre preferibili",
-            "Con più callback correlate o metodi che restituiscono valori"
-          ],
-          "answer": 3,
-          "explanation": "È il modello di `UITableViewDataSource`: un protocol raggruppa molte interazioni con un contratto chiaro.",
-          "difficulty": 2,
-          "whyWrong": [
-            "Con una sola callback la closure è di solito più semplice e leggibile: il delegate rende di più con molte callback correlate.",
-            "Né delegate né closure sono pensati per molti destinatari: per il broadcast c'è `NotificationCenter`.",
-            "Le closure non vincono sempre: con molti metodi correlati, o che restituiscono valori, un protocol è più chiaro.",
-            null
-          ]
-        },
-        {
-          "id": "uikit-architecture-6",
-          "prompt": "Cosa serve per osservare con KVO una property di una tua classe Swift?",
-          "code": null,
-          "options": [
-            "Solo il property wrapper `@Published`",
-            "La conformità a `Observable`",
-            "Una `struct` con `didSet`",
-            "Sottoclasse di `NSObject` e property `@objc dynamic`"
-          ],
-          "answer": 3,
-          "explanation": "KVO si basa sul runtime Objective-C: servono `@objc dynamic` e il token `NSKeyValueObservation` va conservato.",
-          "difficulty": 3,
-          "whyWrong": [
-            "`@Published` è di Combine: si osserva con `$property`, non con KVO, che richiede il runtime Objective-C.",
-            "Il protocollo `Observable` appartiene al framework Observation, non a KVO; i due meccanismi sono distinti.",
-            "KVO funziona solo con istanze di classi `NSObject`: una `struct` con `didSet` non è osservabile via KVO.",
-            null
-          ]
-        },
-        {
-          "id": "uikit-architecture-7",
-          "prompt": "Cosa succede con questa subscription dentro `viewDidLoad`?",
-          "code": "_ = viewModel.$title.sink { [weak self] title in\n    self?.titleLabel.text = title\n}",
-          "options": [
-            "Funziona finché il VC è in vita",
-            "Crash: il cancellable non può essere scartato",
-            "Si cancella subito: arriva al più il valore iniziale",
-            "Non riceve nessun valore, nemmeno quello iniziale"
-          ],
-          "answer": 2,
-          "explanation": "Scartando l'`AnyCancellable` la subscription si cancella alla deallocazione; `@Published` invia però subito il valore corrente in modo sincrono.",
-          "difficulty": 2,
-          "whyWrong": [
-            "L'`AnyCancellable` scartato viene deallocato subito, e la sua deallocazione cancella la subscription: non vive quanto il VC.",
-            "Scartare il cancellable è permesso (con `_ =` non c'è nemmeno warning): nessun crash, solo una subscription che muore subito.",
-            null,
-            "`@Published` invia il valore corrente in modo sincrono durante `sink`, quindi quello iniziale arriva prima della cancellazione."
-          ]
-        },
-        {
-          "id": "uikit-architecture-8",
-          "prompt": "In MVVM-C, chi decide di mostrare la schermata di dettaglio dopo un tap su una riga?",
-          "code": null,
-          "options": [
-            "Il ViewModel, facendo push sul navigation controller",
-            "La cella, tramite `UIResponder`",
-            "Il coordinator, avvisato dal ViewModel o dal VC",
-            "Il model, con una notification"
-          ],
-          "answer": 2,
-          "explanation": "ViewModel e VC segnalano l'intenzione; la navigazione resta nel coordinator, che conosce i flussi.",
-          "difficulty": 3,
-          "whyWrong": [
-            "Così il ViewModel dipenderebbe da UIKit e dal navigation controller: in MVVM-C segnala l'intenzione, non naviga.",
-            "La cella conosce solo la sua riga: decidere la navigazione lì mescola la view con i flussi dell'app.",
-            null,
-            "Il model non sa nulla di UI: la navigazione è una decisione di flusso, che nel pattern spetta al coordinator."
-          ]
-        },
-        {
-          "id": "uikit-architecture-9",
-          "prompt": "Nel MVC di Apple, perché il view controller è difficile da testare?",
-          "code": null,
-          "options": [
-            "È fortemente accoppiato alla view e al suo ciclo di vita",
-            "Non può avere dipendenze",
-            "Non può contenere logica",
-            "Viene creato solo dagli storyboard"
-          ],
-          "answer": 0,
-          "explanation": "Per testarlo serve caricare la view e simulare il ciclo di vita; spostare la logica in oggetti separati risolve.",
-          "difficulty": 1,
-          "whyWrong": [
-            null,
-            "Un VC può avere dipendenze senza problemi, per esempio iniettate via init: non è questo a renderlo difficile da testare.",
-            "Il VC può contenere logica, ed è proprio il problema: la logica è legata alla view e al suo ciclo di vita.",
-            "I VC si possono creare anche via codice con `init`: gli storyboard non sono l'unico modo di istanziarli."
-          ]
-        },
-        {
-          "id": "uikit-architecture-10",
-          "prompt": "Questo VC non viene mai deallocato. Perché?",
-          "code": "token = NotificationCenter.default.addObserver(\n    forName: .userDidLogout, object: nil, queue: .main\n) { _ in\n    self.reset()\n}",
-          "options": [
-            "`queue: .main` trattiene il VC",
-            "Il center trattiene la closure, che cattura `self` in modo strong",
-            "`token` è strong e crea un ciclo con il center",
-            "Manca `@objc` sul metodo `reset`"
-          ],
-          "answer": 1,
-          "explanation": "Con l'API a blocchi il center conserva la closure finché non chiami `removeObserver(token)`: serve `[weak self]`.",
-          "difficulty": 3,
-          "whyWrong": [
-            "La coda indica solo dove eseguire la closure: `OperationQueue.main` non trattiene il view controller.",
-            null,
-            "Il `token` trattiene l'osservatore, non il VC; il ciclo nasce perché il center trattiene la closure che cattura `self` strong.",
-            "Con l'API a blocchi non serve `@objc`: basta al metodo che la closure lo chiami. `@objc` serve solo con `#selector`."
-          ]
-        }
-      ]
-    },
-    {
       "id": "threading-ui",
+      "stage": "mid",
       "title": "Threading e UI",
       "icon": "cpu",
       "summary": "Main thread, GCD, OperationQueue, DispatchGroup e race condition.",
@@ -1677,7 +1679,249 @@
       ]
     },
     {
+      "id": "architecture",
+      "stage": "senior",
+      "title": "Architetture",
+      "icon": "building.columns",
+      "summary": "MVC, MVVM, VIPER, coordinator e pattern di comunicazione tra oggetti.",
+      "lesson": [
+        {
+          "heading": "MVC e Massive View Controller",
+          "body": "Nel MVC di Apple il `UIViewController` fa da mediatore tra model e view, ma è molto accoppiato alla view (ne gestisce il ciclo di vita). Il rischio è il **Massive View Controller**: networking, formattazione, validazione, navigazione e data source tutti nello stesso file.\n\nSi alleggerisce con child view controller, data source separati, servizi iniettati e l'estrazione della navigazione.",
+          "code": null
+        },
+        {
+          "heading": "MVVM",
+          "body": "Il **ViewModel** trasforma i dati del model in stato pronto per la view (stringhe formattate, flag di loading) ed espone input come metodi. Non importa UIKit e non ha riferimenti alla view, quindi si testa con semplici unit test.\n\nIl binding si realizza con closure, Combine (`@Published`) oppure `@Observable`. Da iOS 26 UIKit traccia automaticamente le proprietà `@Observable` lette in metodi come `layoutSubviews` (in iOS 18 serve una chiave in Info.plist).",
+          "code": "final class ProfileViewModel {\n    @Published private(set) var title = \"\"\n    func load() async {\n        let user = try? await service.fetchUser()\n        title = user.map { \"Ciao, \\($0.name)\" } ?? \"Errore\"\n    }\n}"
+        },
+        {
+          "heading": "VIPER e Clean Architecture",
+          "body": "VIPER divide un modulo in **View**, **Interactor** (business logic), **Presenter** (logica di presentazione), **Entity** e **Router** (navigazione). Ogni parte comunica tramite protocol, quindi tutto è mockabile.\n\nIl costo è molto boilerplate: ha senso in team grandi con moduli indipendenti, è eccessivo per app piccole. In colloquio conta saper valutare il trade-off, non recitare l'acronimo.",
+          "code": null
+        },
+        {
+          "heading": "Coordinator",
+          "body": "Il coordinator estrae la navigazione dai view controller: i VC (o i ViewModel) segnalano l'intenzione, per esempio \"utente selezionato\", e il coordinator decide cosa mostrare. Combinato con MVVM si parla di **MVVM-C**.\n\nVantaggi: VC riutilizzabili, deep link centralizzati, flussi testabili. Attenzione a gestire il ciclo di vita dei coordinator figli.",
+          "code": null
+        },
+        {
+          "heading": "Pattern di comunicazione",
+          "body": "**Delegation**: uno-a-uno, adatta a più callback correlate o a metodi che restituiscono valori. **Closure**: uno-a-uno leggera, per una singola callback. **NotificationCenter**: uno-a-molti, disaccoppiata ma poco tipizzata. **KVO**: osserva proprietà `@objc dynamic` di sottoclassi di `NSObject`. **Combine**: stream dichiarativi, con subscription da conservare in `AnyCancellable`.\n\nIn tutti i casi attenzione alla memoria: delegate `weak`, `[weak self]` nelle closure, token e cancellable conservati per il tempo giusto.",
+          "code": "viewModel.$title\n    .receive(on: DispatchQueue.main)\n    .sink { [weak self] in self?.titleLabel.text = $0 }\n    .store(in: &cancellables)"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Che architettura useresti e perché?\"** Risposta concisa: non esiste quella giusta in assoluto; MVVM con coordinator è un buon default per testabilità e separazione, VIPER solo se team e dominio giustificano il costo. Motiva sempre con testabilità, dimensione del team e manutenzione, e mostra di sapere perché MVC tende a degenerare.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "uikit-architecture-1",
+          "prompt": "Qual è la causa tipica di un Massive View Controller?",
+          "code": null,
+          "options": [
+            "Il VC accumula networking, formattazione, navigazione e data source",
+            "L'uso di storyboard invece del codice",
+            "Troppe subview nella gerarchia",
+            "L'uso di Auto Layout"
+          ],
+          "answer": 0,
+          "explanation": "Il VC diventa il posto di default per ogni responsabilità perché è il punto d'incontro tra model e view.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Gli storyboard spostano la costruzione della UI fuori dal codice: se mai alleggeriscono il VC, non lo rendono massive.",
+            "Molte subview rendono pesante la gerarchia, ma il problema del Massive VC è il numero di **responsabilità**, non di view.",
+            "Auto Layout è solo un sistema di layout; il VC si gonfia quando accumula networking, logica e navigazione."
+          ]
+        },
+        {
+          "id": "uikit-architecture-2",
+          "prompt": "In MVVM, quale di queste caratteristiche deve avere il ViewModel?",
+          "code": null,
+          "options": [
+            "Possiede un riferimento strong alla view",
+            "Estende `UIViewController`",
+            "Gestisce direttamente le constraint",
+            "Non dipende da UIKit ed espone stato già formattato"
+          ],
+          "answer": 3,
+          "explanation": "Senza UIKit e senza riferimenti alla view il ViewModel si testa con semplici unit test.",
+          "difficulty": 2,
+          "whyWrong": [
+            "È la view a osservare il ViewModel, non il contrario: un riferimento strong alla view lo accoppierebbe a UIKit.",
+            "Un ViewModel che estende `UIViewController` torna a essere un view controller e perde tutta la testabilità.",
+            "Le constraint appartengono alla view: il ViewModel espone stato, non gestisce layout né oggetti UIKit.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-architecture-3",
+          "prompt": "In VIPER, quale componente contiene la business logic?",
+          "code": null,
+          "options": [
+            "Il Presenter",
+            "Il Router",
+            "L'Interactor",
+            "L'Entity"
+          ],
+          "answer": 2,
+          "explanation": "L'Interactor esegue i casi d'uso; il Presenter prepara i dati per la view e il Router gestisce la navigazione.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Il Presenter fa da ponte: prepara i dati per la view e reagisce agli input, ma delega i casi d'uso all'Interactor.",
+            "Il Router si occupa solo della navigazione tra moduli, non della logica di business.",
+            null,
+            "L'Entity è il modello dei dati, di solito semplici struct senza logica: i casi d'uso stanno nell'Interactor."
+          ]
+        },
+        {
+          "id": "uikit-architecture-4",
+          "prompt": "Devi avvisare più schermate indipendenti che l'utente ha fatto logout. Quale meccanismo è più adatto?",
+          "code": null,
+          "options": [
+            "Un delegate",
+            "`NotificationCenter`",
+            "Una closure di callback",
+            "KVO su `UIApplication`"
+          ],
+          "answer": 1,
+          "explanation": "Delegate e closure sono uno-a-uno; `NotificationCenter` è pensato per broadcast uno-a-molti.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Un delegate collega un oggetto a **un solo** destinatario: per avvisare molte schermate servirebbero tanti delegate.",
+            null,
+            "Una closure di callback è uno-a-uno come il delegate: non si presta a un broadcast verso schermate indipendenti.",
+            "`UIApplication` non espone una property di logout da osservare, e KVO richiede `@objc dynamic`: non è lo strumento giusto."
+          ]
+        },
+        {
+          "id": "uikit-architecture-5",
+          "prompt": "Quando un delegate è preferibile a una closure?",
+          "code": null,
+          "options": [
+            "Quando serve una sola callback",
+            "Quando i destinatari sono molti",
+            "Mai: le closure sono sempre preferibili",
+            "Con più callback correlate o metodi che restituiscono valori"
+          ],
+          "answer": 3,
+          "explanation": "È il modello di `UITableViewDataSource`: un protocol raggruppa molte interazioni con un contratto chiaro.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Con una sola callback la closure è di solito più semplice e leggibile: il delegate rende di più con molte callback correlate.",
+            "Né delegate né closure sono pensati per molti destinatari: per il broadcast c'è `NotificationCenter`.",
+            "Le closure non vincono sempre: con molti metodi correlati, o che restituiscono valori, un protocol è più chiaro.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-architecture-6",
+          "prompt": "Cosa serve per osservare con KVO una property di una tua classe Swift?",
+          "code": null,
+          "options": [
+            "Solo il property wrapper `@Published`",
+            "La conformità a `Observable`",
+            "Una `struct` con `didSet`",
+            "Sottoclasse di `NSObject` e property `@objc dynamic`"
+          ],
+          "answer": 3,
+          "explanation": "KVO si basa sul runtime Objective-C: servono `@objc dynamic` e il token `NSKeyValueObservation` va conservato.",
+          "difficulty": 3,
+          "whyWrong": [
+            "`@Published` è di Combine: si osserva con `$property`, non con KVO, che richiede il runtime Objective-C.",
+            "Il protocollo `Observable` appartiene al framework Observation, non a KVO; i due meccanismi sono distinti.",
+            "KVO funziona solo con istanze di classi `NSObject`: una `struct` con `didSet` non è osservabile via KVO.",
+            null
+          ]
+        },
+        {
+          "id": "uikit-architecture-7",
+          "prompt": "Cosa succede con questa subscription dentro `viewDidLoad`?",
+          "code": "_ = viewModel.$title.sink { [weak self] title in\n    self?.titleLabel.text = title\n}",
+          "options": [
+            "Funziona finché il VC è in vita",
+            "Crash: il cancellable non può essere scartato",
+            "Si cancella subito: arriva al più il valore iniziale",
+            "Non riceve nessun valore, nemmeno quello iniziale"
+          ],
+          "answer": 2,
+          "explanation": "Scartando l'`AnyCancellable` la subscription si cancella alla deallocazione; `@Published` invia però subito il valore corrente in modo sincrono.",
+          "difficulty": 2,
+          "whyWrong": [
+            "L'`AnyCancellable` scartato viene deallocato subito, e la sua deallocazione cancella la subscription: non vive quanto il VC.",
+            "Scartare il cancellable è permesso (con `_ =` non c'è nemmeno warning): nessun crash, solo una subscription che muore subito.",
+            null,
+            "`@Published` invia il valore corrente in modo sincrono durante `sink`, quindi quello iniziale arriva prima della cancellazione."
+          ]
+        },
+        {
+          "id": "uikit-architecture-8",
+          "prompt": "In MVVM-C, chi decide di mostrare la schermata di dettaglio dopo un tap su una riga?",
+          "code": null,
+          "options": [
+            "Il ViewModel, facendo push sul navigation controller",
+            "La cella, tramite `UIResponder`",
+            "Il coordinator, avvisato dal ViewModel o dal VC",
+            "Il model, con una notification"
+          ],
+          "answer": 2,
+          "explanation": "ViewModel e VC segnalano l'intenzione; la navigazione resta nel coordinator, che conosce i flussi.",
+          "difficulty": 3,
+          "whyWrong": [
+            "Così il ViewModel dipenderebbe da UIKit e dal navigation controller: in MVVM-C segnala l'intenzione, non naviga.",
+            "La cella conosce solo la sua riga: decidere la navigazione lì mescola la view con i flussi dell'app.",
+            null,
+            "Il model non sa nulla di UI: la navigazione è una decisione di flusso, che nel pattern spetta al coordinator."
+          ]
+        },
+        {
+          "id": "uikit-architecture-9",
+          "prompt": "Nel MVC di Apple, perché il view controller è difficile da testare?",
+          "code": null,
+          "options": [
+            "È fortemente accoppiato alla view e al suo ciclo di vita",
+            "Non può avere dipendenze",
+            "Non può contenere logica",
+            "Viene creato solo dagli storyboard"
+          ],
+          "answer": 0,
+          "explanation": "Per testarlo serve caricare la view e simulare il ciclo di vita; spostare la logica in oggetti separati risolve.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Un VC può avere dipendenze senza problemi, per esempio iniettate via init: non è questo a renderlo difficile da testare.",
+            "Il VC può contenere logica, ed è proprio il problema: la logica è legata alla view e al suo ciclo di vita.",
+            "I VC si possono creare anche via codice con `init`: gli storyboard non sono l'unico modo di istanziarli."
+          ]
+        },
+        {
+          "id": "uikit-architecture-10",
+          "prompt": "Questo VC non viene mai deallocato. Perché?",
+          "code": "token = NotificationCenter.default.addObserver(\n    forName: .userDidLogout, object: nil, queue: .main\n) { _ in\n    self.reset()\n}",
+          "options": [
+            "`queue: .main` trattiene il VC",
+            "Il center trattiene la closure, che cattura `self` in modo strong",
+            "`token` è strong e crea un ciclo con il center",
+            "Manca `@objc` sul metodo `reset`"
+          ],
+          "answer": 1,
+          "explanation": "Con l'API a blocchi il center conserva la closure finché non chiami `removeObserver(token)`: serve `[weak self]`.",
+          "difficulty": 3,
+          "whyWrong": [
+            "La coda indica solo dove eseguire la closure: `OperationQueue.main` non trattiene il view controller.",
+            null,
+            "Il `token` trattiene l'osservatore, non il VC; il ciclo nasce perché il center trattiene la closure che cattura `self` strong.",
+            "Con l'API a blocchi non serve `@objc`: basta al metodo che la closure lo chiami. `@objc` serve solo con `#selector`."
+          ]
+        }
+      ]
+    },
+    {
       "id": "memory-performance",
+      "stage": "senior",
       "title": "Memoria e performance",
       "icon": "gauge.with.dots.needle.67percent",
       "summary": "Retain cycle, Instruments, rendering offscreen, frame vs bounds e CALayer.",

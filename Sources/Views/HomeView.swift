@@ -171,27 +171,66 @@ struct HomeView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: Scegli un argomento
+    // MARK: Il percorso
 
     private var topicsSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Scegli un argomento")
-                    .font(.title2.weight(.bold))
-                Spacer()
-                Text(state.activeTrack.name)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(theme.primary)
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Il tuo percorso")
+                        .font(.title2.weight(.bold))
+                    Spacer()
+                    Text(state.activeTrack.name)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.primary)
+                }
+                Text("Gli argomenti sono in ordine: ognuno dà per letto quello prima.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
-                ForEach(ContentStore.shared.topics(for: state.activeTrack)) { topic in
-                    NavigationLink(value: topic) {
-                        TopicTile(track: state.activeTrack, topic: topic)
+
+            ForEach(ContentStore.shared.stages(for: state.activeTrack)) { group in
+                VStack(alignment: .leading, spacing: 12) {
+                    StageHeader(stage: group.stage, reached: group.stage.tier <= state.tier)
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)],
+                              spacing: 14) {
+                        ForEach(Array(group.topics.enumerated()), id: \.element.id) { i, topic in
+                            NavigationLink(value: topic) {
+                                TopicTile(track: state.activeTrack, topic: topic,
+                                          number: group.firstNumber + i)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
+    }
+}
+
+/// L'intestazione di uno stage del percorso: Junior, Mid, Senior.
+struct StageHeader: View {
+    let stage: Stage
+    let reached: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: stage.tier.symbol)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 26, height: 26)
+                .background(stage.tier.gradient, in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(stage.tier.name)
+                    .font(.subheadline.weight(.bold))
+                Text(reached ? stage.caption
+                             : "Entra nel quiz del giorno dal grado \(stage.tier.name)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .opacity(reached ? 1 : 0.65)
     }
 }
 
@@ -199,16 +238,29 @@ struct TopicTile: View {
     @Environment(AppState.self) private var state
     let track: Track
     let topic: Topic
+    /// La posizione nel percorso, continua da 1 fino all'ultimo argomento.
+    let number: Int
 
     var body: some View {
         let stat = state.stat(track, topic.id)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: topic.icon)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(track.theme.primary)
-                    .frame(width: 42, height: 42)
-                    .background(track.theme.soft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                ZStack(alignment: .topLeading) {
+                    Image(systemName: topic.icon)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(track.theme.primary)
+                        .frame(width: 42, height: 42)
+                        .background(track.theme.soft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    Text("\(number)")
+                        .font(.caption2.weight(.heavy).monospacedDigit())
+                        .foregroundStyle(.white)
+                        .frame(width: 19, height: 19)
+                        .background(track.theme.primary, in: Circle())
+                        .overlay {
+                            Circle().strokeBorder(Color(.secondarySystemGroupedBackground), lineWidth: 2)
+                        }
+                        .offset(x: -6, y: -6)
+                }
                 Spacer()
                 ZStack {
                     ProgressRing(progress: Double(stat.bestScore) / 100, color: track.theme.primary, lineWidth: 4)

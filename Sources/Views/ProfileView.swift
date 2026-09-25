@@ -77,7 +77,7 @@ struct ProfileView: View {
                                     .background(track.theme.linear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(track.name)
-                                    Text(track.platform.name)
+                                    Text(track.subtitle)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -87,9 +87,9 @@ struct ProfileView: View {
                         .disabled(state.tracks == [track])
                     }
                 } header: {
-                    Text("I tuoi linguaggi")
+                    Text("I tuoi percorsi")
                 } footer: {
-                    Text("Le domande del giorno mescolano tutti i linguaggi attivi. Almeno uno deve restare acceso.")
+                    Text("Ogni percorso ha i suoi argomenti, in ordine dalle fondamenta ai temi da senior. Le domande del giorno mescolano i percorsi attivi, pescando solo dagli argomenti che il tuo grado ha già raggiunto. Almeno un percorso deve restare acceso.")
                 }
 
                 Section {

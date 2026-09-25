@@ -5,13 +5,13 @@ struct OnboardingView: View {
 
     @State private var step = 0
     @State private var forward = true
-    @State private var platforms: Set<Platform> = []
+    @State private var tracks: Set<Track> = []
     @State private var tier: Tier?
     @State private var reminderTime = Calendar.current.date(from: DateComponents(hour: 19, minute: 0)) ?? .now
 
-    /// Colore dell'onboarding: segue la prima piattaforma scelta, arancio Swift finché non si sceglie.
+    /// Colore dell'onboarding: segue il primo percorso scelto, arancio Swift finché non si sceglie.
     private var theme: Theme {
-        Platform.allCases.first { platforms.contains($0) }?.theme ?? Track.swift.theme
+        Track.allCases.first { tracks.contains($0) }?.theme ?? Track.swift.theme
     }
 
     var body: some View {
@@ -19,7 +19,7 @@ struct OnboardingView: View {
             Color(.systemGroupedBackground).ignoresSafeArea()
             theme.linear.opacity(0.05)
                 .ignoresSafeArea()
-                .animation(.easeInOut, value: platforms)
+                .animation(.easeInOut, value: tracks)
 
             VStack(spacing: 0) {
                 if step > 0 {
@@ -45,7 +45,7 @@ struct OnboardingView: View {
                 Group {
                     switch step {
                     case 0: welcome
-                    case 1: platformPicker
+                    case 1: trackPicker
                     case 2: levelPicker
                     default: reminder
                     }
@@ -84,34 +84,36 @@ struct OnboardingView: View {
         .padding(.horizontal, 20)
     }
 
-    // MARK: Che sviluppatore sei
+    // MARK: Che percorsi vuoi seguire
 
-    private var platformPicker: some View {
+    private var trackPicker: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Che sviluppatore mobile sei?")
+                Text("Su cosa ti prepari?")
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                Text("Puoi sceglierne più di uno: le domande del giorno mescoleranno i tuoi linguaggi.")
+                Text("Ogni percorso è a sé, con i suoi argomenti e le sue domande. Puoi sceglierne più di uno: il quiz del giorno li mescolerà.")
                     .foregroundStyle(.secondary)
             }
             .padding(.top, 24)
 
-            VStack(spacing: 14) {
-                ForEach(Platform.allCases) { platform in
-                    PlatformCard(platform: platform, selected: platforms.contains(platform)) {
-                        withAnimation(.snappy) {
-                            if platforms.contains(platform) { platforms.remove(platform) } else { platforms.insert(platform) }
+            ScrollView {
+                VStack(spacing: 14) {
+                    ForEach(Track.allCases) { track in
+                        TrackCard(track: track, selected: tracks.contains(track)) {
+                            withAnimation(.snappy) {
+                                if tracks.contains(track) { tracks.remove(track) } else { tracks.insert(track) }
+                            }
                         }
                     }
                 }
+                .padding(.vertical, 2)
             }
-
-            Spacer()
+            .scrollIndicators(.hidden)
 
             Button("Continua") { go(to: 2) }
                 .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
-                .disabled(platforms.isEmpty)
-                .opacity(platforms.isEmpty ? 0.4 : 1)
+                .disabled(tracks.isEmpty)
+                .opacity(tracks.isEmpty ? 0.4 : 1)
                 .padding(.bottom, 16)
         }
         .padding(.horizontal, 24)
@@ -202,7 +204,7 @@ struct OnboardingView: View {
             var enabled = reminders
             if reminders { enabled = await Reminders.requestPermission() }
             await MainActor.run {
-                state.completeOnboarding(platforms: platforms, tier: tier ?? .junior, reminderEnabled: enabled,
+                state.completeOnboarding(tracks: tracks, tier: tier ?? .junior, reminderEnabled: enabled,
                                          hour: c.hour ?? 19, minute: c.minute ?? 0)
             }
             await Reminders.reschedule(for: state)
@@ -210,45 +212,56 @@ struct OnboardingView: View {
     }
 }
 
-private struct PlatformCard: View {
-    let platform: Platform
+private struct TrackCard: View {
+    let track: Track
     let selected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            HStack(alignment: .top, spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(platform.theme.linear)
+                        .fill(track.theme.linear)
                         .frame(width: 58, height: 58)
-                    Image(systemName: platform.symbol)
+                    Image(systemName: track.symbol)
                         .font(.title2.weight(.semibold))
                         .foregroundStyle(.white)
                 }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(platform.name)
-                        .font(.title3.weight(.bold))
-                    HStack(spacing: 6) {
-                        ForEach(platform.tracks) { TrackChip(track: $0, selected: false) }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text(track.name)
+                            .font(.title3.weight(.bold))
+                        Text(track.subtitle)
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .foregroundStyle(track.theme.primary)
+                            .background(track.theme.soft, in: Capsule())
                     }
+                    Text(track.blurb)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer()
+                Spacer(minLength: 0)
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
-                    .foregroundStyle(selected ? platform.theme.primary : Color.secondary.opacity(0.4))
+                    .foregroundStyle(selected ? track.theme.primary : Color.secondary.opacity(0.4))
                     .contentTransition(.symbolEffect(.replace))
             }
             .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(Color(.secondarySystemGroupedBackground))
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(selected ? platform.theme.primary : .clear, lineWidth: 2.5)
+                    .strokeBorder(selected ? track.theme.primary : .clear, lineWidth: 2.5)
             }
-            .shadow(color: selected ? platform.theme.primary.opacity(0.25) : .black.opacity(0.05), radius: 14, y: 6)
+            .shadow(color: selected ? track.theme.primary.opacity(0.25) : .black.opacity(0.05), radius: 14, y: 6)
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.selection, trigger: selected)

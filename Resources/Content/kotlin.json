@@ -2,7 +2,244 @@
   "track": "kotlin",
   "topics": [
     {
+      "id": "basics",
+      "stage": "junior",
+      "title": "Le basi del linguaggio",
+      "icon": "character.book.closed",
+      "summary": "val e var, i tipi, when, cicli e funzioni: il vocabolario minimo per leggere qualsiasi codice Kotlin.",
+      "lesson": [
+        {
+          "heading": "val e var",
+          "body": "`val` dichiara un riferimento **di sola lettura**: si assegna una volta e non si riassegna più. `var` dichiara un riferimento riassegnabile. Il tipo si scrive dopo il nome, dopo i due punti, ma quasi sempre si omette perché Kotlin lo **inferisce** dal valore iniziale.\n\nUn equivoco da chiarire subito: `val` significa *riferimento* costante, non *oggetto* immutabile. Un `val` che punta a una `MutableList` non si può far puntare altrove, ma la lista può continuare a cambiare. Per l'immutabilità del contenuto servono tipi immutabili, come `List` al posto di `MutableList`.",
+          "code": "val pi = 3.14          // Double per inferenza\nvar contatore = 0      // Int\ncontatore += 1\n\n// pi = 3.15           // errore: val non si riassegna\n\nval lista = mutableListOf(1)\nlista.add(2)           // lecito: cambia il contenuto, non il riferimento\n// lista = mutableListOf()  // errore: questo sì cambierebbe il riferimento"
+        },
+        {
+          "heading": "I tipi e le conversioni",
+          "body": "I tipi numerici sono `Byte`, `Short`, `Int`, `Long`, `Float`, `Double`; poi `Boolean` e `String`. In Kotlin **non esistono primitivi visibili**: si scrive sempre `Int` con la maiuscola, e il compilatore sceglie da solo se usare un `int` della JVM o un `Integer` a seconda del contesto.\n\nCome in Swift **non ci sono conversioni implicite** fra tipi numerici: un `Int` non diventa `Long` da solo, va chiesto con `toLong()`. E la divisione fra interi tronca: `7 / 2` fa `3`.\n\nLe stringhe supportano i **template**: `$nome` inserisce una variabile, `${espressione}` inserisce il risultato di un'espressione.",
+          "code": "val a = 3              // Int\nval b = 2.5            // Double\n\n// val c = a + b       // funziona qui, ma...\nval n: Int = 3\nval l: Long = n.toLong()   // ...la conversione fra tipi interi va chiesta\n\nprintln(7 / 2)         // 3   (divisione intera)\nprintln(7 / 2.0)       // 3.5\n\nval nome = \"Ada\"\nprintln(\"Ciao $nome, hai ${2 + 3} messaggi\")"
+        },
+        {
+          "heading": "if e when sono espressioni",
+          "body": "In Kotlin `if` e `when` non sono solo istruzioni: **restituiscono un valore**, e quindi si possono assegnare. Per questo non esiste l'operatore ternario `?:` in stile Java — al suo posto si scrive un `if` su una riga.\n\n`when` è il cugino potenziato dello switch: confronta valori, intervalli con `in`, tipi con `is`, e nella forma senza argomento funziona come una catena di if-else. La regola importante: **quando `when` è usato come espressione deve essere esaustivo**, quindi serve un `else` a meno che i casi non coprano già tutto (come su un `enum` o una `sealed class`). Usato invece come semplice istruzione, l'`else` è facoltativo.",
+          "code": "val max = if (a > b) a else b      // if come espressione\n\nval etichetta = when (voto) {      // when come espressione: else obbligatorio\n    in 0..5  -> \"insufficiente\"\n    6, 7     -> \"sufficiente\"\n    else     -> \"ottimo\"\n}\n\nwhen {                             // senza argomento: catena di condizioni\n    voto < 6  -> println(\"sotto\")\n    else      -> println(\"sopra\")\n}"
+        },
+        {
+          "heading": "Cicli e intervalli",
+          "body": "`for (x in sequenza)` scorre qualunque cosa esponga un `iterator()`: un intervallo, una lista, i caratteri di una stringa.\n\nGli intervalli hanno tre forme che vale la pena tenere a mente perché è lì che nascono gli errori di conteggio: `1..3` è **inclusivo** (1, 2, 3), `1 until 3` esclude l'estremo destro (1, 2), `3 downTo 1` scende. Si combinano con `step`.\n\nEsistono anche `while` e `do-while`, e `repeat(n) { }` quando l'indice non serve.",
+          "code": "for (i in 1..3) print(i)        // 123\nfor (i in 1 until 3) print(i)   // 12\nfor (i in 3 downTo 1) print(i)  // 321\nfor (i in 0..10 step 5) print(i) // 0510\n\nfor ((indice, valore) in lista.withIndex()) {\n    println(\"$indice: $valore\")\n}\n\nrepeat(3) { println(\"ciao\") }"
+        },
+        {
+          "heading": "Funzioni",
+          "body": "Una funzione si dichiara con `fun`, i parametri hanno tipo obbligatorio e il tipo di ritorno va dopo i due punti. Se non restituisce nulla il tipo è `Unit` e si omette.\n\nDue comodità che in Kotlin si usano ovunque: i **parametri con valore di default**, che eliminano gran parte degli overload, e gli **argomenti con nome** alla chiamata, che permettono di saltare i default in mezzo e rendono leggibili le chiamate con molti booleani.\n\nUna funzione composta da una sola espressione può usare la forma abbreviata con `=`, senza graffe e senza `return`.",
+          "code": "fun somma(a: Int, b: Int): Int = a + b       // corpo a espressione\n\nfun saluta(nome: String = \"mondo\", urlo: Boolean = false): String {\n    val testo = \"Ciao $nome\"\n    return if (urlo) testo.uppercase() else testo\n}\n\nsaluta()                        // \"Ciao mondo\"\nsaluta(\"Ada\")                   // \"Ciao Ada\"\nsaluta(urlo = true)             // \"CIAO MONDO\"  (salta il primo default)\n\nfun logga(msg: String) {        // nessun ritorno: Unit implicito\n    println(msg)\n}"
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-basics-1",
+          "prompt": "Cosa succede compilando questo codice?",
+          "code": "val x = 10\nx = 20\nprintln(x)",
+          "options": [
+            "Errore di compilazione",
+            "Stampa 20",
+            "Stampa 10",
+            "Stampa 10 con un warning"
+          ],
+          "answer": 0,
+          "explanation": "`val` dichiara un riferimento di sola lettura: si assegna una volta sola. Riassegnarlo è un errore che il compilatore rifiuta. Per poterlo cambiare va dichiarato `var`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Sarebbe così con `var x = 10`: dichiarato con `val`, la riga `x = 20` non compila, quindi non si arriva mai a stampare.",
+            "Non viene stampato nulla, perché il programma non compila: `val` non ignora la riassegnazione, la rifiuta.",
+            "Non è un warning ma un errore: il codice non produce un eseguibile."
+          ]
+        },
+        {
+          "id": "kotlin-basics-2",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val a = 7\nval b = 2\nprintln(a / b)",
+          "options": [
+            "3",
+            "3.5",
+            "4",
+            "Errore di compilazione"
+          ],
+          "answer": 0,
+          "explanation": "Entrambi gli operandi sono `Int`, quindi la divisione è intera e la parte decimale viene troncata, non arrotondata. Per ottenere 3.5 serve almeno un operando in virgola mobile: `a / 2.0` oppure `a.toDouble() / b`.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "3.5 è il risultato della divisione in virgola mobile: qui entrambi i tipi sono `Int`, e `Int / Int` produce un `Int`.",
+            "La divisione intera **tronca** verso lo zero, non arrotonda: 3.5 diventa 3, mai 4.",
+            "Il codice compila senza problemi: dividere due `Int` è lecito. Il tranello sta nel tipo del risultato."
+          ]
+        },
+        {
+          "id": "kotlin-basics-3",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val a = 2\nval b = 3\nprintln(\"$a + $b = ${a + b}\")",
+          "options": [
+            "2 + 3 = 5",
+            "$a + $b = ${a + b}",
+            "2 + 3 = 2 + 3",
+            "Errore di compilazione"
+          ],
+          "answer": 0,
+          "explanation": "`$nome` inserisce il valore di una variabile, `${...}` valuta un'espressione intera e ne inserisce il risultato. I `+` fuori dalle graffe sono testo normale, quello dentro è una somma vera.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "Quello è il testo letterale: per stamparlo davvero servirebbe una raw string con `$` esclusi o l'escape `\\$`. In una stringa normale il `$` avvia sempre il template.",
+            "Dentro `${...}` va un'**espressione**, che viene valutata prima di finire nel testo: `a + b` diventa `5`.",
+            "Il codice è valido: i template accettano sia il nome nudo che un'espressione fra graffe."
+          ]
+        },
+        {
+          "id": "kotlin-basics-4",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "for (i in 1..3) print(i)\nprint(\" \")\nfor (i in 1 until 3) print(i)",
+          "options": [
+            "123 12",
+            "12 123",
+            "123 123",
+            "1234 123"
+          ],
+          "answer": 0,
+          "explanation": "`1..3` è un intervallo **inclusivo**: comprende il 3. `1 until 3` esclude l'estremo destro e si ferma a 2. È la coppia che causa più errori di conteggio quando si arriva da altri linguaggi.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "È invertito: `..` è quello che include l'estremo, `until` quello che lo esclude.",
+            "I due intervalli non producono la stessa sequenza: se lo facessero, `until` non avrebbe motivo di esistere.",
+            "`1..3` si ferma a 3, non a 4: l'estremo destro scritto è l'ultimo valore prodotto, non il primo escluso."
+          ]
+        },
+        {
+          "id": "kotlin-basics-5",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val a = 5\nval b = 9\nval max = if (a > b) a else b\nprintln(max)",
+          "options": [
+            "9",
+            "5",
+            "true",
+            "Errore: in Kotlin if non restituisce un valore"
+          ],
+          "answer": 0,
+          "explanation": "In Kotlin `if` è un'**espressione** e restituisce il valore del ramo eseguito: qui `a > b` è falso, quindi vale `b`, cioè 9. È il motivo per cui Kotlin non ha l'operatore ternario.",
+          "difficulty": 1,
+          "whyWrong": [
+            null,
+            "5 sarebbe il valore del ramo `then`, che qui non viene eseguito: `5 > 9` è falso, quindi si prende il ramo `else`.",
+            "L'`if` non restituisce la condizione ma il valore del ramo scelto: il tipo di `max` è `Int`, non `Boolean`.",
+            "È proprio il contrario: `if` e `when` in Kotlin sono espressioni e si possono assegnare. Per questo l'operatore ternario non esiste."
+          ]
+        },
+        {
+          "id": "kotlin-basics-6",
+          "prompt": "Cosa succede compilando questo codice?",
+          "code": "val n = 3\nval etichetta = when (n) {\n    1 -> \"uno\"\n    2 -> \"due\"\n}\nprintln(etichetta)",
+          "options": [
+            "Errore di compilazione: manca il ramo else",
+            "Stampa una riga vuota",
+            "Stampa null",
+            "Lancia un'eccezione a runtime"
+          ],
+          "answer": 0,
+          "explanation": "Un `when` usato come **espressione** deve essere esaustivo: il compilatore pretende un `else`, a meno che i casi non coprano già tutti i valori possibili (come su un `enum` o una `sealed class`). Usato come semplice istruzione, senza assegnarne il risultato, l'`else` sarebbe invece facoltativo.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Non si arriva a stampare nulla: l'errore è in compilazione, quindi il programma non parte.",
+            "`etichetta` è di tipo `String`, non `String?`: Kotlin non riempie di `null` i casi scoperti, preferisce rifiutare il codice.",
+            "Kotlin sposta il controllo in compilazione proprio per evitare eccezioni a runtime: il codice non arriva mai a essere eseguito."
+          ]
+        },
+        {
+          "id": "kotlin-basics-7",
+          "prompt": "Data questa funzione, cosa stampa la chiamata?",
+          "code": "fun saluta(nome: String = \"mondo\", urlo: Boolean = false): String =\n    if (urlo) \"Ciao $nome\".uppercase() else \"Ciao $nome\"\n\nprintln(saluta(urlo = true))",
+          "options": [
+            "CIAO MONDO",
+            "Ciao mondo",
+            "Ciao true",
+            "Errore: non si può saltare il primo parametro"
+          ],
+          "answer": 0,
+          "explanation": "Gli **argomenti con nome** permettono di saltare i parametri che hanno un default e valorizzare solo quelli che servono: `nome` resta `\"mondo\"` e `urlo` diventa `true`, quindi la stringa viene resa maiuscola.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Sarebbe il risultato con `urlo` a `false`, cioè chiamando `saluta()`. Qui `urlo = true` sceglie il ramo che applica `uppercase()`.",
+            "`urlo` non finisce nel testo: è un flag che decide quale dei due rami dell'`if` viene restituito.",
+            "Saltare un parametro in mezzo è esattamente ciò che gli argomenti con nome permettono di fare, purché quello saltato abbia un default."
+          ]
+        },
+        {
+          "id": "kotlin-basics-8",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val lista = mutableListOf(1)\nlista.add(2)\nprintln(lista)",
+          "options": [
+            "[1, 2]",
+            "[1]",
+            "Errore: lista è val, non si può modificare",
+            "[2]"
+          ],
+          "answer": 0,
+          "explanation": "`val` rende costante il **riferimento**, non l'oggetto: la variabile non può puntare a un'altra lista, ma la lista può continuare a cambiare. Sarebbe stato un errore scrivere `lista = mutableListOf()`. Per un contenuto immutabile serve il tipo `List`, non `MutableList`.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "L'`add` viene eseguito eccome: `val` non congela il contenuto dell'oggetto, solo il riferimento a esso.",
+            "Confondere `val` con l'immutabilità è l'errore classico: la distinzione fra riferimento e oggetto è proprio ciò che separa `val` da `List`.",
+            "`add` aggiunge in coda senza rimuovere nulla: l'1 iniziale resta al suo posto."
+          ]
+        },
+        {
+          "id": "kotlin-basics-9",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "println(Int.MAX_VALUE + 1)",
+          "options": [
+            "-2147483648",
+            "2147483648",
+            "Lancia ArithmeticException",
+            "Errore di compilazione"
+          ],
+          "answer": 0,
+          "explanation": "`Int` è a 32 bit e va da -2147483648 a 2147483647. Come sulla JVM la somma va in **overflow silenzioso** e riparte dal minimo. Per evitarlo si usa `Long`, oppure le funzioni `addExact` che lanciano.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "2147483648 non è rappresentabile in un `Int`: servirebbe un `Long`, che si ottiene scrivendo `Int.MAX_VALUE.toLong() + 1`.",
+            "L'overflow degli interi in Kotlin è silenzioso, esattamente come in Java: nessuna eccezione, il valore gira e basta.",
+            "Il codice compila: sommare 1 a un `Int` è lecito, e il compilatore non ha modo di sapere che quel valore specifico traboccherà."
+          ]
+        },
+        {
+          "id": "kotlin-basics-10",
+          "prompt": "Cosa stampa questo codice?",
+          "code": "val a = \"kotlin\"\nval b = buildString { append(\"kot\"); append(\"lin\") }\nprintln(a == b)\nprintln(a === b)",
+          "options": [
+            "true e poi false",
+            "true e poi true",
+            "false e poi false",
+            "false e poi true"
+          ],
+          "answer": 0,
+          "explanation": "`==` in Kotlin è l'uguaglianza **strutturale** e chiama `equals()`: le due stringhe hanno gli stessi caratteri, quindi è `true`. `===` è l'uguaglianza **referenziale** e confronta gli indirizzi: la stringa costruita a runtime è un oggetto diverso dal letterale internato, quindi è `false`.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "`===` sarebbe `true` solo se le due variabili puntassero allo stesso oggetto. Il letterale `\"kotlin\"` sta nel pool delle stringhe, quella di `buildString` è costruita a runtime.",
+            "`==` è `true`: in Kotlin `==` non confronta i riferimenti come `==` in Java sugli oggetti, ma chiama `equals()`. Il confronto per riferimento è `===`.",
+            "È invertito rispetto alla realtà: `==` guarda il contenuto (uguale) e `===` l'identità (diversa)."
+          ]
+        }
+      ]
+    },
+    {
       "id": "null-safety",
+      "stage": "junior",
       "title": "Null safety",
       "icon": "shield.lefthalf.filled",
       "summary": "Tipi nullable, operatori ?. ?: !!, platform types, lateinit e lazy.",
@@ -243,6 +480,7 @@
     },
     {
       "id": "classes-objects",
+      "stage": "junior",
       "title": "Classi e oggetti",
       "icon": "cube",
       "summary": "Data, sealed, enum, object e companion, ereditarietà, interfacce e value class.",
@@ -483,6 +721,7 @@
     },
     {
       "id": "functions-lambdas",
+      "stage": "mid",
       "title": "Funzioni e lambda",
       "icon": "function",
       "summary": "Higher-order function, inline e reified, extension function e scope function.",
@@ -723,6 +962,7 @@
     },
     {
       "id": "collections",
+      "stage": "mid",
       "title": "Collection",
       "icon": "list.bullet.rectangle",
       "summary": "Read-only vs mutable, Sequence vs Iterable e gli operatori funzionali più usati.",
@@ -957,7 +1197,249 @@
       ]
     },
     {
+      "id": "android-lifecycle",
+      "stage": "mid",
+      "title": "Lifecycle Android",
+      "icon": "arrow.triangle.2.circlepath",
+      "summary": "Lifecycle di Activity e Fragment, configuration change, ViewModel e process death.",
+      "lesson": [
+        {
+          "heading": "Lifecycle dell'Activity",
+          "body": "La sequenza è `onCreate` → `onStart` (visibile) → `onResume` (in primo piano, interattiva), poi a ritroso `onPause` → `onStop` → `onDestroy`. Quando A avvia B a schermo intero: `A.onPause`, poi `B.onCreate/onStart/onResume`, infine `A.onStop`.\n\n`onPause` deve essere veloce perché blocca la comparsa della nuova Activity. Il lavoro pesante di salvataggio va in `onStop` o, meglio, fuori dai callback con WorkManager.",
+          "code": null
+        },
+        {
+          "heading": "Fragment e view lifecycle",
+          "body": "Un Fragment ha due lifecycle: quello del Fragment e quello della sua **view**, che viene distrutta e ricreata (`onDestroyView`/`onCreateView`) ad esempio quando va nel back stack, mentre il Fragment sopravvive.\n\nPer questo le osservazioni legate alla UI usano `viewLifecycleOwner` invece di `this`, e il riferimento al binding va azzerato in `onDestroyView` per evitare memory leak.",
+          "code": "override fun onViewCreated(view: View, state: Bundle?) {\n    viewLifecycleOwner.lifecycleScope.launch {\n        viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {\n            vm.state.collect { render(it) }\n        }\n    }\n}\n\noverride fun onDestroyView() {\n    super.onDestroyView()\n    _binding = null\n}"
+        },
+        {
+          "heading": "Configuration change",
+          "body": "Rotazione, cambio lingua, dark mode o ridimensionamento in multi-window provocano di default la **distruzione e ricreazione** dell'Activity. Lo stato della UI va quindi tenuto fuori dall'Activity.\n\nDichiarare `android:configChanges` per gestirle a mano è sconsigliato salvo casi specifici (ad esempio player video): nasconde i bug e non protegge dal process death.",
+          "code": null
+        },
+        {
+          "heading": "ViewModel e SavedStateHandle",
+          "body": "Il `ViewModel` sopravvive ai configuration change perché è conservato nel `ViewModelStore`, e viene distrutto (`onCleared`) solo quando lo scope termina davvero. **Non sopravvive al process death.**\n\n`SavedStateHandle` salva piccoli dati in un Bundle che il sistema ripristina anche dopo il process death: id, query di ricerca, tab selezionata. Non va usato per dati grandi, perché il Bundle ha limiti di dimensione (TransactionTooLargeException).",
+          "code": "class SearchViewModel(\n    private val handle: SavedStateHandle\n) : ViewModel() {\n    val query: StateFlow<String> = handle.getStateFlow(\"q\", \"\")\n\n    fun onQuery(q: String) { handle[\"q\"] = q }\n}"
+        },
+        {
+          "heading": "Process death e Intent",
+          "body": "Quando l'app è in background il sistema può terminare il processo per liberare memoria. Al ritorno Android ricrea l'Activity con il Bundle salvato: tutto ciò che stava solo in memoria (ViewModel, singleton) è perso. Si testa mandando l'app in background ed eseguendo `adb shell am kill <package>`.\n\nGli **Intent espliciti** indicano il componente (`Intent(this, Detail::class.java)`), quelli **impliciti** un'azione (`ACTION_VIEW`, `ACTION_SEND`) risolta dal sistema. Da Android 12 un `PendingIntent` deve dichiarare `FLAG_IMMUTABLE` o `FLAG_MUTABLE`.",
+          "code": "val share = Intent(Intent.ACTION_SEND).apply {\n    type = \"text/plain\"\n    putExtra(Intent.EXTRA_TEXT, url)\n}\nstartActivity(Intent.createChooser(share, null))"
+        },
+        {
+          "heading": "In colloquio",
+          "body": "Domanda tipica: **\"Cosa succede ruotando lo schermo, e come preservi lo stato?\"**. Risposta concisa: l'Activity viene distrutta e ricreata; il ViewModel sopravvive e mantiene lo stato in memoria, mentre per il process death servono `SavedStateHandle` o `rememberSaveable` per i dati piccoli e il database per quelli persistenti.\n\nMostra di conoscere la differenza tra configuration change e process death, e il view lifecycle dei Fragment.",
+          "code": null
+        }
+      ],
+      "questions": [
+        {
+          "id": "kotlin-android-lifecycle-1",
+          "prompt": "In che ordine vengono chiamati i callback all'avvio di un'Activity?",
+          "code": null,
+          "options": [
+            "onCreate, onResume, onStart",
+            "onStart, onCreate, onResume",
+            "onCreate, onStart, onResume",
+            "onResume, onStart, onCreate"
+          ],
+          "answer": 2,
+          "explanation": "onCreate inizializza, onStart rende visibile, onResume porta in primo piano e interattiva.",
+          "difficulty": 1,
+          "whyWrong": [
+            "`onResume` arriva sempre dopo `onStart`: prima l'Activity diventa visibile, poi interattiva.",
+            "`onCreate` è sempre il primo callback: è lì che fai `setContentView`, prima che l'Activity diventi visibile con `onStart`.",
+            null,
+            "L'ordine è esattamente rovesciato: si parte dalla creazione (`onCreate`), poi la visibilità (`onStart`), infine l'interazione (`onResume`)."
+          ]
+        },
+        {
+          "id": "kotlin-android-lifecycle-2",
+          "prompt": "Cosa succede di default all'Activity quando ruoti lo schermo?",
+          "code": null,
+          "options": [
+            "Nulla, viene solo ricalcolato il layout",
+            "Viene distrutta e ricreata",
+            "Il processo viene terminato",
+            "Viene chiamato solo onPause"
+          ],
+          "answer": 1,
+          "explanation": "Un configuration change ricrea l'Activity, a meno che non sia gestito tramite configChanges.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Solo dichiarando `android:configChanges` gestisci tu la rotazione; di default l'Activity viene distrutta e ricreata.",
+            null,
+            "La rotazione non uccide il processo: viene ricreata solo l'Activity, mentre processo e ViewModel restano vivi.",
+            "`onPause` viene chiamato, ma poi segue il resto: `onStop`, `onDestroy` e la creazione di una nuova istanza."
+          ]
+        },
+        {
+          "id": "kotlin-android-lifecycle-3",
+          "prompt": "A cosa sopravvive un ViewModel?",
+          "code": null,
+          "options": [
+            "Sia alla rotazione sia al process death",
+            "Solo al process death",
+            "Alla rotazione ma non al process death",
+            "A nulla"
+          ],
+          "answer": 2,
+          "explanation": "Il ViewModel resta in memoria nel ViewModelStore durante i configuration change, ma la memoria si perde con il processo.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Il ViewModel vive solo in memoria: se il sistema uccide il processo si perde, e per quel caso serve `SavedStateHandle`.",
+            "È il contrario: il process death cancella la memoria, ViewModel compreso, mentre la rotazione è proprio il caso per cui esiste.",
+            null,
+            "Sopravvive ai configuration change come la rotazione: è la sua ragione d'essere, grazie al `ViewModelStore`."
+          ]
+        },
+        {
+          "id": "kotlin-android-lifecycle-4",
+          "prompt": "Perché in un Fragment si osserva lo stato con `viewLifecycleOwner` e non con `this`?",
+          "code": null,
+          "options": [
+            "La view può essere distrutta mentre il Fragment resta vivo",
+            "Perché `this` non è un LifecycleOwner",
+            "Per ottenere aggiornamenti più veloci",
+            "È obbligatorio solo con Compose"
+          ],
+          "answer": 0,
+          "explanation": "Nel back stack la view viene distrutta ma il Fragment no: osservare con `this` causerebbe osservatori duplicati e aggiornamenti a view morte.",
+          "difficulty": 2,
+          "whyWrong": [
+            null,
+            "Il Fragment è un `LifecycleOwner`, quindi `this` compila; il problema è che il suo lifecycle dura più di quello della view.",
+            "La velocità degli aggiornamenti non cambia: cambia quando l'osservatore viene rimosso, cioè alla distruzione della view.",
+            "Non riguarda Compose: il problema nasce con qualunque Fragment la cui view viene distrutta e ricreata, per esempio nel back stack."
+          ]
+        },
+        {
+          "id": "kotlin-android-lifecycle-5",
+          "prompt": "Cosa è corretto salvare in `SavedStateHandle`?",
+          "code": null,
+          "options": [
+            "Bitmap e liste molto grandi",
+            "Piccoli stati UI come id e query",
+            "Riferimenti a Context",
+            "Connessioni di rete aperte"
+          ],
+          "answer": 1,
+          "explanation": "Finisce in un Bundle con limiti di dimensione e deve essere serializzabile: solo dati piccoli per ricostruire lo stato.",
+          "difficulty": 2,
+          "whyWrong": [
+            "Lo stato finisce in un Bundle con limiti di dimensione (circa 1 MB per transazione): Bitmap e liste grandi rischiano `TransactionTooLargeException`.",
+            null,
+            "Un `Context` non è serializzabile e tenerlo causerebbe leak: nel Bundle vanno solo dati semplici.",
+            "Una connessione aperta non si può serializzare né ripristinare dopo il process death: va ricreata, non salvata."
+          ]
+        },
+        {
+          "id": "kotlin-android-lifecycle-6",
+          "prompt": "L'Activity A avvia B a schermo intero. Quando viene chiamato `A.onStop`?",
+          "code": null,
+          "options": [
+            "Prima di B.onCreate",
+            "Subito dopo A.onPause",
+            "Dopo B.onResume",
+            "Mai, A resta in onPause"
+          ],
+          "answer": 2,
+          "explanation": "La sequenza è A.onPause, B.onCreate, B.onStart, B.onResume e solo allora A.onStop, quando A non è più visibile.",
+          "difficulty": 3,
+          "whyWrong": [
+            "A non viene fermata prima che B esista: prima A va in pausa, poi B viene creata e diventa visibile.",
+            "Tra `A.onPause` e `A.onStop` ci sono `onCreate`, `onStart` e `onResume` di B: A si ferma solo quando non è più visibile.",
+            null,
+            "Resterebbe in `onPause` solo se B non la coprisse del tutto (dialog o trasparente); a schermo intero A diventa invisibile e riceve `onStop`."
+          ]
+        },
+        {
+          "id": "kotlin-android-lifecycle-7",
+          "prompt": "Come si simula in modo affidabile il process death?",
+          "code": null,
+          "options": [
+            "Ruotando lo schermo",
+            "Premendo back",
+            "Chiamando finish()",
+            "App in background, poi `adb shell am kill <package>`"
+          ],
+          "answer": 3,
+          "explanation": "`am kill` termina il processo come farebbe il sistema, solo se l'app è in background. Rotazione, back e finish() non lo simulano.",
+          "difficulty": 3,
+          "whyWrong": [
+            "La rotazione ricrea l'Activity, ma il processo resta vivo e con lui il ViewModel: non è un process death.",
+            "Back chiude l'Activity con `onDestroy`, ma il processo resta vivo: nessun process death.",
+            "`finish()` distrugge solo l'Activity, scartandone anche lo stato salvato: il processo continua a vivere.",
+            null
+          ]
+        },
+        {
+          "id": "kotlin-android-lifecycle-8",
+          "prompt": "Quale di questi è un Intent implicito?",
+          "code": null,
+          "options": [
+            "Intent(this, DetailActivity::class.java)",
+            "Intent(Intent.ACTION_VIEW, Uri.parse(url))",
+            "Intent().setClass(this, X::class.java)",
+            "Intent().setComponent(component)"
+          ],
+          "answer": 1,
+          "explanation": "Un Intent implicito dichiara un'azione e dei dati, e il sistema sceglie il componente; gli altri indicano la classe esplicitamente.",
+          "difficulty": 1,
+          "whyWrong": [
+            "Indicare la classe `DetailActivity` rende l'Intent esplicito: il componente di destinazione è già deciso.",
+            null,
+            "`setClass` imposta direttamente il componente di destinazione: l'Intent è esplicito.",
+            "`setComponent` indica esattamente quale componente avviare: anche questo è un Intent esplicito."
+          ]
+        },
+        {
+          "id": "kotlin-android-lifecycle-9",
+          "prompt": "Cosa è obbligatorio creando un `PendingIntent` con targetSdk 31+?",
+          "code": null,
+          "options": [
+            "Specificare FLAG_IMMUTABLE o FLAG_MUTABLE",
+            "Usare FLAG_UPDATE_CURRENT",
+            "Richiedere un permesso runtime",
+            "Nulla, i PendingIntent sono deprecati"
+          ],
+          "answer": 0,
+          "explanation": "Da Android 12 la mutabilità va dichiarata esplicitamente, altrimenti la creazione lancia IllegalArgumentException. FLAG_IMMUTABLE è la scelta di default.",
+          "difficulty": 3,
+          "whyWrong": [
+            null,
+            "`FLAG_UPDATE_CURRENT` serve ad aggiornare gli extra, ma non è obbligatorio: il vincolo di Android 12 riguarda la mutabilità.",
+            "Creare un PendingIntent non richiede alcun permesso runtime: serve solo dichiarare `FLAG_IMMUTABLE` o `FLAG_MUTABLE`.",
+            "I PendingIntent non sono affatto deprecati: si usano ancora per notifiche, alarm e widget."
+          ]
+        },
+        {
+          "id": "kotlin-android-lifecycle-10",
+          "prompt": "In quale callback si azzera il binding di un Fragment per evitare leak?",
+          "code": null,
+          "options": [
+            "onDestroy",
+            "onDetach",
+            "onStop",
+            "onDestroyView"
+          ],
+          "answer": 3,
+          "explanation": "La view muore in onDestroyView mentre il Fragment può sopravvivere: tenere il binding tratterrebbe l'intera gerarchia di view.",
+          "difficulty": 2,
+          "whyWrong": [
+            "In `onDestroy` è troppo tardi: tra `onDestroyView` e `onDestroy` (per esempio nel back stack) il binding tratterrebbe una view già morta.",
+            "`onDetach` arriva persino dopo `onDestroy`: per tutto il tempo nel back stack il binding avrebbe già causato il leak.",
+            "In `onStop` la view esiste ancora e può tornare visibile: azzerare lì il binding porterebbe a crash al ritorno in `onStart`.",
+            null
+          ]
+        }
+      ]
+    },
+    {
       "id": "coroutines",
+      "stage": "senior",
       "title": "Coroutine",
       "icon": "arrow.triangle.branch",
       "summary": "suspend, launch/async, Dispatchers, structured concurrency, cancellazione ed errori.",
@@ -1198,6 +1680,7 @@
     },
     {
       "id": "flow",
+      "stage": "senior",
       "title": "Flow",
       "icon": "water.waves",
       "summary": "Flow cold e hot, StateFlow, SharedFlow, operatori e raccolta lifecycle-aware.",
@@ -1437,247 +1920,8 @@
       ]
     },
     {
-      "id": "android-lifecycle",
-      "title": "Lifecycle Android",
-      "icon": "arrow.triangle.2.circlepath",
-      "summary": "Lifecycle di Activity e Fragment, configuration change, ViewModel e process death.",
-      "lesson": [
-        {
-          "heading": "Lifecycle dell'Activity",
-          "body": "La sequenza è `onCreate` → `onStart` (visibile) → `onResume` (in primo piano, interattiva), poi a ritroso `onPause` → `onStop` → `onDestroy`. Quando A avvia B a schermo intero: `A.onPause`, poi `B.onCreate/onStart/onResume`, infine `A.onStop`.\n\n`onPause` deve essere veloce perché blocca la comparsa della nuova Activity. Il lavoro pesante di salvataggio va in `onStop` o, meglio, fuori dai callback con WorkManager.",
-          "code": null
-        },
-        {
-          "heading": "Fragment e view lifecycle",
-          "body": "Un Fragment ha due lifecycle: quello del Fragment e quello della sua **view**, che viene distrutta e ricreata (`onDestroyView`/`onCreateView`) ad esempio quando va nel back stack, mentre il Fragment sopravvive.\n\nPer questo le osservazioni legate alla UI usano `viewLifecycleOwner` invece di `this`, e il riferimento al binding va azzerato in `onDestroyView` per evitare memory leak.",
-          "code": "override fun onViewCreated(view: View, state: Bundle?) {\n    viewLifecycleOwner.lifecycleScope.launch {\n        viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {\n            vm.state.collect { render(it) }\n        }\n    }\n}\n\noverride fun onDestroyView() {\n    super.onDestroyView()\n    _binding = null\n}"
-        },
-        {
-          "heading": "Configuration change",
-          "body": "Rotazione, cambio lingua, dark mode o ridimensionamento in multi-window provocano di default la **distruzione e ricreazione** dell'Activity. Lo stato della UI va quindi tenuto fuori dall'Activity.\n\nDichiarare `android:configChanges` per gestirle a mano è sconsigliato salvo casi specifici (ad esempio player video): nasconde i bug e non protegge dal process death.",
-          "code": null
-        },
-        {
-          "heading": "ViewModel e SavedStateHandle",
-          "body": "Il `ViewModel` sopravvive ai configuration change perché è conservato nel `ViewModelStore`, e viene distrutto (`onCleared`) solo quando lo scope termina davvero. **Non sopravvive al process death.**\n\n`SavedStateHandle` salva piccoli dati in un Bundle che il sistema ripristina anche dopo il process death: id, query di ricerca, tab selezionata. Non va usato per dati grandi, perché il Bundle ha limiti di dimensione (TransactionTooLargeException).",
-          "code": "class SearchViewModel(\n    private val handle: SavedStateHandle\n) : ViewModel() {\n    val query: StateFlow<String> = handle.getStateFlow(\"q\", \"\")\n\n    fun onQuery(q: String) { handle[\"q\"] = q }\n}"
-        },
-        {
-          "heading": "Process death e Intent",
-          "body": "Quando l'app è in background il sistema può terminare il processo per liberare memoria. Al ritorno Android ricrea l'Activity con il Bundle salvato: tutto ciò che stava solo in memoria (ViewModel, singleton) è perso. Si testa mandando l'app in background ed eseguendo `adb shell am kill <package>`.\n\nGli **Intent espliciti** indicano il componente (`Intent(this, Detail::class.java)`), quelli **impliciti** un'azione (`ACTION_VIEW`, `ACTION_SEND`) risolta dal sistema. Da Android 12 un `PendingIntent` deve dichiarare `FLAG_IMMUTABLE` o `FLAG_MUTABLE`.",
-          "code": "val share = Intent(Intent.ACTION_SEND).apply {\n    type = \"text/plain\"\n    putExtra(Intent.EXTRA_TEXT, url)\n}\nstartActivity(Intent.createChooser(share, null))"
-        },
-        {
-          "heading": "In colloquio",
-          "body": "Domanda tipica: **\"Cosa succede ruotando lo schermo, e come preservi lo stato?\"**. Risposta concisa: l'Activity viene distrutta e ricreata; il ViewModel sopravvive e mantiene lo stato in memoria, mentre per il process death servono `SavedStateHandle` o `rememberSaveable` per i dati piccoli e il database per quelli persistenti.\n\nMostra di conoscere la differenza tra configuration change e process death, e il view lifecycle dei Fragment.",
-          "code": null
-        }
-      ],
-      "questions": [
-        {
-          "id": "kotlin-android-lifecycle-1",
-          "prompt": "In che ordine vengono chiamati i callback all'avvio di un'Activity?",
-          "code": null,
-          "options": [
-            "onCreate, onResume, onStart",
-            "onStart, onCreate, onResume",
-            "onCreate, onStart, onResume",
-            "onResume, onStart, onCreate"
-          ],
-          "answer": 2,
-          "explanation": "onCreate inizializza, onStart rende visibile, onResume porta in primo piano e interattiva.",
-          "difficulty": 1,
-          "whyWrong": [
-            "`onResume` arriva sempre dopo `onStart`: prima l'Activity diventa visibile, poi interattiva.",
-            "`onCreate` è sempre il primo callback: è lì che fai `setContentView`, prima che l'Activity diventi visibile con `onStart`.",
-            null,
-            "L'ordine è esattamente rovesciato: si parte dalla creazione (`onCreate`), poi la visibilità (`onStart`), infine l'interazione (`onResume`)."
-          ]
-        },
-        {
-          "id": "kotlin-android-lifecycle-2",
-          "prompt": "Cosa succede di default all'Activity quando ruoti lo schermo?",
-          "code": null,
-          "options": [
-            "Nulla, viene solo ricalcolato il layout",
-            "Viene distrutta e ricreata",
-            "Il processo viene terminato",
-            "Viene chiamato solo onPause"
-          ],
-          "answer": 1,
-          "explanation": "Un configuration change ricrea l'Activity, a meno che non sia gestito tramite configChanges.",
-          "difficulty": 1,
-          "whyWrong": [
-            "Solo dichiarando `android:configChanges` gestisci tu la rotazione; di default l'Activity viene distrutta e ricreata.",
-            null,
-            "La rotazione non uccide il processo: viene ricreata solo l'Activity, mentre processo e ViewModel restano vivi.",
-            "`onPause` viene chiamato, ma poi segue il resto: `onStop`, `onDestroy` e la creazione di una nuova istanza."
-          ]
-        },
-        {
-          "id": "kotlin-android-lifecycle-3",
-          "prompt": "A cosa sopravvive un ViewModel?",
-          "code": null,
-          "options": [
-            "Sia alla rotazione sia al process death",
-            "Solo al process death",
-            "Alla rotazione ma non al process death",
-            "A nulla"
-          ],
-          "answer": 2,
-          "explanation": "Il ViewModel resta in memoria nel ViewModelStore durante i configuration change, ma la memoria si perde con il processo.",
-          "difficulty": 2,
-          "whyWrong": [
-            "Il ViewModel vive solo in memoria: se il sistema uccide il processo si perde, e per quel caso serve `SavedStateHandle`.",
-            "È il contrario: il process death cancella la memoria, ViewModel compreso, mentre la rotazione è proprio il caso per cui esiste.",
-            null,
-            "Sopravvive ai configuration change come la rotazione: è la sua ragione d'essere, grazie al `ViewModelStore`."
-          ]
-        },
-        {
-          "id": "kotlin-android-lifecycle-4",
-          "prompt": "Perché in un Fragment si osserva lo stato con `viewLifecycleOwner` e non con `this`?",
-          "code": null,
-          "options": [
-            "La view può essere distrutta mentre il Fragment resta vivo",
-            "Perché `this` non è un LifecycleOwner",
-            "Per ottenere aggiornamenti più veloci",
-            "È obbligatorio solo con Compose"
-          ],
-          "answer": 0,
-          "explanation": "Nel back stack la view viene distrutta ma il Fragment no: osservare con `this` causerebbe osservatori duplicati e aggiornamenti a view morte.",
-          "difficulty": 2,
-          "whyWrong": [
-            null,
-            "Il Fragment è un `LifecycleOwner`, quindi `this` compila; il problema è che il suo lifecycle dura più di quello della view.",
-            "La velocità degli aggiornamenti non cambia: cambia quando l'osservatore viene rimosso, cioè alla distruzione della view.",
-            "Non riguarda Compose: il problema nasce con qualunque Fragment la cui view viene distrutta e ricreata, per esempio nel back stack."
-          ]
-        },
-        {
-          "id": "kotlin-android-lifecycle-5",
-          "prompt": "Cosa è corretto salvare in `SavedStateHandle`?",
-          "code": null,
-          "options": [
-            "Bitmap e liste molto grandi",
-            "Piccoli stati UI come id e query",
-            "Riferimenti a Context",
-            "Connessioni di rete aperte"
-          ],
-          "answer": 1,
-          "explanation": "Finisce in un Bundle con limiti di dimensione e deve essere serializzabile: solo dati piccoli per ricostruire lo stato.",
-          "difficulty": 2,
-          "whyWrong": [
-            "Lo stato finisce in un Bundle con limiti di dimensione (circa 1 MB per transazione): Bitmap e liste grandi rischiano `TransactionTooLargeException`.",
-            null,
-            "Un `Context` non è serializzabile e tenerlo causerebbe leak: nel Bundle vanno solo dati semplici.",
-            "Una connessione aperta non si può serializzare né ripristinare dopo il process death: va ricreata, non salvata."
-          ]
-        },
-        {
-          "id": "kotlin-android-lifecycle-6",
-          "prompt": "L'Activity A avvia B a schermo intero. Quando viene chiamato `A.onStop`?",
-          "code": null,
-          "options": [
-            "Prima di B.onCreate",
-            "Subito dopo A.onPause",
-            "Dopo B.onResume",
-            "Mai, A resta in onPause"
-          ],
-          "answer": 2,
-          "explanation": "La sequenza è A.onPause, B.onCreate, B.onStart, B.onResume e solo allora A.onStop, quando A non è più visibile.",
-          "difficulty": 3,
-          "whyWrong": [
-            "A non viene fermata prima che B esista: prima A va in pausa, poi B viene creata e diventa visibile.",
-            "Tra `A.onPause` e `A.onStop` ci sono `onCreate`, `onStart` e `onResume` di B: A si ferma solo quando non è più visibile.",
-            null,
-            "Resterebbe in `onPause` solo se B non la coprisse del tutto (dialog o trasparente); a schermo intero A diventa invisibile e riceve `onStop`."
-          ]
-        },
-        {
-          "id": "kotlin-android-lifecycle-7",
-          "prompt": "Come si simula in modo affidabile il process death?",
-          "code": null,
-          "options": [
-            "Ruotando lo schermo",
-            "Premendo back",
-            "Chiamando finish()",
-            "App in background, poi `adb shell am kill <package>`"
-          ],
-          "answer": 3,
-          "explanation": "`am kill` termina il processo come farebbe il sistema, solo se l'app è in background. Rotazione, back e finish() non lo simulano.",
-          "difficulty": 3,
-          "whyWrong": [
-            "La rotazione ricrea l'Activity, ma il processo resta vivo e con lui il ViewModel: non è un process death.",
-            "Back chiude l'Activity con `onDestroy`, ma il processo resta vivo: nessun process death.",
-            "`finish()` distrugge solo l'Activity, scartandone anche lo stato salvato: il processo continua a vivere.",
-            null
-          ]
-        },
-        {
-          "id": "kotlin-android-lifecycle-8",
-          "prompt": "Quale di questi è un Intent implicito?",
-          "code": null,
-          "options": [
-            "Intent(this, DetailActivity::class.java)",
-            "Intent(Intent.ACTION_VIEW, Uri.parse(url))",
-            "Intent().setClass(this, X::class.java)",
-            "Intent().setComponent(component)"
-          ],
-          "answer": 1,
-          "explanation": "Un Intent implicito dichiara un'azione e dei dati, e il sistema sceglie il componente; gli altri indicano la classe esplicitamente.",
-          "difficulty": 1,
-          "whyWrong": [
-            "Indicare la classe `DetailActivity` rende l'Intent esplicito: il componente di destinazione è già deciso.",
-            null,
-            "`setClass` imposta direttamente il componente di destinazione: l'Intent è esplicito.",
-            "`setComponent` indica esattamente quale componente avviare: anche questo è un Intent esplicito."
-          ]
-        },
-        {
-          "id": "kotlin-android-lifecycle-9",
-          "prompt": "Cosa è obbligatorio creando un `PendingIntent` con targetSdk 31+?",
-          "code": null,
-          "options": [
-            "Specificare FLAG_IMMUTABLE o FLAG_MUTABLE",
-            "Usare FLAG_UPDATE_CURRENT",
-            "Richiedere un permesso runtime",
-            "Nulla, i PendingIntent sono deprecati"
-          ],
-          "answer": 0,
-          "explanation": "Da Android 12 la mutabilità va dichiarata esplicitamente, altrimenti la creazione lancia IllegalArgumentException. FLAG_IMMUTABLE è la scelta di default.",
-          "difficulty": 3,
-          "whyWrong": [
-            null,
-            "`FLAG_UPDATE_CURRENT` serve ad aggiornare gli extra, ma non è obbligatorio: il vincolo di Android 12 riguarda la mutabilità.",
-            "Creare un PendingIntent non richiede alcun permesso runtime: serve solo dichiarare `FLAG_IMMUTABLE` o `FLAG_MUTABLE`.",
-            "I PendingIntent non sono affatto deprecati: si usano ancora per notifiche, alarm e widget."
-          ]
-        },
-        {
-          "id": "kotlin-android-lifecycle-10",
-          "prompt": "In quale callback si azzera il binding di un Fragment per evitare leak?",
-          "code": null,
-          "options": [
-            "onDestroy",
-            "onDetach",
-            "onStop",
-            "onDestroyView"
-          ],
-          "answer": 3,
-          "explanation": "La view muore in onDestroyView mentre il Fragment può sopravvivere: tenere il binding tratterrebbe l'intera gerarchia di view.",
-          "difficulty": 2,
-          "whyWrong": [
-            "In `onDestroy` è troppo tardi: tra `onDestroyView` e `onDestroy` (per esempio nel back stack) il binding tratterrebbe una view già morta.",
-            "`onDetach` arriva persino dopo `onDestroy`: per tutto il tempo nel back stack il binding avrebbe già causato il leak.",
-            "In `onStop` la view esiste ancora e può tornare visibile: azzerare lì il binding porterebbe a crash al ritorno in `onStart`.",
-            null
-          ]
-        }
-      ]
-    },
-    {
       "id": "compose-architecture",
+      "stage": "senior",
       "title": "Compose e architettura",
       "icon": "square.stack.3d.up",
       "summary": "Recomposition, stato, side effect, MVVM/MVI, Hilt e Clean Architecture.",
