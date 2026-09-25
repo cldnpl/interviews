@@ -67,7 +67,7 @@ struct OnboardingView: View {
             VStack(spacing: 12) {
                 Text("Interviews")
                     .font(.system(size: 44, weight: .heavy, design: .rounded))
-                Text("Preparati ai colloqui tecnici mobile.\nCinque domande al giorno, lezioni brevi, zero ansia.")
+                Text("Preparati ai colloqui tecnici mobile.\ncon cinque domande al giorno e lezioni semplificate")
                     .font(.title3)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
