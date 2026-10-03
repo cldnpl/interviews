@@ -31,6 +31,18 @@ spuntato; quello che resta va fatto a mano su App Store Connect.
       quella nell'app non possono divergere.
 - [x] **Niente simbolo `applelogo`** — la licenza di SF Symbols non consente i marchi
       Apple dentro app di terzi.
+- [x] **Abbonamento** — StoreKit 2 in `Sources/Services/Store.swift`, prodotto
+      `com.cldnpl.interviews.pro.monthly`. Il paywall (`PremiumView.swift`) mostra tutto
+      quello che la Linea guida 3.1.2 pretende dentro l'app: nome, durata, prezzo preso
+      da App Store (`product.displayPrice`, non scritto a mano), che cosa si apre,
+      *Ripristina acquisti*, e i link a Termini e Privacy.
+- [x] **Termini aggiornati all'abbonamento** — la clausola «Prezzo e abbonamento» dice
+      prezzo, durata, rinnovo automatico, come disdire e che cancellare l'app non
+      disdice. Era la cosa che faceva contraddire paywall e Termini.
+- [x] **Configurazione StoreKit solo per il simulatore** — `Interviews.storekit` è
+      agganciato alla sola azione *Run* dello schema. L'archivio Release parla con
+      l'App Store vero: se fosse agganciato anche all'archivio, in produzione gli
+      acquisti sarebbero finti.
 
 ## Da fare prima di premere "Submit"
 
@@ -53,7 +65,8 @@ sotto, in `Sources/Models/Legal.swift`. Poi rilancia `./scripts/make_legal_pages
 | Support URL | `https://cldnpl.github.io/interviews/support.html` |
 | Marketing URL | `https://cldnpl.github.io/interviews/` (facoltativo) |
 | License Agreement | Lascia l'EULA standard di Apple |
-| Prezzo | Gratis, nessun acquisto in-app |
+| Prezzo | Gratis, con un abbonamento in-app (vedi §8) |
+| In-App Purchases | *Interviews Pro* — `com.cldnpl.interviews.pro.monthly`, 1,99 €/mese |
 | Categoria primaria | Istruzione |
 | Categoria secondaria | Consultazione |
 | Lingua principale | English (U.S.), italiano come localizzazione |
@@ -71,9 +84,19 @@ l'app non ha rete, non ha SDK di terze parti, non ha account.
 
 Da incollare in *App Review Information › Notes*:
 
-> The app works entirely offline: it needs no account, no login and no internet
-> connection. There is nothing to unlock and no demo credentials are required.
+> The app works offline: it needs no account, no login and no demo credentials.
 > All content (questions, explanations, lessons) is original.
+>
+> IN-APP PURCHASE. The app offers one auto-renewing subscription, Interviews Pro
+> (com.cldnpl.interviews.pro.monthly, 1.99 EUR/month). Everything in the Junior
+> stage of all four tracks is free and needs no purchase. The subscription opens
+> the Mid and Senior topics. To see the paywall: open the app, complete the short
+> onboarding, then tap any locked topic under "Mid" or "Senior" on the Today tab,
+> or the "Unlock every lesson" card. The paywall shows the name, the duration,
+> the price, what the subscription opens, a Restore purchases button and links to
+> the Terms of Use and the Privacy Policy. The subscription is not required to
+> review the rest of the app. An internet connection is needed only to load the
+> price from the App Store and to purchase; everything else works offline.
 > The app is in English by default; Italian can be selected in Profile › Language.
 > The only notifications are local reminders, scheduled on the device after the
 > user's explicit consent: there is no push server.
@@ -143,8 +166,8 @@ unlocked. Answer, read the explanation, keep your streak alive.
 
 XP AND RANKS
 From Junior I all the way to Staff. Every correct answer is worth 10, 20 or 30
-XP depending on difficulty, and as your rank goes up the mid and senior topics
-open up.
+XP depending on difficulty, and your rank decides how hard the daily questions
+get.
 
 REVIEW WITH REAL ANSWERS
 Short lessons with annotated code and, above all, the answer to actually give
@@ -161,6 +184,12 @@ quiz yet. Never one more.
 OFFLINE, NO ACCOUNT
 Interviews works on the subway as well as on the couch. No sign-up, no ads, no
 tracking: your progress stays on your iPhone.
+
+FREE, AND INTERVIEWS PRO
+The Junior stage of all four tracks is free, lessons and quizzes included, and
+stays free. Interviews Pro opens the Mid and Senior topics too, and lets the
+daily quiz follow your rank: 1.99 EUR per month, cancel any time from Settings.
+It is a symbolic price, to support an independent developer.
 
 Available in English and Italian.
 ```
@@ -225,7 +254,7 @@ sbloccato. Rispondi, leggi la spiegazione, tieni viva la serie.
 
 XP E GRADI
 Da Junior I fino a Staff. Ogni risposta giusta vale 10, 20 o 30 XP secondo la
-difficoltà, e salendo di grado si aprono gli argomenti da mid e da senior.
+difficoltà, e il grado decide quanto diventano difficili le domande del giorno.
 
 RIPASSO CON LE RISPOSTE VERE
 Lezioni brevi con codice commentato e, soprattutto, la risposta da dare davvero
@@ -242,6 +271,12 @@ fatto. Mai una in più.
 SENZA RETE, SENZA ACCOUNT
 Interviews funziona in metropolitana come sul divano. Nessuna registrazione, nessuna
 pubblicità, nessuna statistica raccolta: i tuoi progressi restano sul tuo iPhone.
+
+GRATIS, E INTERVIEWS PRO
+Lo stage Junior di tutti e quattro i percorsi è gratuito, lezioni e quiz compresi, e
+resta gratuito. Interviews Pro apre anche gli argomenti Mid e Senior, e fa seguire al
+quiz del giorno il tuo grado: 1,99 € al mese, si disdice quando vuoi da Impostazioni.
+È un prezzo simbolico, per sostenere una sviluppatrice indipendente.
 
 Disponibile in inglese e in italiano: la lingua si cambia in Profilo.
 ```
@@ -295,6 +330,99 @@ Due numeri, due regole diverse, e sbagliarle fa rifiutare l'upload:
 - `MARKETING_VERSION` va alzato **a ogni versione già pubblicata o approvata**.
   Riusare un numero già visto dà *"The train version '1.0' is closed for new build
   submissions"*: quel treno è chiuso, e serve 1.1.
+
+### 8. L'abbonamento su App Store Connect
+
+Il prodotto esiste già in codice: `Store.monthlyID` vale
+`com.cldnpl.interviews.pro.monthly`. Su Connect il Product ID deve essere **identico
+carattere per carattere**, altrimenti `Product.products(for:)` torna vuoto, il bottone
+resta disabilitato e il paywall mostra il prezzo di riserva. Il Product ID, una volta
+creato, non si può né cambiare né riusare: si controlla due volte prima di salvarlo.
+
+#### Il gruppo
+
+*Monetization › Subscriptions › Create* un gruppo prima del prodotto. Il gruppo serve
+a tenere insieme abbonamenti fra cui si può passare: qui ce n'è uno solo, ma il gruppo
+è obbligatorio lo stesso.
+
+| Campo | Valore |
+| --- | --- |
+| Reference Name (gruppo) | `Interviews Pro` — interno, non lo vede nessuno |
+| Group Display Name (en-US) | `Interviews Pro` |
+| Group Display Name (it) | `Interviews Pro` |
+
+Il *Display Name* del gruppo è quello che l'utente legge in **Impostazioni ›
+Abbonamenti**: è l'unico nome visibile quando qualcuno va a disdire.
+
+#### Il prodotto
+
+| Campo | Valore |
+| --- | --- |
+| Reference Name | `Interviews Pro Monthly` — interno |
+| Product ID | `com.cldnpl.interviews.pro.monthly` |
+| Subscription Duration | 1 Month |
+| Prezzo | 1,99 € (base Italia) — le altre valute le calcola Apple |
+| Availability | tutti i Paesi |
+| Introductory Offer | nessuna, per ora |
+| Family Sharing | off (`familyShareable: false` anche in `Interviews.storekit`) |
+| Tax Category | quella predefinita, app software |
+
+**Localizations** — due, come l'app. Il *Display Name* è quello che compare nella
+finestra di acquisto di Apple; la *Description* sotto. I limiti sono 30 e 45 caratteri,
+e Connect taglia senza avvisare, quindi questi sono già dentro:
+
+| Lingua | Display Name | Description |
+| --- | --- | --- |
+| English (U.S.) | `Interviews Pro` | `All the Mid and Senior lessons and quizzes.` |
+| Italiano | `Interviews Pro` | `Tutte le lezioni e i quiz Mid e Senior.` |
+
+**Review Information** (dentro il prodotto, in fondo):
+
+- *Screenshot*: **obbligatorio**, ed è il motivo più frequente di rifiuto di un
+  abbonamento. Serve una schermata del paywall vero. Prendila dal simulatore
+  (`xcrun simctl io <device> screenshot paywall.png`) aprendo Oggi › un argomento Mid.
+- *Review Notes*, da incollare:
+
+> Interviews Pro unlocks the Mid and Senior topics of all four tracks. The Junior
+> stage is free and does not require this subscription. To reach the paywall:
+> finish the onboarding, then tap any locked topic under "Mid" or "Senior" on the
+> Today tab, or the "Unlock every lesson" card. No account or demo credentials are
+> needed.
+
+#### Agganciarlo alla versione
+
+Alla **prima** submission che contiene l'abbonamento, il prodotto va allegato alla
+versione: nella pagina della versione 1.1, sezione *In-App Purchases and
+Subscriptions*, aggiungi *Interviews Pro*. Senza questo passaggio l'app viene
+approvata e l'abbonamento resta in *Waiting for Review* per sempre — e in produzione
+nessuno può comprarlo.
+
+Il prodotto deve essere in stato **Ready to Submit**: finché manca un campo (di solito
+lo screenshot) resta *Missing Metadata*.
+
+#### Prima che funzioni davvero
+
+- **Paid Applications Agreement attivo.** *Business › Agreements, Tax, and Banking*:
+  finché quel contratto non è *Active*, con dati fiscali e bancari compilati,
+  `Product.products(for:)` torna **vuoto** anche se il prodotto esiste. È la causa
+  numero uno del «non si vede il prezzo», e non dà nessun errore: semplicemente non
+  arriva niente.
+- **Qualche ora di propagazione.** Un prodotto appena creato non è subito visibile a
+  StoreKit.
+- **Prova in sandbox su un dispositivo vero.** *Users and Access › Sandbox › Test
+  Accounts*: crea un account con una mail che non sia mai stata un Apple Account,
+  poi sul telefono *Impostazioni › Developer › Sandbox Apple Account*. In sandbox un
+  mese dura 5 minuti, così il rinnovo e la scadenza si vedono per davvero.
+- **Sul simulatore resta tutto finto**, e va bene così: lo schema aggancia
+  `Interviews.storekit` alla sola azione *Run*. Serve a provare il flusso senza
+  toccare l'App Store, e non finisce nell'archivio.
+
+#### Cosa cambia nella scheda
+
+Il prezzo dell'app resta **Gratis**: Connect spunta da sé *Offers In-App Purchases* e
+sulla scheda compare l'elenco degli acquisti. Il *License Agreement* resta l'EULA
+standard di Apple — è quello che soddisfa il link ai Termini d'uso che la Linea guida
+3.1.2 pretende nei metadati; la Privacy Policy URL è già compilata.
 
 ## Rischi residui, da sapere
 

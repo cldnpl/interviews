@@ -107,10 +107,23 @@ extension Legal {
             No reverse engineering, decompiling or disassembling the app, except within the limits the \
             law makes non-waivable; no circumventing its mechanisms; no use contrary to the law.
             """),
-            .init(heading: "Price", body: """
-            The app is free and contains no in-app purchases, subscriptions or advertising. Should paid \
-            features ever arrive, they would be announced beforehand and would not touch progress you \
-            have already made.
+            .init(heading: "Price and subscription", body: """
+            The app is free and shows no advertising. Everything in the Junior stage of every track — \
+            lessons and quizzes — is free and stays free. **Interviews Pro** is an optional \
+            auto-renewing subscription that also opens the Mid and Senior topics: **€1.99 per month**, \
+            or the equivalent in your currency, charged to your Apple Account at confirmation of \
+            purchase.
+
+            It renews automatically for the same period and the same price unless you turn renewal off \
+            at least 24 hours before the current period ends; your account is charged for the renewal \
+            within the 24 hours before that. You can manage it, see when it renews and cancel it at any \
+            time in **Settings › your name › Subscriptions** on your iPhone. Cancelling stops the next \
+            renewal: the subscription stays active until the end of the period you have already paid \
+            for, and no part of it is refunded. Deleting the app does not cancel the subscription.
+
+            The price can change: Apple tells you beforehand, and a price rise never takes effect \
+            without your consent. Your progress is yours either way — it is kept if the subscription \
+            ends, and the Junior content stays open.
             """),
             .init(heading: "Support", body: """
             Support is the developer's sole responsibility, at **\(supportEmail)**. Apple has no \

@@ -104,10 +104,23 @@ extension Legal {
             Niente reverse engineering, decompilazione o disassemblaggio dell'app, salvo nei limiti \
             inderogabili di legge; niente aggiramento dei suoi meccanismi; niente uso contrario alla legge.
             """),
-            .init(heading: "Prezzo", body: """
-            L'app è gratuita e non contiene acquisti in-app, abbonamenti né pubblicità. Se in futuro \
-            arrivassero funzioni a pagamento, sarebbero annunciate prima e non toccherebbero i progressi \
-            già fatti.
+            .init(heading: "Prezzo e abbonamento", body: """
+            L'app è gratuita e non mostra pubblicità. Tutto lo stage Junior di ogni percorso — lezioni \
+            e quiz — è gratuito e resta gratuito. **Interviews Pro** è un abbonamento facoltativo a \
+            rinnovo automatico che apre anche gli argomenti Mid e Senior: **1,99 € al mese**, o \
+            l'equivalente nella tua valuta, addebitati sul tuo Account Apple alla conferma \
+            dell'acquisto.
+
+            Si rinnova da sé per lo stesso periodo e allo stesso prezzo, a meno che tu non disattivi il \
+            rinnovo almeno 24 ore prima della fine del periodo in corso; l'addebito del rinnovo avviene \
+            nelle 24 ore che lo precedono. Puoi gestirlo, vedere quando si rinnova e disdirlo quando \
+            vuoi da **Impostazioni › il tuo nome › Abbonamenti** sul tuo iPhone. Disdire ferma il \
+            rinnovo successivo: l'abbonamento resta attivo fino alla fine del periodo già pagato, che \
+            non viene rimborsato nemmeno in parte. Cancellare l'app non disdice l'abbonamento.
+
+            Il prezzo può cambiare: Apple te lo comunica prima, e un aumento non ha effetto senza il tuo \
+            consenso. I tuoi progressi restano tuoi in ogni caso: si conservano anche se l'abbonamento \
+            finisce, e i contenuti Junior restano aperti.
             """),
             .init(heading: "Assistenza", body: """
             L'assistenza è a carico esclusivo dello sviluppatore, a cui puoi scrivere a \
