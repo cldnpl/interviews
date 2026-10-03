@@ -367,14 +367,18 @@ Abbonamenti**: è l'unico nome visibile quando qualcuno va a disdire.
 | Family Sharing | off (`familyShareable: false` anche in `Interviews.storekit`) |
 | Tax Category | quella predefinita, app software |
 
-**Localizations** — due, come l'app. Il *Display Name* è quello che compare nella
-finestra di acquisto di Apple; la *Description* sotto. I limiti sono 30 e 45 caratteri,
-e Connect taglia senza avvisare, quindi questi sono già dentro:
+**Localizations** — due, come l'app, da *Display Name and Description › +*. Il
+*Display Name* è quello che compare nella finestra di acquisto di Apple; la
+*Description* sotto. I limiti sono **35** e **55** caratteri e Connect non salva se li
+superi: questi stanno dentro, 14 e 54.
 
-| Lingua | Display Name | Description |
+| Localization | Display Name | Description |
 | --- | --- | --- |
-| English (U.S.) | `Interviews Pro` | `All the Mid and Senior lessons and quizzes.` |
-| Italiano | `Interviews Pro` | `Tutte le lezioni e i quiz Mid e Senior.` |
+| English (U.S.) | `Interviews Pro` | `Every Mid and Senior lesson and quiz, all four tracks.` |
+| Italian | `Interviews Pro` | `Tutte le lezioni e i quiz Mid e Senior, ogni percorso.` |
+
+L'*Image (Optional)* 1024×1024 serve solo se accendi la promozione dell'abbonamento
+sull'App Store: lasciala vuota, non è richiesta per la review.
 
 **Review Information** (dentro il prodotto, in fondo):
 
