@@ -1,49 +1,7 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "/ month": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "/ mese"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "/ mes"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "/ mois"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "/ Monat"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "/ mês"
-          }
-        }
-      }
-    },
-    "%@ · © 2026 %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ · © 2026 %2$@"
-          }
-        }
-      },
+    "%@ XP": {
       "shouldTranslate": false
     },
     "%@ lessons": {
@@ -114,7 +72,15 @@
         }
       }
     },
-    "%@ XP": {
+    "%@ · © 2026 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ · © 2026 %2$@"
+          }
+        }
+      },
       "shouldTranslate": false
     },
     "%lld": {
@@ -474,70 +440,36 @@
     "+%lld XP": {
       "shouldTranslate": false
     },
-    "🔥 %lld days in a row": {
+    "/ month": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 %lld giorni di fila"
+            "value": "/ mese"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 %lld días seguidos"
+            "value": "/ mes"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 %lld jours d'affilée"
+            "value": "/ mois"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 %lld Tage in Folge"
+            "value": "/ Monat"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 %lld dias seguidos"
-          }
-        }
-      }
-    },
-    "🔥 1 day in a row": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 giorno di fila"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 día seguido"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 jour d'affilée"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 Tag in Folge"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 dia seguido"
+            "value": "/ mês"
           }
         }
       }
@@ -912,40 +844,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Todos os tópicos Mid e Senior"
-          }
-        }
-      }
-    },
-    "and": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "e"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "y"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "et"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "und"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "e"
           }
         }
       }
@@ -1426,40 +1324,6 @@
         }
       }
     },
-    "correct": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "giuste"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "correctas"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "justes"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "richtig"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "certas"
-          }
-        }
-      }
-    },
     "Correct!": {
       "localizations": {
         "it": {
@@ -1490,40 +1354,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Isso aí!"
-          }
-        }
-      }
-    },
-    "Corrections for every mistake": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La correzione di ogni errore"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La corrección de cada error"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La correction de chaque erreur"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eine Korrektur zu jedem Fehler"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A correção de cada erro"
           }
         }
       }
@@ -1626,74 +1456,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Escuro"
-          }
-        }
-      }
-    },
-    "day": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "giorno"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "día"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "jour"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tag"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "dia"
-          }
-        }
-      }
-    },
-    "days": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "giorni"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "días"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "jours"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tage"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "dias"
           }
         }
       }
@@ -1868,40 +1630,6 @@
         }
       }
     },
-    "Each wrong answer is explained: what you picked, why it does not hold, and why the right one does.": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ogni risposta sbagliata è spiegata: cosa hai scelto, perché non regge e perché invece quella giusta regge."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cada respuesta equivocada se explica: qué elegiste, por qué no se sostiene y por qué la correcta sí."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chaque mauvaise réponse est expliquée : ce que tu as choisi, pourquoi ça ne tient pas, et pourquoi la bonne tient."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jede falsche Antwort wird erklärt: was du gewählt hast, warum es nicht stimmt und warum die richtige stimmt."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cada resposta errada é explicada: o que você escolheu, por que não funciona e por que a certa funciona."
-          }
-        }
-      }
-    },
     "English, Italiano, Español, Français, Deutsch, Português. You pick yours in the profile, whenever you want. Lessons and questions are written in English and Italian.": {
       "localizations": {
         "it": {
@@ -1970,40 +1698,6 @@
         }
       }
     },
-    "Every correct answer is worth 10, 20 or 30 XP depending on difficulty, in full only the first time. The daily quiz adds a bonus, larger when your streak is long. As your rank goes up the questions get harder.": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ogni risposta giusta vale 10, 20 o 30 XP in base alla difficoltà, piena solo la prima volta. Il quiz del giorno aggiunge un bonus, più alto se lo streak è lungo. Salendo di grado le domande si fanno più difficili."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cada respuesta correcta vale 10, 20 o 30 XP según la dificultad, completa solo la primera vez. El cuestionario del día añade un bonus, mayor si tu serie es larga. Al subir de rango las preguntas se vuelven más difíciles."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chaque bonne réponse vaut 10, 20 ou 30 XP selon la difficulté, en entier seulement la première fois. Le quiz du jour ajoute un bonus, plus gros si ta série est longue. En montant de rang, les questions deviennent plus dures."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jede richtige Antwort bringt 10, 20 oder 30 XP je nach Schwierigkeit, voll nur beim ersten Mal. Das Tagesquiz gibt einen Bonus, höher bei langer Serie. Mit steigendem Rang werden die Fragen schwerer."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cada resposta certa vale 10, 20 ou 30 XP conforme a dificuldade, cheia só na primeira vez. O quiz do dia dá um bônus, maior quando a sequência é longa. Conforme o nível sobe, as perguntas ficam mais difíceis."
-          }
-        }
-      }
-    },
     "Every Junior topic of every track is free: the lessons, the quizzes and five questions a day. No trial that runs out.": {
       "localizations": {
         "it": {
@@ -2034,6 +1728,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Todos os tópicos Junior de cada trilha são gratuitos: as lições, os quizzes e cinco perguntas por dia. Sem teste que expira."
+          }
+        }
+      }
+    },
+    "Every correct answer is worth 10, 20 or 30 XP depending on difficulty, in full only the first time. The daily quiz adds a bonus, larger when your streak is long. As your rank goes up the questions get harder.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogni risposta giusta vale 10, 20 o 30 XP in base alla difficoltà, piena solo la prima volta. Il quiz del giorno aggiunge un bonus, più alto se lo streak è lungo. Salendo di grado le domande si fanno più difficili."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada respuesta correcta vale 10, 20 o 30 XP según la dificultad, completa solo la primera vez. El cuestionario del día añade un bonus, mayor si tu serie es larga. Al subir de rango las preguntas se vuelven más difíciles."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque bonne réponse vaut 10, 20 ou 30 XP selon la difficulté, en entier seulement la première fois. Le quiz du jour ajoute un bonus, plus gros si ta série est longue. En montant de rang, les questions deviennent plus dures."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede richtige Antwort bringt 10, 20 oder 30 XP je nach Schwierigkeit, voll nur beim ersten Mal. Das Tagesquiz gibt einen Bonus, höher bei langer Serie. Mit steigendem Rang werden die Fragen schwerer."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada resposta certa vale 10, 20 ou 30 XP conforme a dificuldade, cheia só na primeira vez. O quiz do dia dá um bônus, maior quando a sequência é longa. Conforme o nível sobe, as perguntas ficam mais difíceis."
           }
         }
       }
@@ -3299,6 +3027,40 @@
         }
       }
     },
+    "No XP this time": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun XP questa volta"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ningún XP esta vez"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun XP cette fois"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesmal kein XP"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum XP desta vez"
+          }
+        }
+      }
+    },
     "No active subscription found on this Apple Account.": {
       "localizations": {
         "it": {
@@ -3397,40 +3159,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sem problema: as lições estão aí para isso."
-          }
-        }
-      }
-    },
-    "No XP this time": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nessun XP questa volta"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ningún XP esta vez"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aucun XP cette fois"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diesmal kein XP"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nenhum XP desta vez"
           }
         }
       }
@@ -4524,40 +4252,6 @@
         }
       }
     },
-    "Six languages, light and dark": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sei lingue, chiaro e scuro"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Seis idiomas, claro y oscuro"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Six langues, clair et sombre"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sechs Sprachen, hell und dunkel"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Seis idiomas, claro e escuro"
-          }
-        }
-      }
-    },
     "Solid base. One review and you're there.": {
       "localizations": {
         "it": {
@@ -5317,40 +5011,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "A caixa de ferramentas que desenha as telas de um app de iPhone: botões, listas, a passagem de uma tela para a outra. Existe desde o primeiro iPhone, em 2008, então a maioria dos apps que já estão na App Store usa ela. O SwiftUI é a caixa mais nova que está tomando o lugar dela, mas as entrevistas ainda perguntam sobre esta. Você estuda: a vida de uma tela, Auto Layout, listas longas, navegação e os jeitos comuns de organizar o código."
-          }
-        }
-      }
-    },
-    "The whole app in English, Italian, Spanish, French, German and Portuguese, in the theme you prefer.": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tutta l'app in inglese, italiano, spagnolo, francese, tedesco e portoghese, nel tema che preferisci."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toda la app en inglés, italiano, español, francés, alemán y portugués, en el tema que prefieras."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toute l'app en anglais, italien, espagnol, français, allemand et portugais, dans le thème que tu préfères."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die ganze App auf Englisch, Italienisch, Spanisch, Französisch, Deutsch und Portugiesisch, im Theme deiner Wahl."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "O app todo em inglês, italiano, espanhol, francês, alemão e português, no tema que você preferir."
           }
         }
       }
@@ -6473,6 +6133,210 @@
           "stringUnit": {
             "state": "translated",
             "value": "Suas trilhas"
+          }
+        }
+      }
+    },
+    "and": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "y"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "et"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "und"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e"
+          }
+        }
+      }
+    },
+    "correct": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "giuste"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "correctas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "justes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "richtig"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "certas"
+          }
+        }
+      }
+    },
+    "day": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "giorno"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "día"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jour"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dia"
+          }
+        }
+      }
+    },
+    "days": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "giorni"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "días"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jours"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tage"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dias"
+          }
+        }
+      }
+    },
+    "🔥 %lld days in a row": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld giorni di fila"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld días seguidos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld jours d'affilée"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld Tage in Folge"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld dias seguidos"
+          }
+        }
+      }
+    },
+    "🔥 1 day in a row": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 giorno di fila"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 día seguido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 jour d'affilée"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 Tag in Folge"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 dia seguido"
           }
         }
       }

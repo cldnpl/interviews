@@ -140,14 +140,6 @@ struct PremiumSheet: View {
             BenefitRow(symbol: "sparkles", tint: .flame,
                        title: String(localized: "A daily quiz that grows with you", bundle: .app),
                        detail: String(localized: "Without Pro the daily questions stay on the Junior topics. With Pro they follow your rank, all the way to Staff.", bundle: .app))
-            Divider().padding(.leading, 60)
-            BenefitRow(symbol: "arrow.uturn.backward.circle.fill", tint: .wrong,
-                       title: String(localized: "Corrections for every mistake", bundle: .app),
-                       detail: String(localized: "Each wrong answer is explained: what you picked, why it does not hold, and why the right one does.", bundle: .app))
-            Divider().padding(.leading, 60)
-            BenefitRow(symbol: "globe", tint: Track.flutter.theme.primary,
-                       title: String(localized: "Six languages, light and dark", bundle: .app),
-                       detail: String(localized: "The whole app in English, Italian, Spanish, French, German and Portuguese, in the theme you prefer.", bundle: .app))
         }
         .padding(.vertical, 6)
         .card()
