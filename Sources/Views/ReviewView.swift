@@ -3,11 +3,15 @@ import SwiftUI
 /// Sezione Ripasso: tutte le lezioni del linguaggio attivo.
 struct ReviewView: View {
     @Environment(AppState.self) private var state
+    @State private var paywall: PaywallReason?
 
     var body: some View {
         let track = state.activeTrack
+        // Senza abbonamento il conto è sulle lezioni aperte: "3/9" farebbe credere
+        // che le altre sei si possano leggere.
         let topics = ContentStore.shared.topics(for: track)
-        let read = state.lessonsRead(in: track)
+            .filter { state.isUnlocked($0) }
+        let read = state.readLessons(in: track, among: topics)
 
         NavigationStack {
             ScrollView {
@@ -38,17 +42,29 @@ struct ReviewView: View {
                     .card()
 
                     ForEach(ContentStore.shared.stages(for: track)) { group in
+                        let open = state.isUnlocked(group.stage)
                         VStack(alignment: .leading, spacing: 12) {
                             StageHeader(stage: group.stage, reached: group.stage.tier <= state.tier)
                                 .padding(.top, 6)
-                            ForEach(Array(group.topics.enumerated()), id: \.element.id) { i, topic in
-                                NavigationLink {
-                                    LessonView(track: track, topic: topic)
-                                } label: {
-                                    LessonRow(number: group.firstNumber + i, track: track, topic: topic,
-                                              read: state.isLessonRead(track, topic.id))
+                            if !open {
+                                LockedStageNote(stage: group.stage) {
+                                    paywall = PaywallReason(String(localized: "The \(group.stage.tier.name) lessons of \(track.name) are part of Interviews Pro.", bundle: .app))
                                 }
-                                .buttonStyle(.plain)
+                            }
+                            ForEach(Array(group.topics.enumerated()), id: \.element.id) { i, topic in
+                                let row = LessonRow(number: group.firstNumber + i, track: track, topic: topic,
+                                                    read: state.isLessonRead(track, topic.id), locked: !open)
+                                if open {
+                                    NavigationLink {
+                                        LessonView(track: track, topic: topic)
+                                    } label: { row }
+                                    .buttonStyle(.plain)
+                                } else {
+                                    Button {
+                                        paywall = PaywallReason(String(localized: "The \(group.stage.tier.name) lessons of \(track.name) are part of Interviews Pro.", bundle: .app))
+                                    } label: { row }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
                     }
@@ -58,6 +74,7 @@ struct ReviewView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Review")
+            .sheet(item: $paywall) { PremiumSheet(reason: $0.text) }
         }
     }
 }
@@ -67,13 +84,16 @@ private struct LessonRow: View {
     let track: Track
     let topic: Topic
     let read: Bool
+    var locked = false
 
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(read ? AnyShapeStyle(track.theme.linear) : AnyShapeStyle(track.theme.soft))
-                if read {
+                    .fill(read && !locked ? AnyShapeStyle(track.theme.linear) : AnyShapeStyle(track.theme.soft))
+                if locked {
+                    LockBadge(size: 26)
+                } else if read {
                     Image(systemName: "checkmark").font(.headline).foregroundStyle(.white)
                 } else {
                     Text("\(number)")
@@ -94,6 +114,7 @@ private struct LessonRow: View {
         }
         .padding(14)
         .card()
+        .opacity(locked ? 0.62 : 1)
     }
 }
 

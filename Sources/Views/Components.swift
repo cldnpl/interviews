@@ -66,14 +66,17 @@ struct TrackChip: View {
     var selected = true
 
     var body: some View {
-        Label(track.name, systemImage: track.symbol)
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .foregroundStyle(selected ? .white : track.theme.primary)
-            .background {
-                Capsule().fill(selected ? AnyShapeStyle(track.theme.linear) : AnyShapeStyle(track.theme.soft))
-            }
+        HStack(spacing: 5) {
+            TrackMark(track, size: 13, fill: selected ? AnyShapeStyle(.white) : AnyShapeStyle(track.theme.primary))
+            Text(track.name)
+        }
+        .font(.caption.weight(.semibold))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .foregroundStyle(selected ? .white : track.theme.primary)
+        .background {
+            Capsule().fill(selected ? AnyShapeStyle(track.theme.linear) : AnyShapeStyle(track.theme.soft))
+        }
     }
 }
 
@@ -90,15 +93,19 @@ struct TrackSwitcher: View {
                         Button {
                             withAnimation(.snappy) { state.activeTrack = track }
                         } label: {
-                            Label(track.name, systemImage: track.symbol)
-                                .font(.subheadline.weight(.semibold))
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 9)
-                                .foregroundStyle(selected ? .white : .primary)
-                                .background {
-                                    Capsule().fill(selected ? AnyShapeStyle(track.theme.linear)
-                                                            : AnyShapeStyle(Color(.secondarySystemBackground)))
-                                }
+                            HStack(spacing: 7) {
+                                TrackMark(track, size: 16,
+                                          fill: selected ? AnyShapeStyle(.white) : AnyShapeStyle(track.theme.primary))
+                                Text(track.name)
+                            }
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 9)
+                            .foregroundStyle(selected ? .white : .primary)
+                            .background {
+                                Capsule().fill(selected ? AnyShapeStyle(track.theme.linear)
+                                                        : AnyShapeStyle(Color(.secondarySystemBackground)))
+                            }
                         }
                         .buttonStyle(.plain)
                         .sensoryFeedback(.selection, trigger: selected)
@@ -137,7 +144,7 @@ struct DifficultyDots: View {
                     .fill(i <= level ? color : color.opacity(0.18))
                     .frame(width: 12, height: 5)
             }
-            Text(["Junior", "Mid", "Senior"][max(0, min(2, level - 1))])
+            Text(Tier(rawValue: max(1, min(3, level)))?.name ?? "")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.leading, 3)

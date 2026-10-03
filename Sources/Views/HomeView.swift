@@ -17,6 +17,8 @@ struct QuizSession: Identifiable, Hashable {
 struct HomeView: View {
     @Environment(AppState.self) private var state
     @State private var session: QuizSession?
+    /// Il motivo per cui si apre l'abbonamento, o `nil` se è chiuso.
+    @State private var paywall: PaywallReason?
 
     private var theme: Theme { state.activeTrack.theme }
 
@@ -30,6 +32,7 @@ struct HomeView: View {
                     StreakCard()
                     RankCard()
                     dailyCard
+                    if !state.isPremium { proCard }
                     if !state.mistakeItems.isEmpty { mistakesCard }
                     topicsSection
                 }
@@ -41,6 +44,7 @@ struct HomeView: View {
             .toolbar(.hidden, for: .navigationBar)
         }
         .fullScreenCover(item: $session) { QuizView(session: $0) }
+        .sheet(item: $paywall) { PremiumSheet(reason: $0.text) }
     }
 
     private var header: some View {
@@ -64,6 +68,11 @@ struct HomeView: View {
             .background(Color(.secondarySystemGroupedBackground), in: Capsule())
         }
         .padding(.top, 12)
+    }
+
+    /// Che cosa si stava cercando di aprire, da scrivere in cima all'abbonamento.
+    private func lockReason(_ stage: Stage) -> String {
+        String(localized: "The \(stage.tier.name) topics of \(state.activeTrack.name) are part of Interviews Pro.", bundle: .app)
     }
 
     private var greeting: String {
@@ -136,16 +145,38 @@ struct HomeView: View {
         .background {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: 26, style: .continuous).fill(theme.linear)
-                Image(systemName: state.activeTrack.symbol)
-                    .font(.system(size: 120, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.1))
+                TrackMark(state.activeTrack, size: 120, fill: .white.opacity(0.12))
                     .rotationEffect(.degrees(-12))
-                    .offset(x: 20, y: -10)
-                    .clipped()
+                    .offset(x: 26, y: -14)
             }
             .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         }
         .shadow(color: theme.primary.opacity(0.35), radius: 18, y: 10)
+    }
+
+    /// L'invito all'abbonamento, in home e solo per chi non l'ha.
+    private var proCard: some View {
+        Button {
+            paywall = .plain
+        } label: {
+            HStack(spacing: 14) {
+                LockBadge(size: 38)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Unlock every lesson")
+                        .font(.headline)
+                    Text("Junior is free. Mid and Senior open with Interviews Pro.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
+        }
+        .buttonStyle(.plain)
     }
 
     private var mistakesCard: some View {
@@ -191,16 +222,24 @@ struct HomeView: View {
             }
 
             ForEach(ContentStore.shared.stages(for: state.activeTrack)) { group in
+                let open = state.isUnlocked(group.stage)
                 VStack(alignment: .leading, spacing: 12) {
                     StageHeader(stage: group.stage, reached: group.stage.tier <= state.tier)
+                    if !open {
+                        LockedStageNote(stage: group.stage) { paywall = PaywallReason(lockReason(group.stage)) }
+                    }
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)],
                               spacing: 14) {
                         ForEach(Array(group.topics.enumerated()), id: \.element.id) { i, topic in
-                            NavigationLink(value: topic) {
-                                TopicTile(track: state.activeTrack, topic: topic,
-                                          number: group.firstNumber + i)
+                            let tile = TopicTile(track: state.activeTrack, topic: topic,
+                                                 number: group.firstNumber + i, locked: !open)
+                            if open {
+                                NavigationLink(value: topic) { tile }
+                                    .buttonStyle(.plain)
+                            } else {
+                                Button { paywall = PaywallReason(lockReason(group.stage)) } label: { tile }
+                                    .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -241,6 +280,8 @@ struct TopicTile: View {
     let topic: Topic
     /// La posizione nel percorso, continua da 1 fino all'ultimo argomento.
     let number: Int
+    /// Chiuso dall'abbonamento: si vede il titolo, non si entra.
+    var locked = false
 
     var body: some View {
         let stat = state.stat(track, topic.id)
@@ -263,26 +304,38 @@ struct TopicTile: View {
                         .offset(x: -6, y: -6)
                 }
                 Spacer()
-                ZStack {
-                    ProgressRing(progress: Double(stat.bestScore) / 100, color: track.theme.primary, lineWidth: 4)
-                    if stat.bestScore == 100 {
-                        Image(systemName: "checkmark").font(.caption2.bold()).foregroundStyle(track.theme.primary)
+                if locked {
+                    LockBadge(size: 26)
+                } else {
+                    ZStack {
+                        ProgressRing(progress: Double(stat.bestScore) / 100, color: track.theme.primary, lineWidth: 4)
+                        if stat.bestScore == 100 {
+                            Image(systemName: "checkmark").font(.caption2.bold()).foregroundStyle(track.theme.primary)
+                        }
                     }
+                    .frame(width: 26, height: 26)
                 }
-                .frame(width: 26, height: 26)
             }
             Text(topic.title)
                 .font(.headline)
                 .lineLimit(2, reservesSpace: true)
                 .multilineTextAlignment(.leading)
-            Text(stat.completedRuns > 0 ? "Best \(stat.bestScore)%"
-                 : "\(ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier).count) questions")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
+            Group {
+                if locked {
+                    Text("Interviews Pro")
+                } else if stat.completedRuns > 0 {
+                    Text("Best \(stat.bestScore)%")
+                } else {
+                    Text("\(ContentStore.shared.topicItems(for: track, topic: topic, tier: state.tier).count) questions")
+                }
+            }
+            .font(.caption.weight(.medium))
+            .foregroundStyle(locked ? Color(hex: 0xC07A00) : .secondary)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
+        .opacity(locked ? 0.62 : 1)
     }
 }
 

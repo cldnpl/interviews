@@ -10,6 +10,8 @@ struct QuizView: View {
     @State private var selected: Int?
     @State private var correctCount = 0
     @State private var finished = false
+    /// Vero fra la fine del quiz del giorno e il bottone della festa dello streak.
+    @State private var celebrating = false
     @State private var streakBefore = 0
     @State private var rankBefore = Rank.all[0]
     @State private var xpGained = 0
@@ -23,7 +25,16 @@ struct QuizView: View {
         ZStack {
             Color(.systemGroupedBackground).ignoresSafeArea()
 
-            if finished {
+            if celebrating {
+                StreakCelebrationView(from: streakBefore, to: state.currentStreak) {
+                    withAnimation(.snappy) {
+                        celebrating = false
+                        finished = true
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(2)
+            } else if finished {
                 QuizResultView(session: session, correct: correctCount, streakBefore: streakBefore,
                                xpGained: xpGained, rankBefore: rankBefore, mistakes: mistakes) { dismiss() }
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
@@ -32,6 +43,7 @@ struct QuizView: View {
             }
         }
         .animation(.snappy, value: finished)
+        .animation(.easeInOut(duration: 0.35), value: celebrating)
         .onAppear {
             streakBefore = state.currentStreak
             rankBefore = state.rank
@@ -196,6 +208,11 @@ struct QuizView: View {
         case .daily:
             xpGained += state.finishDaily(correct: correctCount, total: session.items.count)
             Task { await Reminders.reschedule(for: state) }
+            // Lo streak è salito: prima la festa, il riepilogo viene dopo.
+            if state.currentStreak > streakBefore {
+                celebrating = true
+                return
+            }
         case .topic(let track, let topicID):
             xpGained += state.finishTopicQuiz(track: track, topicID: topicID, correct: correctCount, total: session.items.count)
         case .mistakes, .practice:
@@ -304,19 +321,16 @@ struct QuizResultView: View {
         VStack(spacing: 28) {
             Spacer()
             if isDaily {
-                VStack(spacing: 8) {
+                HStack(spacing: 8) {
                     Image(systemName: "flame.fill")
-                        .font(.system(size: 96))
                         .foregroundStyle(LinearGradient(colors: [.yellow, .flame, .red], startPoint: .top, endPoint: .bottom))
                         .symbolEffect(.bounce, value: appeared)
-                        .scaleEffect(appeared ? 1 : 0.4)
-                    Text("\(state.currentStreak)")
-                        .font(.system(size: 64, weight: .heavy, design: .rounded).monospacedDigit())
-                        .contentTransition(.numericText(value: Double(state.currentStreak)))
-                    Text(state.currentStreak > streakBefore ? "Streak extended! See you tomorrow." : "Days in a row")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
+                    Text(state.currentStreak == 1 ? "1 day in a row" : "\(state.currentStreak) days in a row")
+                        .font(.headline.monospacedDigit())
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 9)
+                .background(Color.flame.opacity(0.12), in: Capsule())
             }
 
             ZStack {

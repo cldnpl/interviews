@@ -54,5 +54,38 @@ extension Color {
     static let flame = Color(hex: 0xFF7A00)
     static let correct = Color(hex: 0x2FB36B)
     static let wrong = Color(hex: 0xE5484D)
+    /// Il fondo dei blocchi di codice: scuro in entrambi i temi, come in Xcode.
     static let codeBackground = Color(hex: 0x1E1F29)
+}
+
+/// Tema chiaro o scuro. Di default l'app segue l'iPhone; chi vuole può fissarne uno.
+enum Appearance: String, Codable, CaseIterable, Identifiable {
+    case system, light, dark
+
+    var id: String { rawValue }
+
+    /// `nil` significa "decidi tu, iOS".
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    var name: String {
+        switch self {
+        case .system: String(localized: "Automatic", bundle: .app)
+        case .light: String(localized: "Light", bundle: .app)
+        case .dark: String(localized: "Dark", bundle: .app)
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .system: "circle.lefthalf.filled"
+        case .light: "sun.max.fill"
+        case .dark: "moon.fill"
+        }
+    }
 }

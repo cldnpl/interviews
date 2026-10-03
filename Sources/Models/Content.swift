@@ -16,32 +16,50 @@ enum Track: String, Codable, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    /// Una riga sotto il nome: di che cosa parla questo percorso.
+    /// Una riga sotto il nome: che cos'è questa cosa, in parole povere.
+    /// "Il linguaggio" non diceva niente a chi non sa già che Swift è un linguaggio.
     var subtitle: String {
         switch self {
-        case .swift: String(localized: "The language", bundle: .app)
-        case .uikit: String(localized: "iOS interface", bundle: .app)
-        case .kotlin: String(localized: "Android", bundle: .app)
-        case .flutter: String(localized: "Cross-platform", bundle: .app)
+        case .swift: String(localized: "The language of iPhone apps", bundle: .app)
+        case .uikit: String(localized: "The classic way to build iPhone screens", bundle: .app)
+        case .kotlin: String(localized: "The language of Android apps", bundle: .app)
+        case .flutter: String(localized: "One app for Android and iPhone together", bundle: .app)
         }
     }
 
-    /// Gli argomenti che si incontrano, per scegliere in onboarding.
+    /// Una riga brevissima da mettere accanto al nome, dove non c'è spazio per il sottotitolo.
+    var tag: String {
+        switch self {
+        case .swift: String(localized: "Language · iPhone", bundle: .app)
+        case .uikit: String(localized: "Interfaces · iPhone", bundle: .app)
+        case .kotlin: String(localized: "Language · Android", bundle: .app)
+        case .flutter: String(localized: "Both · Android and iPhone", bundle: .app)
+        }
+    }
+
+    /// Che cos'è e che cosa si studia: la spiegazione lunga, per la scelta in onboarding.
     var blurb: String {
         switch self {
-        case .swift: String(localized: "Optionals, value and reference types, protocols and generics, closures, ARC, concurrency", bundle: .app)
-        case .uikit: String(localized: "View lifecycle, Auto Layout, table and collection views, navigation, architectures", bundle: .app)
-        case .kotlin: String(localized: "Null safety, coroutines, data classes, collections, Jetpack and Android lifecycle", bundle: .app)
-        case .flutter: String(localized: "Widgets and state, Dart, isolates, architecture, native integration, deployment", bundle: .app)
+        case .swift:
+            String(localized: "A programming language made by Apple in 2014. Every app on the iPhone is written in it, and it took the place of the older Objective-C. You study: optionals, value and reference types, protocols and generics, closures, how memory is freed (ARC) and how to do two things at once (async/await).", bundle: .app)
+        case .uikit:
+            String(localized: "The toolbox that draws the screens of an iPhone app: buttons, lists, the passage from one screen to the next. It has been there since the first iPhone in 2008, so most apps already on the App Store use it. SwiftUI is the newer toolbox that is slowly taking its place, but interviews still ask about this one. You study: the life of a screen, Auto Layout, long lists, navigation and the common ways of organising the code.", bundle: .app)
+        case .kotlin:
+            String(localized: "A programming language made by JetBrains, and since 2017 the one Google recommends for Android apps. It took the place of Java, which is why interviewers compare the two. You study: avoiding the null crash, coroutines for work that takes time, data classes, collections, and the life of an Android screen with Jetpack.", bundle: .app)
+        case .flutter:
+            String(localized: "A toolbox made by Google to write the app once and run it on both Android and iPhone. The language it uses is called Dart. You study: widgets and state, Dart and its asynchronous code, isolates for heavy work, how to organise a project, how to call native code and how to publish.", bundle: .app)
         }
     }
 
+    /// Il simbolo di sistema più vicino, per i posti dove serve un `Image(systemName:)`
+    /// e non si può disegnare una forma (le notifiche, per esempio).
+    /// Nell'interfaccia si usa `TrackMark`, che disegna i marchi veri.
     var symbol: String {
         switch self {
         case .swift: "swift"
-        case .uikit: "iphone"
-        case .kotlin: "k.square.fill"
-        case .flutter: "bird.fill"
+        case .uikit: "square.on.square"
+        case .kotlin: "chevron.right.square.fill"
+        case .flutter: "square.stack.3d.up.fill"
         }
     }
 }
@@ -158,14 +176,17 @@ final class ContentStore {
 
     private func load() {
         byTrack = [:]
+        // Lezioni e domande esistono in inglese e in italiano: le altre lingue
+        // dell'interfaccia leggono quelle inglesi.
+        let folder = language.contentLanguage.rawValue
         for track in Track.allCases {
             guard let url = Bundle.main.url(forResource: track.rawValue, withExtension: "json",
-                                            subdirectory: nil, localization: language.rawValue),
+                                            subdirectory: nil, localization: folder),
                   let data = try? Data(contentsOf: url) else { continue }
             do {
                 byTrack[track] = try JSONDecoder().decode(TrackContent.self, from: data).topics
             } catch {
-                assertionFailure("Invalid content for \(language.rawValue)/\(track.rawValue): \(error)")
+                assertionFailure("Invalid content for \(folder)/\(track.rawValue): \(error)")
             }
         }
     }
@@ -187,8 +208,11 @@ final class ContentStore {
 
     /// Gli argomenti che a questa fascia sono già stati incontrati nel percorso:
     /// il quiz del giorno non pesca da lezioni che vengono dopo.
-    func topics(for track: Track, upTo tier: Tier) -> [Topic] {
-        topics(for: track).filter { $0.stage.tier <= tier }
+    /// `ceiling` è il tetto dell'abbonamento: senza abbonamento si ferma a Junior.
+    func topics(for track: Track, upTo tier: Tier, ceiling: Stage? = nil) -> [Topic] {
+        topics(for: track).filter { topic in
+            topic.stage.tier <= tier && (ceiling.map { topic.stage <= $0 } ?? true)
+        }
     }
 
     func topic(_ id: String, in track: Track) -> Topic? {
@@ -199,20 +223,26 @@ final class ContentStore {
         topic.questions.map { QuizItem(question: $0, track: track, topicID: topic.id) }
     }
 
-    func allItems(for tracks: [Track]) -> [QuizItem] {
-        tracks.flatMap { track in topics(for: track).flatMap { items(for: track, topic: $0) } }
+    func allItems(for tracks: [Track], ceiling: Stage? = nil) -> [QuizItem] {
+        tracks.flatMap { track in
+            topics(for: track)
+                .filter { topic in ceiling.map { topic.stage <= $0 } ?? true }
+                .flatMap { items(for: track, topic: $0) }
+        }
     }
 
     /// Le domande del giorno: stesse per tutta la giornata, diverse ogni giorno,
     /// pescate in modo equo fra i track scelti e dosate sulla fascia dell'utente.
     /// Entrano solo gli argomenti già raggiunti nel percorso: salendo di grado
     /// si sbloccano gli stage successivi.
-    func dailyItems(for tracks: [Track], tier: Tier, day: Day, count: Int = 5) -> [QuizItem] {
+    func dailyItems(for tracks: [Track], tier: Tier, day: Day, count: Int = 5,
+                    ceiling: Stage? = nil) -> [QuizItem] {
         guard !tracks.isEmpty else { return [] }
         var rng = SeededGenerator(seed: UInt64(truncatingIfNeeded: day.ordinal &* 2_654_435_761 &+ tier.rawValue))
         // pools[track][difficoltà] = domande mescolate
         var pools = tracks.map { track in
-            let reached = topics(for: track, upTo: tier).flatMap { items(for: track, topic: $0) }
+            let reached = topics(for: track, upTo: tier, ceiling: ceiling)
+                .flatMap { items(for: track, topic: $0) }
             return Dictionary(grouping: reached.shuffled(using: &rng), by: \.question.difficulty)
         }
         // Quote fisse per quiz (metodo dei resti più grandi): un Mid riceve sempre

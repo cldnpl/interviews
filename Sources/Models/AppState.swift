@@ -30,6 +30,7 @@ struct SavedState: Codable {
     var reminderHour = 19
     var reminderMinute = 0
     var startingTier: Tier = .junior
+    var appearance: Appearance = .system
     var xp = 0
     /// Domande già indovinate almeno una volta: danno XP pieni solo la prima volta.
     var mastered: Set<String> = []
@@ -61,6 +62,7 @@ struct SavedState: Codable {
         reminderHour = v(.reminderHour, d.reminderHour)
         reminderMinute = v(.reminderMinute, d.reminderMinute)
         startingTier = v(.startingTier, d.startingTier)
+        appearance = v(.appearance, d.appearance)
         xp = v(.xp, d.xp)
         mastered = v(.mastered, d.mastered)
         wrongChoices = v(.wrongChoices, d.wrongChoices)
@@ -98,6 +100,35 @@ final class AppState {
             guard language != oldValue else { return }
             AppLanguage.current = language
             ContentStore.shared.reload(for: language)
+        }
+    }
+
+    // MARK: Tema chiaro o scuro
+
+    var appearance: Appearance {
+        get { saved.appearance }
+        set { saved.appearance = newValue }
+    }
+
+    // MARK: Abbonamento
+
+    /// L'abbonamento vive in `Store`, che lo chiede a StoreKit. Qui si passa solo
+    /// la risposta, perché le view guardano una cosa sola: `state`.
+    let store = Store.shared
+
+    var isPremium: Bool { store.isPremium }
+
+    /// Gratis si studiano gli argomenti Junior di ogni linguaggio; gli altri
+    /// si aprono con l'abbonamento.
+    func isUnlocked(_ topic: Topic) -> Bool { isPremium || topic.stage == .junior }
+
+    func isUnlocked(_ stage: Stage) -> Bool { isPremium || stage == .junior }
+
+    /// Quanti argomenti si aprirebbero con l'abbonamento, su tutti i linguaggi scelti:
+    /// serve a dire un numero vero nella schermata dell'abbonamento, non "tanti".
+    var lockedTopicCount: Int {
+        tracks.reduce(0) { total, track in
+            total + ContentStore.shared.topics(for: track).count { $0.stage != .junior }
         }
     }
 
@@ -172,7 +203,12 @@ final class AppState {
 
     var todayResult: DailyResult? { saved.dailyResults[Day.today.description] }
 
-    var dailyItems: [QuizItem] { ContentStore.shared.dailyItems(for: tracks, tier: tier, day: .today) }
+    /// Senza abbonamento il quiz del giorno pesca solo dagli argomenti Junior,
+    /// gli stessi che si possono studiare: nessuna domanda su una lezione chiusa.
+    var dailyItems: [QuizItem] {
+        ContentStore.shared.dailyItems(for: tracks, tier: tier, day: .today,
+                                       ceiling: isPremium ? nil : .junior)
+    }
 
     // MARK: XP e gradi
 
@@ -267,10 +303,18 @@ final class AppState {
         saved.lessonsRead.filter { $0.hasPrefix(track.rawValue + "/") }.count
     }
 
+    /// Quante di queste lezioni sono state lette: serve a contare solo quelle aperte.
+    func readLessons(in track: Track, among topics: [Topic]) -> Int {
+        topics.count { isLessonRead(track, $0.id) }
+    }
+
     func wrongChoice(for item: QuizItem) -> Int? { saved.wrongChoices[item.id] }
 
+    /// Gli errori da ripassare. Senza abbonamento restano solo quelli degli
+    /// argomenti aperti: non si manda a ripassare una lezione che non si può leggere.
     var mistakeItems: [QuizItem] {
-        ContentStore.shared.allItems(for: tracks).filter { saved.mistakes.contains($0.id) }
+        ContentStore.shared.allItems(for: tracks, ceiling: isPremium ? nil : .junior)
+            .filter { saved.mistakes.contains($0.id) }
     }
 
     func resetProgress() {
@@ -283,10 +327,12 @@ final class AppState {
         saved.reminderHour = keep.reminderHour
         saved.reminderMinute = keep.reminderMinute
         saved.startingTier = keep.startingTier
+        saved.appearance = keep.appearance
         saved.xp = Rank.start(of: keep.startingTier).minXP
     }
 
     #if DEBUG
     func restartOnboarding() { saved.hasOnboarded = false }
+    func debugTogglePremium() { store.debugSetPremium(!store.isPremium) }
     #endif
 }

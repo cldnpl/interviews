@@ -1,0 +1,54 @@
+{
+  "identifier" : "4A1C8E77",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_applicationInternalID" : "interviews",
+    "_developerTeamID" : "H4M7KJL5DT",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "ITA",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21501234",
+      "localizations" : [],
+      "name" : "Interviews Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "1.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "61501234",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "All the Mid and Senior lessons and quizzes, on every track.",
+              "displayName" : "Interviews Pro",
+              "locale" : "en_US"
+            },
+            {
+              "description" : "Tutte le lezioni e i quiz Mid e Senior, su ogni percorso.",
+              "displayName" : "Interviews Pro",
+              "locale" : "it_IT"
+            }
+          ],
+          "productID" : "com.cldnpl.interviews.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Interviews Pro Monthly",
+          "subscriptionGroupID" : "21501234",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : []
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

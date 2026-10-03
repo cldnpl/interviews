@@ -4,6 +4,7 @@ struct ProfileView: View {
     @Environment(AppState.self) private var state
     @State private var confirmReset = false
     @State private var notificationsDenied = false
+    @State private var paywall: PaywallReason?
 
     var body: some View {
         @Bindable var state = state
@@ -28,6 +29,52 @@ struct ProfileView: View {
                     RankCard()
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets())
+                }
+
+                Section {
+                    if state.isPremium {
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.title2)
+                                .foregroundStyle(Color(hex: 0xF5A000))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Interviews Pro is active")
+                                    .font(.headline)
+                                Text("Every lesson and every question is open. Thank you, really.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Link(destination: URL(string: "https://apps.apple.com/account/subscriptions")!) {
+                            Label("Manage subscription", systemImage: "arrow.up.right.square")
+                        }
+                    } else {
+                        Button {
+                            paywall = .plain
+                        } label: {
+                            HStack(spacing: 12) {
+                                LockBadge(size: 34)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Unlock every lesson")
+                                        .font(.headline)
+                                    Text("Junior is free. Mid and Senior with Interviews Pro, \(state.store.priceText) a month.")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        Button("Restore purchases") { Task { await state.store.restore() } }
+                    }
+                } header: {
+                    Text("Subscription")
+                } footer: {
+                    Text(state.isPremium
+                         ? "It renews by itself every month until you cancel it, from Settings on your iPhone."
+                         : "Without the subscription you keep all the Junior topics, forever, and five questions a day.")
                 }
 
                 Section {
@@ -71,8 +118,7 @@ struct ProfileView: View {
                             }
                         )) {
                             HStack(spacing: 12) {
-                                Image(systemName: track.symbol)
-                                    .foregroundStyle(.white)
+                                TrackMark(track, size: 16)
                                     .frame(width: 30, height: 30)
                                     .background(track.theme.linear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                                 VStack(alignment: .leading, spacing: 1) {
@@ -90,6 +136,23 @@ struct ProfileView: View {
                     Text("Your tracks")
                 } footer: {
                     Text("Each track has its own topics, in order from the fundamentals to senior material. The daily questions mix the active tracks, drawing only from the topics your rank has already reached. At least one track must stay on.")
+                }
+
+                Section {
+                    Picker("Theme", selection: Binding(
+                        get: { state.appearance },
+                        set: { state.appearance = $0 }
+                    )) {
+                        ForEach(Appearance.allCases) { appearance in
+                            Label(appearance.name, systemImage: appearance.symbol).tag(appearance)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                } header: {
+                    Text("Theme")
+                } footer: {
+                    Text("Automatic follows your iPhone: it turns dark in the evening if you have set it that way.")
                 }
 
                 Section {
@@ -112,7 +175,9 @@ struct ProfileView: View {
                 } header: {
                     Text("Language")
                 } footer: {
-                    Text("Lessons, questions and reminders switch too. Your progress stays as it is.")
+                    Text(state.language.contentIsTranslated
+                         ? "Buttons, lessons, questions and reminders all switch. Your progress stays as it is."
+                         : "The app switches language. Lessons and questions are written by hand in English and Italian, so in this language you read them in English: better than a machine translation of a hard idea.")
                 }
 
                 Section {
@@ -149,12 +214,14 @@ struct ProfileView: View {
                     Button("Reset progress", role: .destructive) { confirmReset = true }
                     #if DEBUG
                     Button("Redo onboarding") { state.restartOnboarding() }
+                    Button(state.isPremium ? "DEBUG: turn Pro off" : "DEBUG: turn Pro on") { state.debugTogglePremium() }
                     #endif
                 }
 
                 AboutSection()
             }
             .navigationTitle("Profile")
+            .sheet(item: $paywall) { PremiumSheet(reason: $0.text) }
             .confirmationDialog("Reset streak, stats and mistakes?", isPresented: $confirmReset, titleVisibility: .visible) {
                 Button("Reset", role: .destructive) {
                     state.resetProgress()

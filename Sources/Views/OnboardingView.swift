@@ -34,7 +34,7 @@ struct OnboardingView: View {
                         }
                         .foregroundStyle(.primary)
                         Spacer()
-                        PageDots(count: 4, index: step, color: theme.primary)
+                        PageDots(count: 5, index: step, color: theme.primary)
                         Spacer()
                         Color.clear.frame(width: 40, height: 40)
                     }
@@ -47,6 +47,7 @@ struct OnboardingView: View {
                     case 0: welcome
                     case 1: trackPicker
                     case 2: levelPicker
+                    case 3: goodToKnow
                     default: reminder
                     }
                 }
@@ -150,6 +151,47 @@ struct OnboardingView: View {
         .padding(.horizontal, 24)
     }
 
+    // MARK: Quello che è giusto sapere
+
+    private var goodToKnow: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("A few things about the app")
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                Text("Nothing hidden: this is what you get, and what costs money.")
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 24)
+
+            ScrollView {
+                VStack(spacing: 12) {
+                    FactCard(symbol: "book.fill", tint: theme.primary,
+                             title: "Free from the first day",
+                             detail: "Every Junior topic of every track is free: the lessons, the quizzes and five questions a day. No trial that runs out.")
+                    FactCard(symbol: "lock.fill", tint: Color(hex: 0xF5A000),
+                             title: "Mid and Senior with Interviews Pro",
+                             detail: "The harder topics are part of a subscription at \(Store.shared.priceText) a month. It's a symbolic price to support an independent developer. You can look at it later, from your profile.")
+                    FactCard(symbol: "globe", tint: Track.flutter.theme.primary,
+                             title: "Six languages",
+                             detail: "English, Italiano, Español, Français, Deutsch, Português. You pick yours in the profile, whenever you want. Lessons and questions are written in English and Italian.")
+                    FactCard(symbol: "circle.lefthalf.filled", tint: Track.kotlin.theme.primary,
+                             title: "Light and dark",
+                             detail: "By default the app follows your iPhone. If you prefer, you can fix it on light or on dark from the profile.")
+                    FactCard(symbol: "wifi.slash", tint: Track.swift.theme.primary,
+                             title: "Works with no internet",
+                             detail: "Lessons and questions are inside the app. Nothing of yours leaves your iPhone: there is no account and no sign-up.")
+                }
+                .padding(.vertical, 2)
+            }
+            .scrollIndicators(.hidden)
+
+            Button("Continue") { go(to: 4) }
+                .buttonStyle(PrimaryButtonStyle(gradient: theme.linear))
+                .padding(.bottom, 16)
+        }
+        .padding(.horizontal, 24)
+    }
+
     // MARK: Promemoria
 
     private var reminder: some View {
@@ -225,21 +267,24 @@ private struct TrackCard: View {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(track.theme.linear)
                         .frame(width: 58, height: 58)
-                    Image(systemName: track.symbol)
-                        .font(.title2.weight(.semibold))
-                        .foregroundStyle(.white)
+                    TrackMark(track, size: 30)
                 }
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 8) {
                         Text(track.name)
                             .font(.title3.weight(.bold))
-                        Text(track.subtitle)
-                            .font(.caption.weight(.semibold))
-                            .padding(.horizontal, 8)
+                        Text(track.tag)
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 7)
                             .padding(.vertical, 3)
                             .foregroundStyle(track.theme.primary)
                             .background(track.theme.soft, in: Capsule())
                     }
+                    Text(track.subtitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary.opacity(0.85))
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(track.blurb)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -325,33 +370,34 @@ private struct PageDots: View {
     }
 }
 
-/// Il marchio dell'app: quattro spicchi nei colori dei quattro linguaggi.
-struct AppMark: View {
-    var body: some View {
-        GeometryReader { geo in
-            let s = geo.size.width
-            ZStack {
-                RoundedRectangle(cornerRadius: s * 0.28, style: .continuous)
-                    .fill(Color(.secondarySystemGroupedBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 20, y: 10)
-                Grid(horizontalSpacing: s * 0.06, verticalSpacing: s * 0.06) {
-                    GridRow {
-                        tile(.swift, s)
-                        tile(.uikit, s)
-                    }
-                    GridRow {
-                        tile(.kotlin, s)
-                        tile(.flutter, s)
-                    }
-                }
-            }
-        }
-        .aspectRatio(1, contentMode: .fit)
-    }
+/// Una delle cose da sapere, nell'onboarding: un simbolo, una riga e la spiegazione.
+private struct FactCard: View {
+    let symbol: String
+    let tint: Color
+    let title: LocalizedStringKey
+    let detail: LocalizedStringKey
 
-    private func tile(_ track: Track, _ s: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: s * 0.1, style: .continuous)
-            .fill(track.theme.linear)
-            .frame(width: s * 0.3, height: s * 0.3)
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: symbol)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 34, height: 34)
+                .background(tint, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.subheadline.weight(.bold))
+                    .multilineTextAlignment(.leading)
+                Text(detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
     }
 }

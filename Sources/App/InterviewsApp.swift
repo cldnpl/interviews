@@ -26,25 +26,40 @@ struct RootView: View {
     @Environment(AppState.self) private var state
     /// Sta qui, sopra l'`.id` della lingua: cambiando lingua dal Profilo si resta sul Profilo.
     @State private var tab = AppTab.today
+    /// L'apertura resta per un attimo e poi sfuma: il tempo di vedere il marchio.
+    @State private var showingSplash = true
 
     var body: some View {
-        Group {
-            if state.hasOnboarded {
-                MainTabView(selection: $tab)
+        ZStack {
+            Group {
+                if state.hasOnboarded {
+                    MainTabView(selection: $tab)
+                        .transition(.opacity)
+                } else {
+                    OnboardingView()
+                        .transition(.opacity)
+                }
+            }
+            // Il locale dell'ambiente decide la lingua di ogni Text; l'id ricostruisce le view,
+            // che così rileggono anche i contenuti e le stringhe calcolate nella lingua nuova.
+            .environment(\.locale, state.language.locale)
+            .id(state.language)
+            .animation(.easeInOut(duration: 0.35), value: state.hasOnboarded)
+            .tint(state.activeTrack.theme.primary)
+
+            if showingSplash {
+                SplashView()
                     .transition(.opacity)
-            } else {
-                OnboardingView()
-                    .transition(.opacity)
+                    .zIndex(1)
             }
         }
-        // Il locale dell'ambiente decide la lingua di ogni Text; l'id ricostruisce le view,
-        // che così rileggono anche i contenuti e le stringhe calcolate nella lingua nuova.
-        .environment(\.locale, state.language.locale)
-        .id(state.language)
-        .animation(.easeInOut(duration: 0.35), value: state.hasOnboarded)
-        .tint(state.activeTrack.theme.primary)
-        // Il design è pensato su fondo bianco: arancio e bianco per Swift, e così via.
-        .preferredColorScheme(.light)
+        // Chiaro, scuro o come l'iPhone: lo decide l'utente dal Profilo.
+        .preferredColorScheme(state.appearance.colorScheme)
+        .task {
+            // Abbastanza da vedere l'animazione, abbastanza poco da non annoiare.
+            try? await Task.sleep(for: .milliseconds(1250))
+            withAnimation(.easeOut(duration: 0.45)) { showingSplash = false }
+        }
     }
 }
 
