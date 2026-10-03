@@ -165,6 +165,15 @@ tracking: your progress stays on your iPhone.
 Available in English and Italian.
 ```
 
+**What's New** (1.1)
+
+```
+Every lesson rewritten from scratch, in plain words: nothing taken for granted,
+and every wrong answer explained. New streak screen with your calendar and your
+XP day by day. The app now speaks six languages and follows light or dark mode.
+Interviews Pro opens the Mid and Senior topics.
+```
+
 **What's New** (1.0)
 
 ```
@@ -237,6 +246,15 @@ pubblicità, nessuna statistica raccolta: i tuoi progressi restano sul tuo iPhon
 Disponibile in inglese e in italiano: la lingua si cambia in Profilo.
 ```
 
+**Novità di questa versione** (1.1)
+
+```
+Tutte le lezioni riscritte da zero, in parole semplici: niente dato per scontato,
+e ogni risposta sbagliata spiegata. Nuova schermata della serie, col calendario e
+gli XP giorno per giorno. L'app ora parla sei lingue e segue il tema chiaro o
+scuro. Con Interviews Pro si aprono gli argomenti Mid e Senior.
+```
+
 **Novità di questa versione** (1.0)
 
 ```
@@ -269,8 +287,14 @@ xcodebuild -project Interviews.xcodeproj -scheme Interviews \
 ```
 
 Poi *Distribute App › App Store Connect* da Xcode Organizer, oppure `xcrun altool`.
-Alza `CURRENT_PROJECT_VERSION` in `project.yml` a ogni upload: un build number non
-può essere riusato.
+
+Due numeri, due regole diverse, e sbagliarle fa rifiutare l'upload:
+
+- `CURRENT_PROJECT_VERSION` (il build number) va alzato **a ogni upload**, anche
+  per la stessa versione: un build number non si può riusare.
+- `MARKETING_VERSION` va alzato **a ogni versione già pubblicata o approvata**.
+  Riusare un numero già visto dà *"The train version '1.0' is closed for new build
+  submissions"*: quel treno è chiuso, e serve 1.1.
 
 ## Rischi residui, da sapere
 
