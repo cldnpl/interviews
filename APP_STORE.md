@@ -194,7 +194,7 @@ It is a symbolic price, to support an independent developer.
 Available in English and Italian.
 ```
 
-**What's New** (1.1)
+**What's New** (2.0)
 
 ```
 Everything you read has been rewritten.
@@ -300,7 +300,7 @@ quiz del giorno il tuo grado: 1,99 € al mese, si disdice quando vuoi da Impost
 Disponibile in inglese e in italiano: la lingua si cambia in Profilo.
 ```
 
-**Novità di questa versione** (1.1)
+**Novità di questa versione** (2.0)
 
 ```
 Tutto quello che si legge è stato riscritto.
@@ -449,11 +449,16 @@ contrario. Vale comunque solo per le vendite future, non per quelle già fatte.
 
 #### Agganciarlo alla versione
 
-Alla **prima** submission che contiene l'abbonamento, il prodotto va allegato alla
-versione: nella pagina della versione 1.1, sezione *In-App Purchases and
-Subscriptions*, aggiungi *Interviews Pro*. Senza questo passaggio l'app viene
-approvata e l'abbonamento resta in *Waiting for Review* per sempre — e in produzione
-nessuno può comprarlo.
+Alla **prima** submission che contiene l'abbonamento vanno allegati alla versione
+**due** elementi, non uno: il **gruppo** *e* la **subscription** che sta dentro. Il
+gruppo da solo dà *«New subscription groups must be submitted with an auto-renewable
+subscription from within that group»* e il pulsante di invio resta spento. La
+subscription si aggiunge dalla sua pagina (*Monetization › Subscriptions ›
+Interviews Pro*), col pulsante **Add for Review** in alto a destra: finisce nella
+stessa submission in preparazione.
+
+Senza questo passaggio l'app viene approvata e l'abbonamento resta in *Waiting for
+Review* per sempre — e in produzione nessuno può comprarlo.
 
 Il prodotto deve essere in stato **Ready to Submit**: finché manca un campo (di solito
 lo screenshot) resta *Missing Metadata*.

@@ -19,8 +19,9 @@ settings:
     SWIFT_VERSION: "5.0"
     DEVELOPMENT_TEAM: H4M7KJL5DT
     CODE_SIGN_STYLE: Automatic
-    MARKETING_VERSION: "1.1"
-    CURRENT_PROJECT_VERSION: "2"
+    MARKETING_VERSION: "2.0"
+    # Il 2 è già caricato su Connect: il prossimo archivio dev'essere il 3.
+    CURRENT_PROJECT_VERSION: "3"
 targets:
   Interviews:
     type: application
