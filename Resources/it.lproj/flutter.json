@@ -968,240 +968,240 @@
     {
       "id": "trees-keys",
       "stage": "mid",
-      "title": "Alberi e Key",
+      "title": "I tre alberi, e a cosa servono le chiavi",
       "icon": "point.3.connected.trianglepath.dotted",
-      "summary": "Widget, Element e RenderObject tree, riconciliazione, Key e InheritedWidget",
+      "summary": "Perché ricostruire costa poco, come Flutter decide che cosa tenere, e la correzione da una riga per il bug in cui lo stato finisce sulla riga sbagliata.",
       "lesson": [
         {
-          "heading": "I tre alberi",
-          "body": "Il **Widget tree** contiene configurazioni immutabili ed economiche, ricreate a ogni build. L'**Element tree** contiene le istanze vive: gestisce il ciclo di vita, tiene lo `State` e collega widget e render object. Il **RenderObject tree** si occupa di layout, paint e hit testing.\n\nElement e RenderObject sono costosi e vengono **riusati** il più possibile: il rebuild crea nuovi widget, ma di solito aggiorna gli oggetti esistenti.",
-          "code": null
+          "heading": "Tre alberi, non uno",
+          "language": null,
+          "body": "Flutter tiene tre alberi paralleli, e quasi ogni domanda a questo livello riguarda in realtà quale faccia cosa.\n\n**L'albero dei widget** — le tue descrizioni. Immutabili e usa-e-getta: vengono buttate e ricostruite di continuo. Creare un widget costa quanto creare un oggettino, ed è per questo che `build` può girare a ogni fotogramma.\n\n**L'albero degli element** — gli oggetti di lunga durata. Ogni element tiene una posizione nell'albero, un riferimento al widget corrente e — per un widget stateful — lo `State`. Sono questi a sopravvivere alle ricostruzioni, ed è per questo che le tue variabili non si perdono.\n\n**L'albero dei render object** — quelli che misurano, posizionano e disegnano davvero. Costosi da creare, quindi Flutter li aggiorna sul posto invece di rifarli.\n\nQuindi quando chiami `setState` succede questo: viene costruito un albero di widget nuovo (costa poco), confrontato con quello vecchio, e gli element che corrispondono ancora vengono tenuti e aggiornati. Ai render object arriva solo quello che è davvero diverso.\n\nÈ tutta qui la risposta a \"ma ricostruire tutto non è lento?\": non stai ricostruendo tutto. Stai ricostruendo il più economico dei tre alberi, e il framework lo usa per capire quel poco che deve davvero cambiare.",
+          "code": "// Quello che scrivi: una descrizione. Costa poco, buttata a ogni build.\nconst Padding(padding: EdgeInsets.all(8), child: Text('Ciao'))\n\n// Quello che Flutter tiene: un element, con la posizione e lo State.\n// Quello che disegna: un render object, aggiornato sul posto.\n\n// È per questo che questo va bene, ed è quello che ci si aspetta:\n@override\nWidget build(BuildContext context) {\n  return Column(\n    children: [for (final item in items) ItemTile(item)],   // a ogni fotogramma\n  );\n}"
         },
         {
-          "heading": "Rebuild e riconciliazione",
-          "body": "Quando un parent ricostruisce, per ogni figlio Flutter chiama `Widget.canUpdate(old, new)`: se `runtimeType` e `key` coincidono, l'Element esistente viene **aggiornato** con il nuovo widget e lo State viene conservato. Altrimenti l'Element viene smontato e ne viene creato uno nuovo, perdendo lo stato.\n\nPer le liste di figli il confronto avviene per posizione, a meno che ci siano key: in quel caso Flutter abbina i figli per key.",
-          "code": "static bool canUpdate(Widget oldWidget, Widget newWidget) {\n  return oldWidget.runtimeType == newWidget.runtimeType &&\n      oldWidget.key == newWidget.key;\n}"
+          "heading": "Come Flutter decide cosa tenere",
+          "language": null,
+          "body": "Quando arriva un albero di widget nuovo, Flutter lo scorre insieme a quello vecchio e in ogni posizione fa una domanda sola:\n\n**Questo element si può aggiornare con questo widget nuovo?**\n\nLa risposta è sì quando **il tipo è lo stesso e la chiave è la stessa**. È tutta la regola — nel framework è una funzione di due righe, e vale la pena ricordarla alla lettera.\n\nSe sì, l'element viene tenuto: lo stato sopravvive, il render object viene aggiornato sul posto. Se no, il vecchio element viene buttato — col suo stato — e ne viene costruito uno nuovo.\n\nNota che cosa **non** fa parte della regola: il contenuto del widget. Due `Text` con stringhe diverse combaciano lo stesso, perché tipo e chiave coincidono; l'element viene tenuto e viene aggiornata solo la stringa. Che è esattamente quello che vuoi.\n\nE nota la posizione: il confronto avviene **per posizione fra fratelli**. Il primo figlio viene confrontato col vecchio primo figlio, il secondo col secondo. Va benissimo finché l'elenco non cambia forma — ed è lì che entrano le chiavi.",
+          "code": "// La regola vera, dal framework\nstatic bool canUpdate(Widget oldWidget, Widget newWidget) {\n  return oldWidget.runtimeType == newWidget.runtimeType &&\n      oldWidget.key == newWidget.key;\n}\n\n// Stesso tipo, nessuna chiave: l'element resta, il testo viene aggiornato\nText('ciao')  ->  Text('addio')      // lo stesso element\n\n// Tipo diverso: il vecchio element e il suo stato vengono buttati\nText('ciao')  ->  Icon(Icons.star)   // un element nuovo"
         },
         {
-          "heading": "Key locali",
-          "body": "Le key servono quando **figli fratelli dello stesso tipo** con stato vengono riordinati, inseriti o rimossi. Senza key, lo State resta legato alla posizione e \"scivola\" sull'elemento sbagliato.\n\n`ValueKey` confronta un valore con `==` (tipicamente un id), `ObjectKey` confronta l'identità dell'oggetto, `UniqueKey` è diversa da tutte le altre e forza sempre un nuovo Element. La key va messa sul widget **radice di ogni elemento**, al livello dei fratelli.",
-          "code": "ListView(\n  children: [\n    for (final todo in todos)\n      TodoTile(key: ValueKey(todo.id), todo: todo),\n  ],\n)"
+          "heading": "Le chiavi: quando la posizione non basta",
+          "language": null,
+          "body": "Confrontare per posizione funziona finché l'elenco non cambia. Togli il primo elemento di una lista di tile stateful e tutto si sposta in su: l'element che stava in posizione 0 adesso viene confrontato con quello che stava in posizione 1. Stesso tipo, nessuna chiave — quindi combacia, e l'element **si tiene il suo stato**.\n\nIl risultato è il bug classico: cancelli la prima riga e la spunta resta dov'era, adesso su un elemento diverso. Non si rompe niente; i dati sono semplicemente sbagliati.\n\nUna **chiave** lo risolve dando al confronto qualcosa di meglio della posizione. Flutter può allora trovare l'element con quella chiave, dovunque si sia spostato, e portarsi dietro lo stato.\n\nQuale chiave usare:\n\n**`ValueKey(id)`** — la scelta solita. Confronta con `==`, quindi un id, una stringa o un numero.\n**`ObjectKey(obj)`** — confronta per identità, per quando due oggetti possono essere uguali ma vanno tenuti distinti.\n**`UniqueKey()`** — non è mai uguale a niente, nemmeno a sé stessa della build precedente. **Obbliga** l'element a essere ricostruito, il che a volte è esattamente quello che vuoi e a volte è un disastro involontario.\n\nE la regola di posizionamento che la gente sbaglia: **la chiave va sulla radice di ogni elemento, fra i suoi fratelli**, non su un widget interno. Il confronto avviene fra fratelli, quindi è lì che la chiave dev'essere visibile.",
+          "code": "// Il bug: togli il primo e lo stato si sposta\nListView(\n  children: [for (final todo in todos) TodoTile(todo: todo)],\n)\n\n// La soluzione: una riga\nListView(\n  children: [\n    for (final todo in todos)\n      TodoTile(key: ValueKey(todo.id), todo: todo),\n  ],\n)\n\n// Sulla radice di ogni elemento, fra i fratelli — non dentro\n// Sbagliato: TodoTile(todo: todo, child: Checkbox(key: ValueKey(todo.id)))"
         },
         {
-          "heading": "GlobalKey",
-          "body": "Una `GlobalKey` è unica in tutta l'app: permette di accedere al `currentState` o al `currentContext` di un widget (es. `FormState.validate()`) e di spostare un sottoalbero in un'altra posizione **mantenendone lo stato**.\n\nÈ più costosa delle key locali e va creata **una sola volta** (in un campo dello State), mai dentro `build`: una nuova GlobalKey a ogni build ricrea il sottoalbero e perde lo stato.",
-          "code": "final _formKey = GlobalKey<FormState>();\n\nvoid _submit() {\n  if (_formKey.currentState!.validate()) {\n    _formKey.currentState!.save();\n  }\n}"
+          "heading": "GlobalKey: potente e facile da usare male",
+          "language": null,
+          "body": "Una **`GlobalKey`** è un'altra categoria. È unica in tutta l'app, e ti permette di raggiungere un element — e il suo stato — da qualsiasi parte, non solo dal genitore.\n\nGli usi legittimi sono pochi e precisi: chiamare `validate()` su un `Form` da un bottone che sta fuori, leggere la dimensione di un widget dopo il layout, spostare un widget in un altro punto dell'albero conservandone lo stato.\n\nCosta più di una chiave normale, perché il framework deve tenere un registro globale, e due errori si fanno facilmente:\n\n**Crearne una dentro `build`.** Una chiave nuova a ogni build vuol dire che il vecchio element viene buttato tutte le volte, quindi un campo di testo perde il testo e il fuoco a ogni ricostruzione. La chiave va creata una volta, in `initState` o come campo.\n\n**Usare la stessa in due posti insieme.** È globale e unica, quindi due widget con la stessa `GlobalKey` nell'albero nello stesso momento sono un errore.\n\nE una regola pratica da avere: se stai prendendo una `GlobalKey` per leggere lo stato di un altro widget, probabilmente quello stato sta nel posto sbagliato. Spostarlo più in alto di solito è la risposta migliore.",
+          "code": "// Giusto: creata una volta, come campo\nfinal _formKey = GlobalKey<FormState>();\n\nvoid _submit() {\n  if (_formKey.currentState!.validate()) {\n    _formKey.currentState!.save();\n  }\n}\n\n// Sbagliato: una chiave nuova a ogni build\n@override\nWidget build(BuildContext context) {\n  return TextField(key: GlobalKey());   // perde testo e fuoco ogni volta\n}"
         },
         {
-          "heading": "InheritedWidget",
-          "body": "Un `InheritedWidget` rende disponibili dati a tutto il sottoalbero. Un discendente che chiama `dependOnInheritedWidgetOfExactType` ottiene il dato in O(1) e **si registra come dipendente**: verrà ricostruito quando il widget cambia e `updateShouldNotify` restituisce true.\n\n`getInheritedWidgetOfExactType` legge senza registrare dipendenza. `Theme.of`, `MediaQuery.of` e Provider sono costruiti su questo meccanismo.",
-          "code": "class AppConfig extends InheritedWidget {\n  const AppConfig({super.key, required this.env, required super.child});\n  final String env;\n\n  static AppConfig of(BuildContext c) =>\n      c.dependOnInheritedWidgetOfExactType<AppConfig>()!;\n\n  @override\n  bool updateShouldNotify(AppConfig old) => env != old.env;\n}"
-        },
-        {
-          "heading": "In colloquio",
-          "body": "Domanda tipica: **\"Quando servono le key?\"** Risposta concisa: quando una collezione di widget con stato dello stesso tipo cambia ordine o composizione; senza key Flutter abbina per posizione e lo State finisce sull'elemento sbagliato. Cita `canUpdate` (runtimeType + key).\n\nSe chiedono dei tre alberi, spiega che i widget sono blueprint economici, gli Element sono il ponte che conserva lo stato e i RenderObject fanno layout e paint: così il rebuild frequente resta economico.",
-          "code": null
+          "heading": "InheritedWidget: far scendere le cose nell'albero",
+          "language": null,
+          "body": "Passare un valore attraverso sei strati di widget a cui non interessa è una pena. **`InheritedWidget`** lo risolve: metti il valore in alto nell'albero, e qualsiasi discendente se lo può chiedere direttamente.\n\nSono questo `Theme.of(context)` e `MediaQuery.of(context)`. `of` è una convenzione, e quello che chiama è `dependOnInheritedWidgetOfExactType`.\n\nDue cose lo rendono degno di essere capito e non solo usato.\n\n**La ricerca è istantanea.** Non sale lungo l'albero cercando. Ogni element tiene una mappa degli inherited widget che stanno sopra di lui, costruita mentre l'albero viene costruito, quindi trovarne uno è una lettura sola per quanto in fondo tu sia.\n\n**`dependOn` registra una dipendenza.** È questa la metà che conta: da lì in poi, questo widget viene ricostruito ogni volta che quell'inherited widget cambia. Se sia davvero cambiato lo decide `updateShouldNotify` — ed è per questo che un cambio di tema ricostruisce tutto quello che usa il tema, e nient'altro.\n\nEsiste anche una versione che cerca **senza** registrare: utile quando ti serve un valore una volta sola e non vuoi essere ricostruito da lui.",
+          "code": "class AppConfig extends InheritedWidget {\n  const AppConfig({super.key, required this.env, required super.child});\n  final String env;\n\n  // La convenzione 'of': trovalo, e dipendi da lui\n  static AppConfig of(BuildContext c) =>\n      c.dependOnInheritedWidgetOfExactType<AppConfig>()!;\n\n  // Vanno ricostruiti quelli che dipendono da me?\n  @override\n  bool updateShouldNotify(AppConfig old) => env != old.env;\n}\n\n// Da qualsiasi punto sotto, per quanto in fondo\nfinal env = AppConfig.of(context).env;\n\n// Leggilo e basta, senza essere ricostruito quando cambia\nfinal c = context.getInheritedWidgetOfExactType<AppConfig>();"
         }
       ],
       "questions": [
         {
           "id": "flutter-trees-keys-1",
-          "prompt": "Quale albero si occupa di layout e paint?",
+          "difficulty": 1,
+          "answer": 1,
+          "prompt": "Quale albero si occupa di layout e disegno?",
           "code": null,
           "options": [
-            "Widget tree",
-            "RenderObject tree",
-            "Element tree",
-            "Semantics tree"
+            "L'albero dei widget",
+            "L'albero dei render object",
+            "L'albero degli element",
+            "L'albero della semantica"
           ],
-          "answer": 1,
-          "explanation": "I RenderObject calcolano dimensioni, posizione e disegno. I widget sono solo configurazione, gli Element gestiscono il ciclo di vita.",
-          "difficulty": 1,
+          "explanation": "I render object sono quelli che misurano, posizionano e disegnano. Sono costosi da creare, ed è per questo che Flutter li aggiorna sul posto invece di rifarli — e per questo ricostruire i widget, in confronto, costa poco.",
           "whyWrong": [
-            "I widget sono solo descrizioni immutabili della UI: non calcolano dimensioni né disegnano.",
+            "I widget sono solo descrizioni. Non disegnano niente.",
             null,
-            "Gli Element gestiscono ciclo di vita e collegamento tra widget e RenderObject, ma layout e paint spettano ai RenderObject.",
-            "Il Semantics tree serve all'accessibilità (screen reader), non al layout né al disegno."
+            "Gli element tengono la posizione nell'albero e lo stato. Non disegnano.",
+            "L'albero della semantica serve all'accessibilità: quello che annuncia un lettore di schermo."
           ]
         },
         {
           "id": "flutter-trees-keys-2",
-          "prompt": "Quando Flutter riusa un Element esistente con il nuovo widget?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "Quando Flutter riusa un element esistente col widget nuovo?",
           "code": null,
           "options": [
             "Quando i widget sono `==`",
-            "Sempre, se sono nella stessa posizione",
+            "Sempre, se stanno nella stessa posizione",
             "Quando hanno gli stessi figli",
-            "Stesso runtimeType e stessa key"
+            "Stesso tipo e stessa chiave"
           ],
-          "answer": 3,
-          "explanation": "È la regola di `Widget.canUpdate`. Se tipo o key cambiano, l'Element viene smontato e ricreato, e lo State si perde.",
-          "difficulty": 2,
+          "explanation": "È tutta la regola, e nel framework sono due righe. Se valgono tutte e due, l'element resta e lo stato sopravvive. Se una delle due è diversa, l'element viene buttato e ne viene costruito uno nuovo.",
           "whyWrong": [
-            "Flutter non usa `==` per decidere il riuso, ma `Widget.canUpdate`, che confronta `runtimeType` e `key`.",
-            "La posizione non basta: se cambia il tipo o la key, l'Element viene smontato e ricreato anche nello stesso posto.",
-            "I figli non entrano in `canUpdate`: vengono riconciliati dopo, uno per uno.",
+            "Il contenuto non c'entra: due `Text` con stringhe diverse combaciano lo stesso.",
+            "La posizione è il punto di partenza, ma devono coincidere anche tipo e chiave.",
+            "I figli vengono confrontati dopo, ricorsivamente. Non decidono questo.",
             null
           ]
         },
         {
           "id": "flutter-trees-keys-3",
-          "prompt": "Una lista di tile Stateful con checkbox: rimuovi il primo e lo stato \"checked\" finisce sul tile sbagliato. Fix?",
+          "difficulty": 2,
+          "answer": 0,
+          "prompt": "Una lista di tile stateful con delle caselle: togli la prima e la spunta finisce sulla riga sbagliata. La soluzione?",
           "code": null,
           "options": [
             "Dare a ogni tile una `ValueKey(item.id)`",
-            "Una GlobalKey unica per la lista",
+            "Una GlobalKey per la lista",
             "Chiamare setState due volte",
-            "Rendere i tile const"
+            "Rendere const le tile"
           ],
-          "answer": 0,
-          "explanation": "Senza key gli Element sono abbinati per posizione. Con una key stabile legata all'id, ogni State segue il proprio elemento.",
-          "difficulty": 2,
+          "explanation": "Senza chiavi il confronto è per posizione, quindi quando tutto si sposta in su ogni element combacia con l'elemento che stava sotto e si tiene il suo stato. Una chiave permette a Flutter di seguire ogni element dovunque si sia spostato.",
           "whyWrong": [
             null,
-            "Una GlobalKey identifica un singolo widget, non gli elementi di una lista: non risolve l'abbinamento dei tile tra fratelli.",
-            "Chiamare `setState` più volte non cambia l'abbinamento per posizione degli Element: serve una key stabile.",
-            "`const` evita rebuild inutili ma non dà identità ai tile: senza key gli State restano legati alla posizione."
+            "Una `GlobalKey` sulla lista non distingue fra i suoi figli.",
+            "La ricostruzione non è il problema: lo stato sta andando all'element sbagliato.",
+            "`const` riguarda le prestazioni e non cambia niente su quale element combaci con quale."
           ]
         },
         {
           "id": "flutter-trees-keys-4",
-          "prompt": "Cosa succede a ogni rebuild con questo codice?",
+          "difficulty": 3,
+          "answer": 2,
+          "prompt": "Che succede a ogni ricostruzione qui?",
           "code": "@override\nWidget build(BuildContext context) {\n  return TextField(key: GlobalKey());\n}",
           "options": [
-            "Nulla, la GlobalKey viene riusata",
-            "Errore: GlobalKey duplicata",
-            "Nuova key: il TextField perde testo e focus",
-            "Il TextField viene solo ridisegnato"
+            "Niente: la chiave viene riusata",
+            "Un errore: GlobalKey duplicata",
+            "Una chiave nuova ogni volta, quindi il campo perde testo e fuoco",
+            "Il campo viene solo ridisegnato"
           ],
-          "answer": 2,
-          "explanation": "Ogni build crea una GlobalKey diversa, quindi `canUpdate` fallisce: l'Element viene ricreato con un nuovo State. Le GlobalKey vanno create una volta sola.",
-          "difficulty": 3,
+          "explanation": "`GlobalKey()` crea una chiave nuova di zecca a ogni build, quindi il confronto fallisce, il vecchio element viene buttato e ne viene costruito uno nuovo. Il campo di testo riparte vuoto, perde il fuoco e il cursore. La chiave va creata una volta sola, come campo.",
           "whyWrong": [
-            "`GlobalKey()` crea un oggetto nuovo a ogni chiamata di `build`: la key precedente non viene riusata.",
-            "Non c'è duplicato, perché in ogni istante esiste una sola GlobalKey nell'albero; il problema è che cambia a ogni build.",
+            "Non viene riusata: ne viene creata un'istanza nuova ogni volta.",
+            "La duplicazione è un altro errore, e succede quando la stessa chiave è usata in due posti insieme.",
             null,
-            "Con una key diversa `canUpdate` fallisce: l'Element e lo State vengono ricreati, non solo ridisegnati."
+            "Molto più di un ridisegno: vengono sostituiti element, stato e render object."
           ]
         },
         {
           "id": "flutter-trees-keys-5",
-          "prompt": "Differenza tra `ValueKey` e `ObjectKey`?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "Che differenza c'è fra `ValueKey` e `ObjectKey`?",
           "code": null,
           "options": [
-            "ValueKey è globale, ObjectKey locale",
-            "ValueKey usa `==`, ObjectKey usa `identical`",
+            "ValueKey è globale, ObjectKey è locale",
+            "ValueKey confronta con `==`, ObjectKey per identità",
             "ObjectKey accetta solo stringhe",
-            "Nessuna differenza"
+            "Non ce n'è"
           ],
-          "answer": 1,
-          "explanation": "Entrambe sono LocalKey. ValueKey confronta il valore con `==`; ObjectKey confronta l'identità dell'oggetto, utile quando non esiste un id univoco.",
-          "difficulty": 2,
+          "explanation": "`ValueKey` usa `==`, quindi due oggetti uguali contano come lo stesso — che è quello che vuoi con un id. `ObjectKey` chiede se è letteralmente lo stesso oggetto, cosa che conta quando due elementi possono essere uguali ma vanno comunque distinti.",
           "whyWrong": [
-            "Entrambe sono LocalKey, confrontate tra fratelli; le chiavi globali sono le GlobalKey.",
+            "Sono locali tutte e due. Quella globale è `GlobalKey`.",
             null,
-            "ObjectKey accetta qualsiasi oggetto; la sua particolarità è il confronto per identità, non il tipo del valore.",
-            "La differenza c'è: ValueKey confronta con `==`, ObjectKey con `identical`."
+            "`ObjectKey` accetta qualsiasi oggetto: è proprio il suo senso.",
+            "La differenza c'è, e decide se due elementi uguali vengono trattati come uno."
           ]
         },
         {
           "id": "flutter-trees-keys-6",
-          "prompt": "A cosa serve `updateShouldNotify` in un InheritedWidget?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "A che cosa serve `updateShouldNotify`?",
           "code": null,
           "options": [
-            "Forza il rebuild dell'InheritedWidget",
-            "Notifica i listener di un ChangeNotifier",
-            "Aggiorna il RenderObject associato",
-            "Decide se ricostruire i dipendenti"
+            "Obbliga l'InheritedWidget a ricostruirsi",
+            "Avvisa gli ascoltatori di un ChangeNotifier",
+            "Aggiorna il render object",
+            "Decide se vengono ricostruiti i widget che dipendono da lui"
           ],
-          "answer": 3,
-          "explanation": "Quando l'InheritedWidget viene sostituito, Flutter chiama `updateShouldNotify(old)`: se true, i widget che dipendono da esso vengono ricostruiti.",
-          "difficulty": 2,
+          "explanation": "Quando l'inherited widget viene sostituito, Flutter chiede a questo metodo se è cambiato qualcosa che conta. Restituire falso vuol dire lasciare in pace chi dipende da lui — ed è così che un cambio di tema ricostruisce solo quello che il tema lo usa davvero.",
           "whyWrong": [
-            "Non forza rebuild dell'InheritedWidget: viene chiamato quando è già stato sostituito, per decidere se avvisare i dipendenti.",
-            "ChangeNotifier ha il proprio meccanismo con `notifyListeners`; `updateShouldNotify` riguarda i dipendenti dell'InheritedWidget.",
-            "Un InheritedWidget non ha un RenderObject proprio: `updateShouldNotify` decide solo se ricostruire chi dipende da lui.",
+            "L'inherited widget lo ricostruisce il suo genitore. Questo metodo viene chiesto dopo.",
+            "`ChangeNotifier` è tutto un altro meccanismo.",
+            "I render object non c'entrano: qui si decide quali widget si ricostruiscono.",
             null
           ]
         },
         {
           "id": "flutter-trees-keys-7",
-          "prompt": "Perché `dependOnInheritedWidgetOfExactType` costa O(1)?",
+          "difficulty": 3,
+          "answer": 0,
+          "prompt": "Perché cercare un inherited widget è istantaneo, per quanto in fondo tu sia?",
           "code": null,
           "options": [
-            "Ogni Element ha una mappa degli InheritedElement antenati",
-            "Scorre l'albero con una cache LRU",
+            "Ogni element tiene una mappa degli inherited widget che stanno sopra",
+            "Sale con una cache",
             "Usa una GlobalKey interna",
             "Perché l'albero è bilanciato"
           ],
-          "answer": 0,
-          "explanation": "Ogni Element eredita dal parent una mappa tipo -> InheritedElement, quindi il lookup non richiede di risalire l'albero.",
-          "difficulty": 3,
+          "explanation": "Mentre l'albero viene costruito, ogni element copia la mappa degli inherited widget del genitore e ci aggiunge il suo. Quindi trovarne uno è una sola lettura per tipo, non una risalita — ed è questo che rende `Theme.of(context)` tranquillo da chiamare dovunque e quante volte vuoi.",
           "whyWrong": [
             null,
-            "Nessuna risalita dell'albero né cache LRU: ogni Element eredita dal parent una mappa tipo -> InheritedElement.",
-            "Le GlobalKey non c'entrano: il lookup usa la mappa degli InheritedElement ereditata dal parent.",
-            "L'albero dei widget non è bilanciato, e anche se lo fosse il costo sarebbe O(log n); l'O(1) viene dalla mappa per tipo."
+            "Non si sale: la risposta è già lì nel momento in cui l'element nasce.",
+            "`GlobalKey` non c'entra e costerebbe molto di più.",
+            "La forma dell'albero non entra in gioco: la mappa toglie del tutto il bisogno di cercare."
           ]
         },
         {
           "id": "flutter-trees-keys-8",
-          "prompt": "Quale albero è più economico da ricreare a ogni build?",
+          "difficulty": 1,
+          "answer": 2,
+          "prompt": "Quale albero costa meno ricreare a ogni build?",
           "code": null,
           "options": [
-            "Element tree",
-            "RenderObject tree",
-            "Widget tree",
-            "Layer tree"
+            "L'albero degli element",
+            "L'albero dei render object",
+            "L'albero dei widget",
+            "L'albero dei livelli"
           ],
-          "answer": 2,
-          "explanation": "I widget sono oggetti immutabili e leggeri: ricrearli è economico. Element e RenderObject vengono riusati proprio perché costosi.",
-          "difficulty": 1,
+          "explanation": "I widget sono piccole descrizioni immutabili, fatte per essere create e buttate. È tutto il progetto: si ricostruisce l'albero economico, e il framework lo usa per capire le poche modifiche che servono a quelli costosi.",
           "whyWrong": [
-            "Gli Element sono costosi da ricreare perché portano lo State e il ciclo di vita: Flutter fa di tutto per riusarli.",
-            "I RenderObject mantengono layout e informazioni di paint: ricrearli è costoso, per questo vengono aggiornati in place.",
+            "Gli element durano a lungo e tengono lo stato. Ricrearli lo perderebbe.",
+            "I render object sono i più costosi dei tre, ed è per questo che vengono aggiornati sul posto.",
             null,
-            "Il Layer tree serve alla composizione in fase di paint; non è quello che ricrei a ogni `build`."
+            "I livelli riguardano il disegno e non vengono ricreati da una build."
           ]
         },
         {
           "id": "flutter-trees-keys-9",
-          "prompt": "In una lista, dove va messa la key?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "In una lista, dove va la chiave?",
           "code": null,
           "options": [
-            "Sul figlio più interno che ha lo stato",
-            "Sul ListView",
+            "Sul widget più interno che tiene lo stato",
+            "Sulla ListView",
             "Sul MaterialApp",
-            "Sulla radice di ogni elemento, tra i fratelli"
+            "Sulla radice di ogni elemento, fra i fratelli"
           ],
-          "answer": 3,
-          "explanation": "Le key sono confrontate tra fratelli dello stesso parent. Una key annidata più in profondità non aiuta l'abbinamento degli elementi della lista.",
-          "difficulty": 2,
+          "explanation": "Il confronto avviene fra fratelli, quindi la chiave deve stare sulla cosa confrontata: la radice di ogni elemento. Metterla su un widget interno vuol dire che al livello che conta il confronto non ha comunque niente su cui basarsi.",
           "whyWrong": [
-            "Le key si confrontano solo tra fratelli: su un figlio annidato non aiutano ad abbinare gli elementi della lista.",
-            "Una key sul ListView identifica la lista intera, non i singoli elementi che devono essere riconciliati.",
-            "La key sul MaterialApp non ha alcun effetto sulla riconciliazione degli elementi di una lista.",
+            "Troppo in basso: lo scambio è già avvenuto più in alto.",
+            "Una chiave sulla lista distingue la lista dagli altri widget, non i suoi figli fra loro.",
+            "Troppo in alto per avere qualche effetto sugli elementi.",
             null
           ]
         },
         {
           "id": "flutter-trees-keys-10",
-          "prompt": "Differenza tra `dependOnInheritedWidgetOfExactType` e `getInheritedWidgetOfExactType`?",
+          "difficulty": 3,
+          "answer": 1,
+          "prompt": "Che differenza c'è fra `dependOnInheritedWidgetOfExactType` e `getInheritedWidgetOfExactType`?",
           "code": null,
           "options": [
             "Il secondo è deprecato",
-            "Il primo registra la dipendenza, il secondo no",
-            "Il secondo cerca anche nei discendenti",
-            "Nessuna, sono alias"
+            "Il primo registra una dipendenza, il secondo no",
+            "Il secondo cerca anche verso il basso",
+            "Non ce n'è"
           ],
-          "answer": 1,
-          "explanation": "Solo `dependOn...` iscrive il widget ai cambiamenti e causa rebuild. `get...` legge il valore una volta, utile nei callback.",
-          "difficulty": 3,
+          "explanation": "Trovano il valore tutti e due. Solo il primo dice \"ricostruiscimi quando questo cambia\". Usa il secondo quando ti serve un valore una volta sola — in una callback, per dire — e non vuoi essere ricostruito ogni volta che cambia.",
           "whyWrong": [
-            "`getInheritedWidgetOfExactType` non è deprecato: è il modo corretto di leggere senza creare dipendenza.",
+            "Non è deprecato: esiste proprio per il caso senza dipendenza.",
             null,
-            "Entrambi cercano solo tra gli antenati, mai nei discendenti.",
-            "Non sono alias: solo `dependOn...` iscrive il widget e causa rebuild quando il valore cambia."
+            "Guardano tutti e due verso l'alto. Un inherited widget è visibile solo ai suoi discendenti.",
+            "La differenza è tutto il senso, e usare quello sbagliato ti dà o troppe ricostruzioni o nessuna."
           ]
         }
       ]
@@ -1209,240 +1209,240 @@
     {
       "id": "state-management",
       "stage": "mid",
-      "title": "State management",
+      "title": "Dove vive lo stato",
       "icon": "slider.horizontal.3",
-      "summary": "setState, ChangeNotifier, Provider, Riverpod, BLoC/Cubit e quando usarli",
+      "summary": "setState, ChangeNotifier, Provider, Riverpod, BLoC: che cosa risolve davvero ciascuno, e come si risponde alla domanda da colloquio su quale sceglieresti.",
       "lesson": [
         {
-          "heading": "Stato effimero e stato dell'app",
-          "body": "La documentazione Flutter distingue lo **stato effimero** (tab selezionato, animazione, testo in un campo), che vive bene in un `StatefulWidget` con `setState`, dallo **stato dell'app** (utente loggato, carrello, preferenze) condiviso tra schermate.\n\nNon tutto deve finire in una soluzione globale: usare BLoC per un toggle locale è over-engineering. Il segnale di cui avere bisogno di altro è il **prop drilling** o la logica di business mescolata alla UI.",
-          "code": null
+          "heading": "Due tipi di stato",
+          "language": null,
+          "body": "Prima di scegliere una libreria, fai la distinzione che decide tutto: **a chi serve questo valore?**\n\nLo **stato locale** appartiene a un widget e a nessun altro. Se un pannello è aperto, la posizione di un cursore mentre lo trascini, il testo in un campo, quale scheda è selezionata. Per questo, `setState` in uno `StatefulWidget` è la risposta giusta, e tirare in ballo una libreria peggiora il codice.\n\nLo **stato condiviso** serve a più schermate, o deve sopravvivere al widget che lo mostra. Chi ha fatto l'accesso, il contenuto di un carrello, una cache di cose prese dal server. È per questo che esistono le librerie di gestione dello stato.\n\nL'errore in tutte e due le direzioni è comune. Mettere tutto in un archivio globale rende una schermata semplice difficile da leggere e da provare. Tenere lo stato condiviso dentro un widget vuol dire passarlo giù attraverso sei strati a cui non interessa, e perderlo nel momento in cui quel widget viene ricostruito.\n\nLa domanda da farsi non è mai \"quale libreria è la migliore\" ma **\"quanto lontano deve viaggiare questo valore, e quanto deve vivere?\"** La risposta sceglie lo strumento.",
+          "code": "// Locale: non lo deve sapere nessun altro\nclass _TabsState extends State<Tabs> {\n  int selected = 0;\n\n  @override\n  Widget build(BuildContext context) => TabBar(\n    currentIndex: selected,\n    onTap: (i) => setState(() => selected = i),\n  );\n}\n\n// Condiviso: serve a più schermate e sopravvive a ognuna di loro\nclass Cart extends ChangeNotifier {\n  final _items = <Item>[];\n  List<Item> get items => List.unmodifiable(_items);\n\n  void add(Item i) {\n    _items.add(i);\n    notifyListeners();\n  }\n}"
         },
         {
-          "heading": "ChangeNotifier e ValueNotifier",
-          "body": "`ChangeNotifier` è una classe osservabile: modifichi lo stato e chiami `notifyListeners()`. `ValueNotifier<T>` notifica automaticamente quando assegni un nuovo `value` diverso dal precedente.\n\nAttenzione: mutare un oggetto interno (es. `value.add(x)` su una lista) **non** notifica, perché il riferimento non cambia. Nella UI si ascolta con `ListenableBuilder` o `ValueListenableBuilder`.",
-          "code": "class Cart extends ChangeNotifier {\n  final _items = <Item>[];\n  List<Item> get items => List.unmodifiable(_items);\n\n  void add(Item i) {\n    _items.add(i);\n    notifyListeners();\n  }\n}"
+          "heading": "ChangeNotifier: lo stato condiviso più semplice",
+          "language": null,
+          "body": "**`ChangeNotifier`** sta dentro Flutter, senza bisogno di nessun pacchetto. È un oggetto che tiene un elenco di ascoltatori e li chiama quando lo dici tu, con `notifyListeners()`.\n\nÈ tutto qui. I widget a cui interessa si mettono in ascolto, e si ricostruiscono quando vengono avvisati.\n\n**`ValueNotifier<T>`** è la versione a valore singolo, e si porta dietro un widget — `ValueListenableBuilder` — che ricostruisce solo se stesso. Per un valore solo spesso è tutto quello che serve.\n\nDue errori da conoscere, perché producono tutti e due una schermata che in silenzio non si aggiorna:\n\n**Cambiare il contenuto invece del valore.** Con un `ValueNotifier<List>`, chiamare `value.add(x)` cambia la lista ma non assegna mai `value`, quindi non viene avvisato nessuno. Devi assegnare una lista nuova.\n\n**Dimenticare `notifyListeners()`.** I dati sono cambiati davvero; nessuno è stato avvisato.\n\nE il terzo, che perde memoria invece di fallire visibilmente: un `ChangeNotifier` creato da un widget va **rilasciato**, altrimenti i suoi ascoltatori restano registrati. `ChangeNotifierProvider` lo fa per te, che è un buon motivo per usarlo invece di tenerne uno a mano.",
+          "code": "class Counter extends ChangeNotifier {\n  int _n = 0;\n  int get n => _n;\n\n  void increment() {\n    _n++;\n    notifyListeners();      // senza questo non si aggiorna niente\n  }\n}\n\n// Un valore solo, e si ricostruisce solo questo widget\nfinal count = ValueNotifier(0);\n\nValueListenableBuilder<int>(\n  valueListenable: count,\n  builder: (context, value, _) => Text('$value'),\n)\n\n// Il bug silenzioso: cambia la lista, non il valore\nclass Numbers extends ValueNotifier<List<int>> {\n  Numbers() : super([]);\n  void add(int x) => value.add(x);                  // non succede niente\n  void addGiusto(int x) => value = [...value, x];   // questo avvisa\n}"
         },
         {
-          "heading": "Provider",
-          "body": "Provider è un wrapper attorno a InheritedWidget che semplifica dependency injection e ascolto dei cambiamenti. `context.watch<T>()` ricostruisce il widget quando T notifica, `context.read<T>()` legge senza iscriversi (per i callback), `context.select` ricostruisce solo quando cambia una parte specifica.\n\nÈ semplice e raccomandato dal team Flutter come punto di partenza, ma dipende dal `BuildContext` e alcuni errori (provider mancante) emergono solo a runtime.",
-          "code": "ChangeNotifierProvider(\n  create: (_) => Cart(),\n  child: const App(),\n);\n\n// nel build\nfinal count = context.select<Cart, int>((c) => c.items.length);\n// in un callback\nonPressed: () => context.read<Cart>().add(item),"
+          "heading": "Provider: metterlo nell'albero",
+          "language": null,
+          "body": "Un `ChangeNotifier` deve pur vivere da qualche parte, e ogni widget a cui interessa lo deve raggiungere. **Provider** fa tutte e due le cose: mette l'oggetto nell'albero dei widget e dà ai discendenti un modo per trovarlo.\n\nSotto sotto è un `InheritedWidget`, ed è per questo che la ricerca è istantanea per quanto in fondo tu sia — e per questo l'oggetto è legato a un punto dell'albero, quindi viene rilasciato quando quel pezzo di albero se ne va.\n\nTre modi per leggerlo, e scegliere bene è la cosa che gli esaminatori controllano:\n\n**`context.watch<T>()`** — leggilo **e** ricostruisci quando cambia. Solo dentro `build`.\n**`context.read<T>()`** — leggilo una volta, senza ricostruzioni. Nelle callback: `onPressed`, `initState`.\n**`context.select<T, R>((t) => ...)`** — osserva solo **una parte**, e ricostruisci solo quando quella parte cambia.\n\n`select` è quello che vale la pena conoscere bene. Osservare tutto un carrello vuol dire ricostruire ogni volta che ci cambia qualsiasi cosa; selezionare solo il conteggio vuol dire ricostruire solo quando cambia il conteggio. Su una schermata piena è la differenza fra fluido e no.\n\nL'errore comune, ed è chiaro a runtime: chiamare `watch` dentro un `onPressed`. Una callback non è una build, quindi non c'è niente da ricostruire, e Provider te lo dice.",
+          "code": "// Mettilo nell'albero, e viene rilasciato con lui\nChangeNotifierProvider(\n  create: (_) => Cart(),\n  child: const App(),\n)\n\n// In build: leggi e ricostruisci\nfinal cart = context.watch<Cart>();\n\n// In build, ma solo questa parte: meno ricostruzioni\nfinal count = context.select<Cart, int>((c) => c.items.length);\n\n// In una callback: leggi una volta, nessuna ricostruzione\nonPressed: () => context.read<Cart>().add(item),\n\n// L'errore: watch fuori da una build\n// onPressed: () => context.watch<Cart>().add(item),   // lancia"
         },
         {
-          "heading": "Riverpod",
-          "body": "Riverpod (dello stesso autore di Provider) dichiara i provider come variabili globali immutabili, **indipendenti dal BuildContext**, con errori rilevati a compile time. Si legge con `ref.watch` nel build e `ref.read` nei callback; `ref.listen` per side effect.\n\nOffre `Notifier`/`AsyncNotifier` per la logica, `AsyncValue` per loading/error/data, `autoDispose` e `family`, e override semplici nei test tramite `ProviderScope` o `ProviderContainer`.",
-          "code": "@riverpod\nFuture<User> user(Ref ref, String id) =>\n    ref.watch(apiProvider).fetchUser(id);\n\n// nella UI\nfinal user = ref.watch(userProvider('42'));\nreturn user.when(\n  data: (u) => Text(u.name),\n  loading: () => const CircularProgressIndicator(),\n  error: (e, _) => Text('$e'),\n);"
+          "heading": "Riverpod e BLoC",
+          "language": null,
+          "body": "**Riverpod** è stato scritto dall'autore di Provider per sistemarne le due debolezze: tutto passa dal `BuildContext`, quindi lo stato è scomodo da usare fuori dai widget e scomodo da provare; e chiedere una cosa che nell'albero non c'è fallisce solo quando l'app gira.\n\nCon Riverpod i provider sono **oggetti di primo livello**, indipendenti dall'albero. Vuol dire che si possono leggere da qualsiasi parte, sostituire in un test senza nessun widget, e — la cosa grossa — **un riferimento sbagliato è un errore di compilazione, non un crash**.\n\nGestisce bene anche lo stato asincrono: un provider async ti dà un `AsyncValue`, che è in caricamento, dati o errore, e `when` ti obbliga a gestirli tutti e tre. Quella sola caratteristica elimina un'intera categoria di schermate che si dimenticano il caso di errore.\n\n**BLoC** prende un'altra strada: lo stato è un oggetto immutabile unico, e cambia solo in risposta a degli eventi. Il widget manda un evento, il bloc produce uno stato nuovo, il widget si ricostruisce. **Cubit** è la versione leggera: metodi invece di eventi, che quasi sempre bastano.\n\nQuello che ti compra BLoC è la tracciabilità: ogni modifica ha una causa che puoi registrare, e la sequenza degli stati è riproducibile. In una squadra grande su un'app che durerà anni vale la cerimonia in più; su un'app piccola è soprattutto cerimonia.\n\nUna regola che vale proprio per BLoC: **`BlocBuilder` serve a costruire, `BlocListener` a fare**. Navigazione e messaggi vanno nell'ascoltatore, perché `build` può girare tante volte e navigheresti due volte.",
+          "code": "// Riverpod: un oggetto di primo livello, nessun context\n@riverpod\nFuture<User> user(Ref ref, String id) =>\n    ref.watch(apiProvider).fetchUser(id);\n\n// Caricamento, errore e dati: gestiti tutti e tre, o non compila\nfinal user = ref.watch(userProvider('42'));\nreturn user.when(\n  data: (u) => Text(u.name),\n  loading: () => const CircularProgressIndicator(),\n  error: (e, _) => Text('$e'),\n);\n\n// Cubit: metodi che emettono uno stato nuovo\nclass CounterCubit extends Cubit<int> {\n  CounterCubit() : super(0);\n  void increment() => emit(state + 1);\n}\n\n// Costruisci col builder, agisci con l'ascoltatore\nBlocListener<AuthCubit, AuthState>(\n  listener: (context, state) {\n    if (state is LoggedOut) Navigator.of(context).pushReplacementNamed('/login');\n  },\n  child: BlocBuilder<CounterCubit, int>(\n    builder: (context, count) => Text('$count'),\n  ),\n)"
         },
         {
-          "heading": "BLoC e Cubit",
-          "body": "BLoC separa rigorosamente UI e logica: la UI invia **eventi**, il Bloc emette **stati** come Stream. **Cubit** è la versione semplificata: metodi pubblici che chiamano `emit(nuovoStato)`, senza eventi.\n\n`BlocBuilder` ricostruisce la UI, `BlocListener` esegue side effect una tantum (navigazione, SnackBar), `BlocConsumer` fa entrambe le cose. È molto testabile (`bloc_test`) e prevedibile, al prezzo di più boilerplate.",
-          "code": "class CounterCubit extends Cubit<int> {\n  CounterCubit() : super(0);\n  void increment() => emit(state + 1);\n}\n\nBlocBuilder<CounterCubit, int>(\n  builder: (context, count) => Text('$count'),\n)"
-        },
-        {
-          "heading": "In colloquio",
-          "body": "Domanda tipica: **\"Quale state management usi e perché?\"** Non esiste una risposta unica: mostra un criterio. `setState` per lo stato locale; Provider o Riverpod per stato condiviso in app piccole e medie; BLoC quando servono tracciabilità degli eventi, team grandi e regole rigide.\n\nCita concetti trasversali: stato immutabile, separazione UI/logica, rebuild granulari (`select`, `Consumer`), side effect fuori dal build, testabilità. Spiega un caso reale in cui hai scelto e cosa cambieresti.",
-          "code": null
+          "heading": "Scegliere, e saper dire perché",
+          "language": null,
+          "body": "\"Che gestione dello stato usi?\" in realtà chiede se sai motivare una scelta. La risposta cattiva è un nome di marca; quella buona è una regola.\n\nLa regola, in sintesi:\n\n**`setState`** per tutto quello che è locale a un widget. Sempre. Senza eccezioni, e tirare in ballo una libreria qui è un errore, non raffinatezza.\n**`ValueNotifier`** per un valore condiviso solo, senza nessun pacchetto.\n**Provider** per un'app piccola o media, quando la squadra lo conosce già.\n**Riverpod** per un progetto nuovo di qualsiasi dimensione: i test senza widget, la sicurezza in compilazione e `AsyncValue` sono vantaggi veri.\n**BLoC** per una squadra grande su un'app che durerà, dove la tracciabilità di ogni cambio di stato vale il codice in più.\n\nE due cose che contano più della scelta in sé, ed è quello che un buon esaminatore sta ascoltando.\n\n**Dev'essere provabile senza una schermata.** Se la logica si può provare solo costruendo widget, sta nel posto sbagliato, qualunque libreria ci sia intorno.\n\n**Mescolarle va benissimo.** `setState` per i pezzi locali e una libreria per lo stato condiviso è la forma normale di un'app vera. Insistere che tutto passi dall'archivio è il modo in cui una schermata semplice diventa difficile da leggere.",
+          "code": "// Locale: nessuna libreria\nsetState(() => expanded = !expanded);\n\n// Condiviso, un valore solo: ancora nessuna libreria\nfinal theme = ValueNotifier(ThemeMode.system);\n\n// Condiviso, più schermate, va provato senza widget\nfinal cartProvider = NotifierProvider<CartNotifier, Cart>(CartNotifier.new);\n\n// Il test che conta: nessun widget da nessuna parte\ntest('aggiungere aumenta il totale', () {\n  final cart = CartNotifier();\n  cart.add(Item(price: 10));\n  expect(cart.state.total, 10);\n});"
         }
       ],
       "questions": [
         {
           "id": "flutter-state-management-1",
-          "prompt": "Lo stato del tab selezionato in una singola schermata va gestito con:",
+          "difficulty": 1,
+          "answer": 1,
+          "prompt": "La scheda selezionata su una sola schermata va gestita con:",
           "code": null,
           "options": [
-            "BLoC, obbligatoriamente",
+            "BLoC, sempre",
             "`setState` in uno StatefulWidget",
             "Un Provider globale",
             "SharedPreferences"
           ],
-          "answer": 1,
-          "explanation": "È stato effimero, locale a un widget: `setState` è la soluzione più semplice e corretta.",
-          "difficulty": 1,
+          "explanation": "Nessuno fuori da questo widget lo deve sapere, e il valore non deve sopravvivergli. `setState` è la cosa più semplice che funziona, e qualsiasi cosa in più rende la schermata più difficile da leggere senza nessun vantaggio.",
           "whyWrong": [
-            "BLoC non è mai obbligatorio: per uno stato effimero locale aggiungerebbe complessità senza benefici.",
+            "Il \"sempre\" è l'istinto sbagliato: una libreria per un valore che appartiene a un widget solo è macchinario intorno al niente.",
             null,
-            "Un Provider globale esporrebbe a tutta l'app uno stato che interessa a un solo widget.",
-            "SharedPreferences serve alla persistenza su disco, non a gestire lo stato della UI in memoria."
+            "Globale vuol dire che ogni schermata lo vede e lo può cambiare, che è il contrario di quello che serve a questo valore.",
+            "Quello lo salva su disco, che è un altro problema — a meno che tu non voglia davvero ricordarlo fra un avvio e l'altro."
           ]
         },
         {
           "id": "flutter-state-management-2",
-          "prompt": "Differenza tra `context.watch<T>()` e `context.read<T>()`?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "Che differenza c'è fra `context.watch<T>()` e `context.read<T>()`?",
           "code": null,
           "options": [
-            "read è per le liste, watch per oggetti singoli",
-            "watch è async, read è sincrono",
-            "Nessuna",
-            "watch ricostruisce ai cambi, read no"
+            "read è per le liste",
+            "watch è asincrona",
+            "Non ce n'è",
+            "watch ricostruisce quando cambia, read no"
           ],
-          "answer": 3,
-          "explanation": "`watch` registra il widget come dipendente; `read` restituisce il valore senza iscriversi ed è adatto ai callback come onPressed.",
-          "difficulty": 2,
+          "explanation": "`watch` registra una dipendenza: questo widget si ricostruisce ogni volta che l'oggetto avvisa. `read` lo prende e basta. Quindi `watch` sta in `build` e `read` nelle callback — usare `watch` in un `onPressed` lancia un errore, perché non c'è nessuna build a cui agganciarsi.",
           "whyWrong": [
-            "Il tipo del valore non c'entra: la differenza è se il widget si iscrive ai cambiamenti o no.",
-            "Entrambi sono sincroni e restituiscono subito il valore; cambia solo la registrazione della dipendenza.",
-            "C'è una differenza importante: `watch` ricostruisce il widget ai cambiamenti, `read` no.",
+            "Nessuna delle due c'entra col tipo che stai leggendo.",
+            "Sono immediate tutte e due: nessuna aspetta niente.",
+            "La differenza è tutto il senso, e sbagliarla ti dà o nessun aggiornamento o un errore.",
             null
           ]
         },
         {
           "id": "flutter-state-management-3",
-          "prompt": "Quando `Cart` chiama `notifyListeners()` ma `count` non cambia, il widget:",
+          "difficulty": 3,
+          "answer": 0,
+          "prompt": "`Cart` chiama `notifyListeners()` ma il conteggio non è cambiato. Che succede a questo widget?",
           "code": "@override\nWidget build(BuildContext context) {\n  final count = context.select<Cart, int>((c) => c.count);\n  return Text('$count');\n}",
           "options": [
             "Non viene ricostruito",
-            "Viene ricostruito comunque",
+            "Viene ricostruito lo stesso",
             "Lancia un'eccezione",
             "Perde il suo stato"
           ],
-          "answer": 0,
-          "explanation": "`select` confronta il valore selezionato prima e dopo: ricostruisce solo se è cambiato. Serve proprio a ridurre i rebuild.",
-          "difficulty": 3,
+          "explanation": "`select` osserva solo il valore che hai estratto. A ogni notifica Provider lo ricalcola e lo confronta con l'ultimo; se è uguale non ricostruisce niente. È esattamente per questo che `select` vale la pena su una schermata piena.",
           "whyWrong": [
             null,
-            "`select` confronta il valore selezionato prima e dopo: se `count` è uguale il rebuild viene saltato.",
-            "Nessuna eccezione: `notifyListeners` è normale e `select` si limita a ignorare la notifica.",
-            "Il widget non viene nemmeno ricostruito, quindi non c'è modo che perda il suo stato."
+            "Ricostruire lo stesso è quello che fa `watch` liscio, che reagisce a ogni notifica.",
+            "Non lancia niente: è il comportamento normale e voluto.",
+            "Lo stato non viene toccato: il senso è proprio che non succede niente."
           ]
         },
         {
           "id": "flutter-state-management-4",
-          "prompt": "Differenza principale tra Cubit e Bloc?",
+          "difficulty": 2,
+          "answer": 2,
+          "prompt": "Qual è la differenza principale fra Cubit e Bloc?",
           "code": null,
           "options": [
-            "Cubit non usa Stream",
-            "Bloc non è testabile",
+            "Cubit non usa gli Stream",
+            "Bloc non è provabile",
             "Cubit ha metodi che emettono, Bloc riceve eventi",
-            "Bloc funziona solo su Flutter web"
+            "Bloc funziona solo sul web"
           ],
-          "answer": 2,
-          "explanation": "Entrambi espongono uno Stream di stati. Il Cubit viene pilotato da chiamate a metodi, il Bloc da eventi mappati con `on<Event>`.",
-          "difficulty": 2,
+          "explanation": "Un Cubit espone metodi che chiami direttamente; un Bloc riceve oggetti evento e li trasforma in stati. Gli eventi ti danno un registro del perché di ogni modifica, cosa che conta su un'app grande ed è pura cerimonia su una piccola.",
           "whyWrong": [
-            "Anche il Cubit espone uno Stream di stati: cambia solo il modo in cui lo alimenti.",
-            "Bloc è molto testabile: con `bloc_test` verifichi gli stati emessi in risposta agli eventi.",
+            "Sono costruiti tutti e due sugli stream: Cubit è solo uno strato più sottile sulla stessa cosa.",
+            "Sono provabilissimi tutti e due — ed è uno dei motivi principali per cui si scelgono.",
             null,
-            "Bloc è Dart puro e funziona su tutte le piattaforme, non solo sul web."
+            "Funzionano tutti e due dovunque funziona Flutter."
           ]
         },
         {
           "id": "flutter-state-management-5",
-          "prompt": "Cosa fa `notifyListeners()` in un ChangeNotifier?",
+          "difficulty": 1,
+          "answer": 1,
+          "prompt": "Che cosa fa `notifyListeners()`?",
           "code": null,
           "options": [
-            "Ricostruisce l'intera app",
-            "Chiama tutti i listener registrati",
-            "Salva lo stato in modo persistente",
+            "Ricostruisce tutta l'app",
+            "Chiama ogni ascoltatore registrato",
+            "Salva lo stato",
             "Chiude il notifier"
           ],
-          "answer": 1,
-          "explanation": "Invoca in modo sincrono i listener registrati; saranno builder come `ListenableBuilder` o Provider a schedulare i rebuild.",
-          "difficulty": 1,
+          "explanation": "Scorre l'elenco degli ascoltatori e li chiama uno a uno. Di solito quegli ascoltatori sono widget, che quindi si ricostruiscono. Dimenticare la chiamata è il bug classico: i dati sono cambiati davvero, e nessuno è stato avvisato.",
           "whyWrong": [
-            "Non ricostruisce nulla direttamente: chiama i listener, e solo i widget iscritti schedulano un rebuild.",
+            "Si ricostruisce solo quello che sta ascoltando, non tutta l'app.",
             null,
-            "`notifyListeners` non salva nulla: la persistenza va gestita a parte.",
-            "Per chiudere il notifier si usa `dispose()`; `notifyListeners` lo lascia attivo."
+            "Non viene salvato niente: è solo una notifica.",
+            "Chiudere è `dispose`, che è un'altra cosa."
           ]
         },
         {
           "id": "flutter-state-management-6",
-          "prompt": "Vantaggio chiave di Riverpod rispetto a Provider?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "Qual è il vantaggio chiave di Riverpod su Provider?",
           "code": null,
           "options": [
             "Non usa mai InheritedWidget",
-            "Compila più velocemente",
+            "Compila più in fretta",
             "Supporta solo stato immutabile",
-            "Indipendente dal BuildContext, errori a compile time"
+            "Indipendente dal BuildContext, ed errori in compilazione"
           ],
-          "answer": 3,
-          "explanation": "I provider Riverpod sono dichiarati globalmente e letti via `ref`, quindi niente `ProviderNotFoundException` a runtime e accesso anche fuori dai widget.",
-          "difficulty": 2,
+          "explanation": "I provider sono oggetti di primo livello, quindi li puoi usare fuori dall'albero dei widget e provarli senza nessun widget. E chiedere una cosa che non esiste è un errore di compilazione invece di un crash a runtime, che è la differenza pratica che si sente per prima.",
           "whyWrong": [
-            "Riverpod usa ancora un InheritedWidget, `ProviderScope`, per esporre il container: il vantaggio è non dipendere dal context per leggere.",
-            "La velocità di compilazione non è un vantaggio distintivo; lo sono indipendenza dal BuildContext e sicurezza a compile time.",
-            "Riverpod supporta anche stato mutabile, per esempio con ChangeNotifierProvider; l'immutabilità è consigliata, non imposta.",
+            "Uno lo usa internamente. La differenza è che non passi dal context.",
+            "La velocità di compilazione non c'entra.",
+            "Funziona anche con stato modificabile. È una scelta di stile, non un requisito.",
             null
           ]
         },
         {
           "id": "flutter-state-management-7",
-          "prompt": "Perché la UI non si aggiorna chiamando `add`?",
+          "difficulty": 2,
+          "answer": 0,
+          "prompt": "Perché l'interfaccia non si aggiorna quando viene chiamata `add`?",
           "code": "class Numbers extends ValueNotifier<List<int>> {\n  Numbers() : super([]);\n\n  void add(int x) => value.add(x);\n}",
           "options": [
-            "Si muta la lista senza riassegnare `value`",
+            "La lista viene cambiata senza assegnare `value`",
             "ValueNotifier non supporta le liste",
             "Manca `dispose()`",
             "`add` dovrebbe essere async"
           ],
-          "answer": 0,
-          "explanation": "ValueNotifier notifica solo nel setter di `value` quando il nuovo valore è diverso. Serve `value = [...value, x]`.",
-          "difficulty": 2,
+          "explanation": "Un `ValueNotifier` avvisa quando `value` viene **assegnato**. Qui la stessa lista viene cambiata sul posto, quindi per il notifier non è successo niente. Assegna una lista nuova — `value = [...value, x]` — e avvisa.",
           "whyWrong": [
             null,
-            "ValueNotifier accetta qualsiasi tipo; il punto è che notifica solo nel setter di `value`, che qui non viene chiamato.",
-            "`dispose` libera le risorse ma non c'entra con le notifiche: anche con dispose la UI non si aggiornerebbe.",
-            "Rendere `add` async non cambierebbe nulla: la lista verrebbe comunque mutata senza passare dal setter di `value`."
+            "Funziona con qualsiasi tipo. Il problema è come è stata fatta la modifica.",
+            "Un `dispose` mancante è una perdita di memoria, non un aggiornamento che non arriva.",
+            "Essere asincrona non cambierebbe niente: la notifica continuerebbe a non partire."
           ]
         },
         {
           "id": "flutter-state-management-8",
-          "prompt": "Dove navighi o mostri una SnackBar in risposta a uno stato di un Bloc?",
+          "difficulty": 2,
+          "answer": 2,
+          "prompt": "Dove navighi o mostri un messaggio in risposta a uno stato di un Bloc?",
           "code": null,
           "options": [
             "Dentro `BlocBuilder.builder`",
             "Nel costruttore del Bloc",
             "In un `BlocListener`",
-            "In initState con un Timer"
+            "In initState con un timer"
           ],
-          "answer": 2,
-          "explanation": "Il builder può essere eseguito più volte e deve essere puro; `BlocListener` viene chiamato una volta per cambio di stato, ideale per i side effect.",
-          "difficulty": 2,
+          "explanation": "`builder` può girare tante volte per lo stesso stato — dopo un cambio di tema, una rotazione, un genitore che si ricostruisce — quindi navigare da lì navigherebbe due volte. `BlocListener` gira una volta per ogni cambio di stato, che è esattamente quello che serve a un'azione usa-e-getta.",
           "whyWrong": [
-            "Il builder può essere eseguito più volte per lo stesso stato: navigare lì causerebbe push multipli.",
-            "Nel costruttore del Bloc non hai un BuildContext, e la logica di business non deve occuparsi di navigazione.",
+            "È il bug classico: due push, o un messaggio che ricompare di continuo.",
+            "Il bloc dell'interfaccia non sa niente, e non deve saperne.",
             null,
-            "Un Timer in `initState` è un hack: non reagisce ai cambi di stato e rischia di usare un context non più valido."
+            "Un timer non c'entra e scatterebbe nel momento sbagliato."
           ]
         },
         {
           "id": "flutter-state-management-9",
+          "difficulty": 2,
+          "answer": 1,
           "prompt": "In Riverpod, dentro `build()` dovresti usare:",
           "code": null,
           "options": [
             "`ref.read` per tutto",
-            "`ref.watch` per reagire, `ref.read` nei callback",
-            "Sempre `ref.listen` al posto di watch",
+            "`ref.watch` per reagire, `ref.read` nelle callback",
+            "Sempre `ref.listen`",
             "`context.watch`"
           ],
-          "answer": 1,
-          "explanation": "`ref.watch` nel build mantiene la UI sincronizzata; `ref.read` nei callback evita rebuild inutili; `ref.listen` è per side effect.",
-          "difficulty": 2,
+          "explanation": "`watch` registra una dipendenza, quindi il widget si ricostruisce quando il valore cambia — che è quello che vuoi in `build`. In una callback non c'è niente da ricostruire, quindi va bene `read`. È la stessa divisione di `watch` e `read` in Provider.",
           "whyWrong": [
-            "Con `ref.read` nel build la UI non si aggiorna quando il provider cambia: legge il valore una volta sola.",
+            "`read` in `build` vuol dire che il widget non si aggiorna mai quando il valore cambia.",
             null,
-            "`ref.listen` serve ai side effect come navigazione o SnackBar e non restituisce il valore da mostrare.",
-            "`context.watch` appartiene a Provider; in Riverpod leggi tramite `ref`."
+            "`listen` serve per gli effetti collaterali — mostrare una finestra, navigare — non per costruire.",
+            "`context.watch` è di Provider. Riverpod passa da `ref`."
           ]
         },
         {
           "id": "flutter-state-management-10",
-          "prompt": "Come motivi la scelta dello state management in colloquio?",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "Come motivi la tua scelta di gestione dello stato a un colloquio?",
           "code": null,
           "options": [
-            "Scala, team e testabilità; setState per il locale",
-            "Riverpod sempre: Provider è deprecato",
-            "GetX, perché ha meno boilerplate",
-            "BLoC sempre: è lo standard"
+            "Per dimensione, squadra e provabilità; e setState per lo stato locale",
+            "Sempre Riverpod: Provider è superato",
+            "GetX, perché si scrive meno",
+            "Sempre BLoC: è lo standard"
           ],
-          "answer": 0,
-          "explanation": "Nessuna libreria è obbligatoria e Provider non è deprecato: gli intervistatori cercano un criterio ragionato, non una preferenza assoluta.",
-          "difficulty": 1,
+          "explanation": "La domanda sta misurando se sai ragionare su un compromesso. La risposta è dire da cosa dipende la scelta: quanto lontano viaggia il valore, quanto vive, quanto è grande la squadra, se la logica si può provare senza widget. Un nome di marca non lo è.",
           "whyWrong": [
             null,
-            "Provider non è deprecato ed è ancora raccomandato; scegliere sempre la stessa libreria non mostra capacità di giudizio.",
-            "Il boilerplate non è l'unico criterio: GetX è spesso criticato per il forte accoppiamento e la testabilità.",
-            "Non esiste uno standard unico: BLoC è valido per app grandi, ma imporlo sempre ignora scala e contesto."
+            "Provider è mantenuto e usatissimo. Dichiararlo superato è semplicemente falso.",
+            "\"Si scrive meno\" da solo non è un motivo, e non dice niente su test e manutenzione.",
+            "Uno standard unico non c'è, e BLoC su un'app piccola è soprattutto file in più."
           ]
         }
       ]
@@ -1450,65 +1450,67 @@
     {
       "id": "navigation",
       "stage": "mid",
-      "title": "Navigazione",
+      "title": "Spostarsi fra le schermate",
       "icon": "arrow.left.arrow.right",
-      "summary": "Navigator 1.0, named routes, Router, go_router, risultati e deep link",
+      "summary": "La pila delle schermate, farsi dare una risposta da quella che hai aperto, e perché un URL del web ha cambiato il modo in cui funziona la navigazione in Flutter.",
       "lesson": [
         {
-          "heading": "Navigator 1.0",
-          "body": "Il `Navigator` gestisce uno **stack di route** in modo imperativo: `push` aggiunge una schermata, `pop` la rimuove. `pushReplacement` sostituisce la route corrente (es. splash verso home) e `pushAndRemoveUntil` svuota lo stack fino a una condizione (es. dopo il login o il logout).\n\n`MaterialPageRoute` e `CupertinoPageRoute` forniscono le transizioni della piattaforma, incluso lo swipe back su iOS.",
-          "code": "Navigator.of(context).pushAndRemoveUntil(\n  MaterialPageRoute(builder: (_) => const HomePage()),\n  (route) => false, // rimuove tutto\n);"
+          "heading": "Il Navigator è una pila",
+          "language": null,
+          "body": "Flutter tiene le schermate in una **pila**: quella in cima è quella che vedi, una schermata nuova finisce sopra, e tornare indietro toglie quella in cima. Ultima entrata, prima uscita.\n\nÈ per questo che il bottone indietro funziona senza che tu scriva niente: la schermata precedente è ancora lì sotto, con la sua posizione di scorrimento e tutto il resto esattamente come l'avevi lasciata.\n\nLe operazioni che userai:\n\n**`push`** — aggiungi una schermata sopra.\n**`pop`** — togli quella in cima.\n**`pushReplacement`** — sostituisci quella corrente, così indietro non ci torna.\n**`pushAndRemoveUntil`** — aggiungine una e butta quelle sotto, fino a un punto che scegli tu.\n**`popUntil`** — torna indietro di diverse schermate in un colpo.\n\nIl caso da sapere a memoria è dopo il login: l'utente non deve poter tornare alla schermata di accesso. `pushReplacement` toglie solo quella; `pushAndRemoveUntil` con `(route) => false` svuota tutta la pila, che è quello che vuoi anche quando l'utente esce.",
+          "code": "// Avanti\nNavigator.of(context).push(\n  MaterialPageRoute(builder: (_) => DetailPage(item: item)),\n);\n\n// Indietro\nNavigator.of(context).pop();\n\n// Dopo il login: indietro non deve tornare qui\nNavigator.of(context).pushReplacement(\n  MaterialPageRoute(builder: (_) => const HomePage()),\n);\n\n// Dopo l'uscita: svuota tutto quello che c'è sotto\nNavigator.of(context).pushAndRemoveUntil(\n  MaterialPageRoute(builder: (_) => const LoginPage()),\n  (route) => false,\n);"
         },
         {
-          "heading": "Passare dati e risultati",
-          "body": "I dati si passano alla nuova schermata tramite il **costruttore**. Per ricevere un risultato, `push` restituisce un `Future<T?>` che completa quando la route viene chiusa con `pop(context, valore)`.\n\nIl risultato è **nullable**: se l'utente torna indietro con il gesto o il pulsante di sistema, il Future completa con `null`. Dopo l'`await` controlla `context.mounted` prima di usare il context.",
-          "code": "final picked = await Navigator.of(context).push<Color>(\n  MaterialPageRoute(builder: (_) => const ColorPicker()),\n);\nif (picked != null && context.mounted) {\n  setState(() => color = picked);\n}\n\n// in ColorPicker\nNavigator.pop(context, Colors.teal);"
+          "heading": "Passare dati, e farsi dare una risposta",
+          "language": null,
+          "body": "Andare avanti è facile: costruisci la schermata successiva e le passi quello che le serve dal costruttore. È meglio di qualsiasi altro meccanismo, perché lo controlla il compilatore: un argomento mancante è un errore sul tuo schermo, non un crash davanti a un utente.\n\nTornare indietro è la metà interessante, e Flutter la rende elegante: **`push` restituisce un `Future`**. Lo aspetti, e ti arriva quello che la schermata ha passato a `pop` chiudendosi.\n\nDue dettagli che contano nel codice vero.\n\n**Il risultato è sempre opzionale.** L'utente può chiudere la schermata col bottone indietro di sistema o con un gesto, e quello fa `pop` senza valore. Quindi il tipo è `Color?`, non `Color`, e il caso nullo è normale, non eccezionale.\n\n**Controlla `context.mounted` dopo.** Hai appena aspettato, quindi la schermata da cui venivi può non esserci più. Usarne il context dopo è il crash classico, e si risolve con una riga.",
+          "code": "// Avanti: il costruttore, controllato dal compilatore\nNavigator.of(context).push(\n  MaterialPageRoute(builder: (_) => DetailPage(item: item)),\n);\n\n// Indietro: aspetti il push e gestisci il null\nfinal picked = await Navigator.of(context).push<Color>(\n  MaterialPageRoute(builder: (_) => const ColorPicker()),\n);\n\nif (!context.mounted) return;        // dopo un await, sempre\nif (picked != null) {\n  setState(() => color = picked);\n}\n\n// Nella schermata aperta\nNavigator.pop(context, Colors.teal);   // con un valore\n// oppure l'utente preme indietro: pop() senza niente, e arriva null"
         },
         {
-          "heading": "Named routes",
-          "body": "Con `routes` o `onGenerateRoute` in `MaterialApp` navighi con `pushNamed('/details', arguments: id)` e leggi gli argomenti con `ModalRoute.of(context)!.settings.arguments`.\n\nLa documentazione Flutter oggi **sconsiglia** le named routes per la maggior parte delle app: il comportamento dei deep link non è personalizzabile e sul web non gestiscono il pulsante avanti del browser. Gli argomenti sono inoltre `Object?`, quindi non type-safe.",
-          "code": null
+          "heading": "Le rotte con nome, e perché non bastano",
+          "language": null,
+          "body": "Le **rotte con nome** ti permettono di scrivere `pushNamed('/detail')` invece di costruire la schermata sul posto. La mappa dai nomi ai costruttori sta in un punto solo, il che sembra più ordinato.\n\nHanno difetti veri, e conoscerli è il senso di questa sezione.\n\n**Gli argomenti non hanno tipo.** Arrivano come `Object?` e li converti tu. Il compilatore non ti può aiutare, quindi un argomento sbagliato è un crash mentre l'app gira.\n\n**I deep link sono limitati.** Un percorso con un parametro dentro, tipo `/users/42`, è scomodo: lo devi analizzare a mano in `onGenerateRoute`.\n\n**Sul web non funzionano davvero.** Il bottone avanti del browser e la barra degli indirizzi si aspettano che l'app sappia ricostruire tutta la sua pila da un URL, e una pila costruita con una sequenza di push non ci riesce.\n\nQuest'ultimo punto è il motivo per cui esiste la **Router API**, la cosiddetta \"Navigator 2.0\". Invece di dire \"spingi questa\", dici \"ecco tutta la pila per questo URL\", e il framework calcola la differenza. È dichiarativa, ed è quello che fa funzionare come si deve il web e i deep link.\n\nLa Router API è potente e davvero sgradevole da usare direttamente. Quasi nessuno lo fa: si usa un pacchetto costruito sopra.",
+          "code": "// Rotte con nome: la mappa in un posto solo\nMaterialApp(\n  routes: {\n    '/': (_) => const HomePage(),\n    '/detail': (_) => const DetailPage(),\n  },\n)\n\nNavigator.pushNamed(context, '/detail', arguments: item);\n\n// E dall'altra parte: senza tipo, quindi una conversione\nfinal item = ModalRoute.of(context)!.settings.arguments as Item;\n\n// Un percorso con un parametro: a mano\nonGenerateRoute: (settings) {\n  final uri = Uri.parse(settings.name!);\n  if (uri.pathSegments.first == 'users') {\n    final id = uri.pathSegments[1];\n    return MaterialPageRoute(builder: (_) => UserPage(id: id));\n  }\n  return null;\n}"
         },
         {
-          "heading": "Navigator 2.0 e Router",
-          "body": "Navigator 2.0 (Router API) è **dichiarativo**: lo stack di pagine è derivato dallo stato dell'app tramite una lista di `Page`. Un `RouterDelegate` costruisce il Navigator e un `RouteInformationParser` converte gli URL in stato e viceversa.\n\nÈ nato per supportare URL sul web, deep link e cambi di stack arbitrari, ma è verboso. Per questo nella pratica si usa un pacchetto come **go_router**, mantenuto dal team Flutter.",
-          "code": null
+          "heading": "go_router",
+          "language": null,
+          "body": "**go_router** è il pacchetto che la squadra di Flutter consiglia. Ti dà la potenza della Router API con una sintassi che scriveresti volentieri.\n\nDichiari le rotte come percorsi, coi parametri dentro, e ottieni accesso tipizzato a quei parametri, deep link come si deve, e URL che si comportano bene in un browser.\n\nI due metodi, e la differenza la chiedono al colloquio:\n\n**`context.go('/users/42')`** — imposta la pila **a partire dall'URL**. Il framework capisce quali schermate implica quel percorso e le costruisce. Giusto per un deep link o un cambio di scheda.\n\n**`context.push('/users/42')`** — aggiunge una schermata sopra a quello che c'è. Giusto per entrare nel dettaglio: apri un dettaglio da una lista, così indietro torna alla lista.\n\nLa caratteristica che fa risparmiare più codice è **`redirect`**. Gira prima di ogni navigazione e può mandare l'utente altrove — ed è così che dici \"non autenticato, vai a /login\" in un posto solo, invece di controllare nel `build` di ogni schermata.\n\nE per una barra in basso dove ogni scheda tiene la sua cronologia c'è `StatefulShellRoute`: ogni ramo ha la sua pila, quindi cambiare scheda non perde il punto in cui eri.",
+          "code": "final router = GoRouter(\n  routes: [\n    GoRoute(path: '/', builder: (_, __) => const HomePage()),\n    GoRoute(\n      path: '/users/:id',\n      builder: (_, s) => UserPage(id: s.pathParameters['id']!),   // tipizzato\n    ),\n  ],\n  // In un posto solo, invece che in ogni schermata\n  redirect: (context, state) =>\n      !auth.isLoggedIn && state.matchedLocation != '/login' ? '/login' : null,\n);\n\n// Imposta la pila dall'URL: un deep link, una scheda\ncontext.go('/users/42');\n\n// Aggiungine una sopra: entrare in un dettaglio\ncontext.push('/users/42');"
         },
         {
-          "heading": "go_router e deep link",
-          "body": "go_router mappa URL su schermate con `GoRoute(path: '/users/:id')` e legge i parametri da `state.pathParameters` e `state.uri.queryParameters`. `context.go` **imposta lo stack** in base all'URL, `context.push` aggiunge una route sopra lo stack corrente.\n\n`redirect` centralizza i guard (es. autenticazione), `ShellRoute` e `StatefulShellRoute` gestiscono layout persistenti e bottom navigation con uno stack per tab. Per i deep link servono la configurazione nativa: App Links su Android, Universal Links su iOS (Associated Domains + file `apple-app-site-association`).",
-          "code": "final router = GoRouter(\n  redirect: (context, state) =>\n      !auth.isLoggedIn && state.matchedLocation != '/login' ? '/login' : null,\n  routes: [\n    GoRoute(path: '/', builder: (_, __) => const HomePage()),\n    GoRoute(\n      path: '/users/:id',\n      builder: (_, s) => UserPage(id: s.pathParameters['id']!),\n    ),\n  ],\n);"
-        },
-        {
-          "heading": "In colloquio",
-          "body": "Domanda tipica: **\"Come gestisci navigazione, auth e deep link in un'app Flutter?\"** Risposta concisa: go_router con routing dichiarativo basato su URL, `redirect` per il guard di autenticazione (con `refreshListenable` per reagire al login), `StatefulShellRoute` per i tab e configurazione nativa per App Links e Universal Links.\n\nSe chiedono Navigator 1.0 vs 2.0: il primo è imperativo e semplice, il secondo rende lo stack funzione dello stato, necessario per web e deep link complessi.",
-          "code": null
+          "heading": "I deep link: cosa serve alla piattaforma",
+          "language": null,
+          "body": "Un **deep link** è un collegamento che apre la tua app su una schermata precisa. Flutter si occupa del dentro — go_router legge il percorso e costruisce la pila giusta — ma il fuori va configurato su ogni piattaforma, ed è lì che si rompe.\n\nCe ne sono di due tipi, e la differenza conta:\n\n**Uno schema personalizzato** — `miaapp://users/42`. Facile da impostare, e inaffidabile: qualsiasi app può rivendicare lo stesso schema, e un collegamento del genere non fa niente di utile se l'app non è installata.\n\n**Un vero collegamento https** — `https://esempio.com/users/42`. È questo quello giusto. Lo stesso collegamento apre l'app se è installata e il sito se non lo è, e non può essere rubato da un'altra app, perché la proprietà viene verificata.\n\nLa verifica è quello che va configurato, ed è simmetrica sulle due piattaforme. Su **iOS** accendi gli Associated Domains e metti sul tuo sito un file `apple-app-site-association`. Su **Android** aggiungi un intent filter con `autoVerify` e metti sul sito un file `assetlinks.json`. In tutti e due i casi il sistema va a prendere quel file e controlla che il sito garantisca davvero per la tua app.\n\nIl consiglio pratico: provalo su un dispositivo vero, da un collegamento vero — un messaggio, una nota — non dal terminale. Metà dei problemi si vedono solo così.",
+          "code": "// iOS: Runner.entitlements\n// <key>com.apple.developer.associated-domains</key>\n// <array><string>applinks:esempio.com</string></array>\n\n// Android: AndroidManifest.xml\n// <intent-filter android:autoVerify=\"true\">\n//   <action android:name=\"android.intent.action.VIEW\" />\n//   <category android:name=\"android.intent.category.BROWSABLE\" />\n//   <data android:scheme=\"https\" android:host=\"esempio.com\" />\n// </intent-filter>\n\n// Sul sito: /.well-known/apple-app-site-association\n// e /.well-known/assetlinks.json\n\n// Nell'app non serve altro: go_router legge il percorso\nGoRoute(path: '/users/:id', builder: (_, s) => UserPage(id: s.pathParameters['id']!))"
         }
       ],
       "questions": [
         {
           "id": "flutter-navigation-1",
-          "prompt": "Come ricevi un valore dalla schermata che viene chiusa?",
+          "difficulty": 1,
+          "answer": 2,
+          "prompt": "Come ti fai dare un valore da una schermata che si sta chiudendo?",
           "code": null,
           "options": [
-            "Tramite una variabile globale",
+            "Con una variabile globale",
             "Con setState nella schermata figlia",
             "`await Navigator.push(...)` e `pop(context, valore)`",
             "Con `Navigator.replace`"
           ],
-          "answer": 2,
-          "explanation": "`push` restituisce un Future che completa con il valore passato a `pop`. È il modo idiomatico per ottenere risultati.",
-          "difficulty": 1,
+          "explanation": "`push` restituisce un `Future` che si completa quando la schermata si chiude, portandosi quello che è stato passato a `pop`. È il modo più pulito: nessuno stato condiviso e nessun accoppiamento fra le due schermate.",
           "whyWrong": [
-            "Una variabile globale crea accoppiamento e bug difficili da seguire: `push` restituisce già un Future con il risultato.",
-            "`setState` aggiorna solo lo State della schermata figlia e non passa nulla alla schermata precedente.",
+            "Una globale funziona e lega fra loro le due schermate, rendendole più difficili da riusare e da provare.",
+            "La figlia non può chiamare `setState` sul genitore: non ne ha nessun riferimento.",
             null,
-            "`Navigator.replace` sostituisce una route e non restituisce alcun risultato."
+            "`replace` scambia una rotta con un'altra nella pila. Non riguarda la restituzione di un valore."
           ]
         },
         {
           "id": "flutter-navigation-2",
-          "prompt": "Dopo il login, \"indietro\" non deve tornare al login. Cosa usi?",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "Dopo il login, indietro non deve tornare alla schermata di accesso. Cosa usi?",
           "code": null,
           "options": [
             "`pushReplacement` o `pushAndRemoveUntil`",
@@ -1516,19 +1518,19 @@
             "`maybePop`",
             "`popUntil`"
           ],
-          "answer": 0,
-          "explanation": "Sostituire la route (o svuotare lo stack) rimuove il login dallo storico; con `push` resterebbe sotto la home.",
-          "difficulty": 1,
+          "explanation": "`pushReplacement` mette la schermata nuova al posto di quella corrente, quindi non c'è niente a cui tornare. `pushAndRemoveUntil` va oltre e svuota quello che gli dici — che è quello che vuoi dopo un'uscita.",
           "whyWrong": [
             null,
-            "Con `push` il login resta nello stack sotto la home: premendo indietro ci torneresti.",
-            "`maybePop` chiude la route corrente se possibile, ma non rimuove il login dallo storico.",
-            "`popUntil` toglie route dalla cima, ma non inserisce la home al posto del login."
+            "`push` lascia la schermata di accesso sotto, quindi indietro ci riporta dritto.",
+            "`maybePop` toglie una schermata solo se può. Non ne apre nessuna.",
+            "`popUntil` va all'indietro. Qui stai andando avanti."
           ]
         },
         {
           "id": "flutter-navigation-3",
-          "prompt": "L'utente chiude la pagina con il back di sistema. Cosa stampa?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "L'utente chiude la pagina col bottone indietro di sistema. Che cosa stampa?",
           "code": "final r = await Navigator.of(context).push<bool>(\n  MaterialPageRoute(builder: (_) => const ConfirmPage()),\n);\nprint(r);",
           "options": [
             "false",
@@ -1536,38 +1538,38 @@
             "Lancia un'eccezione",
             "null"
           ],
-          "answer": 3,
-          "explanation": "Chiudendo senza passare un valore a `pop` il Future completa con `null`: per questo il tipo del risultato è `bool?`.",
-          "difficulty": 2,
+          "explanation": "Il bottone indietro fa `pop` senza valore, quindi il future si completa con null. È per questo che il tipo del risultato è `bool?` e per questo il null va sempre gestito: che l'utente chiuda senza scegliere è un esito normale, non un errore.",
           "whyWrong": [
-            "Chiudere senza valore non produce `false`: il Future completa con `null`, per questo il tipo è `bool?`.",
-            "`true` arriva solo se la pagina chiama `pop(context, true)`; il back di sistema non passa nessun valore.",
-            "Chiudere con il back non è un errore: il Future completa normalmente, solo con `null`.",
+            "`false` vorrebbe dire che la schermata ha fatto `pop` esplicitamente con `false`. Non ha passato niente.",
+            "`true` richiederebbe una scelta esplicita, e non c'è stata.",
+            "Non lancia niente: un `pop` senza valore è normalissimo.",
             null
           ]
         },
         {
           "id": "flutter-navigation-4",
-          "prompt": "In go_router, differenza tra `context.go` e `context.push`?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "In go_router, che differenza c'è fra `context.go` e `context.push`?",
           "code": null,
           "options": [
-            "Nessuna",
-            "go imposta lo stack dall'URL, push aggiunge sopra",
-            "push funziona solo sul web",
-            "go è asincrono, push no"
+            "Non ce n'è",
+            "`go` imposta la pila dall'URL, `push` ne aggiunge una sopra",
+            "`push` funziona solo sul web",
+            "`go` è asincrona"
           ],
-          "answer": 1,
-          "explanation": "`go` naviga a una location ricostruendo lo stack secondo la gerarchia delle route; `push` impila una nuova pagina e permette di tornare indietro.",
-          "difficulty": 2,
+          "explanation": "`go` è quello dichiarativo: il percorso dice com'è fatta la pila, e il framework la costruisce. `push` è il comportamento vecchio, aggiungere una schermata sopra. Usa `go` per un deep link o una scheda, e `push` per entrare in un dettaglio.",
           "whyWrong": [
-            "C'è una differenza importante: `go` ricostruisce lo stack dalla location, `push` aggiunge una pagina sopra.",
+            "Si comportano in modo parecchio diverso, e sceglierne uno sbagliato ti dà un bottone indietro che va in un posto inaspettato.",
             null,
-            "`push` funziona su tutte le piattaforme; sul web cambia al massimo il modo in cui l'URL viene aggiornato.",
-            "È il contrario: `go` non restituisce nulla, mentre `push` restituisce un Future con il risultato del pop."
+            "Funzionano dappertutto. Il web rende solo la differenza più visibile.",
+            "Nessuna delle due aspetta niente in quel senso."
           ]
         },
         {
           "id": "flutter-navigation-5",
+          "difficulty": 2,
+          "answer": 2,
           "prompt": "Con `GoRoute(path: '/users/:id')`, come leggi `42` da `/users/42`?",
           "code": null,
           "options": [
@@ -1576,114 +1578,112 @@
             "`state.pathParameters['id']`",
             "`ModalRoute.of(context)!.settings`"
           ],
-          "answer": 2,
-          "explanation": "I segmenti `:param` finiscono in `pathParameters`; i query parameter (`?id=42`) sono in `uri.queryParameters`; `extra` è un oggetto arbitrario non presente nell'URL.",
-          "difficulty": 2,
+          "explanation": "Un `:nome` nel percorso diventa una voce di `pathParameters`. È tutto il senso di dichiarare le rotte come percorsi: il parametro te lo estrae lui, senza analisi a mano.",
           "whyWrong": [
-            "`extra` è un oggetto arbitrario passato in navigazione, non estratto dall'URL: non contiene `42`.",
-            "`queryParameters` legge la parte dopo `?`, come `?id=42`; `:id` è un segmento del path.",
+            "`extra` serve a passare un oggetto che nell'URL non c'è, e non sopravvive a un deep link.",
+            "I parametri di query sono quelli dopo il `?`. Il 42 qui fa parte del percorso.",
             null,
-            "`ModalRoute.settings` appartiene al Navigator classico; go_router espone i segmenti in `state.pathParameters`."
+            "Quello è il modo di Navigator 1.0 per leggere argomenti senza tipo."
           ]
         },
         {
           "id": "flutter-navigation-6",
-          "prompt": "Perché è stato introdotto Navigator 2.0 (Router API)?",
+          "difficulty": 3,
+          "answer": 3,
+          "prompt": "Perché è stata introdotta la Router API (Navigator 2.0)?",
           "code": null,
           "options": [
             "Per supportare le animazioni Hero",
             "Per sostituire MaterialPageRoute",
-            "Perché Navigator 1.0 non supportava pop",
-            "Stack dichiarativo: URL web e deep link"
+            "Perché Navigator 1.0 non sapeva tornare indietro",
+            "Per descrivere la pila in modo dichiarativo: URL del web e deep link"
           ],
-          "answer": 3,
-          "explanation": "L'API imperativa non permetteva di ricostruire lo stack dallo stato o da un URL. Router rende lo stack una funzione dello stato dell'app.",
-          "difficulty": 3,
+          "explanation": "Una pila costruita con una sequenza di push non si può ricostruire da un URL, che è quello che pretendono la barra degli indirizzi e il bottone avanti del browser. La Router API ribalta la cosa: descrivi tutta la pila per un dato stato, e il framework calcola la differenza.",
           "whyWrong": [
-            "Le animazioni Hero funzionavano già con Navigator 1.0; il motivo fu la gestione dichiarativa dello stack.",
-            "MaterialPageRoute si usa anche con la Router API; lo scopo non era sostituire le route.",
-            "Navigator 1.0 supporta `pop` da sempre; mancava la possibilità di ricostruire lo stack da stato o URL.",
+            "Le animazioni Hero funzionavano benissimo con Navigator 1.0.",
+            "`MaterialPageRoute` c'è ancora ed è usato anche da go_router.",
+            "Tornare indietro sapeva benissimo. Il problema era descrivere una pila dall'esterno.",
             null
           ]
         },
         {
           "id": "flutter-navigation-7",
-          "prompt": "Dove implementi \"se non autenticato vai a /login\" con go_router?",
+          "difficulty": 2,
+          "answer": 0,
+          "prompt": "Dove metti \"se non è autenticato, vai a /login\" con go_router?",
           "code": null,
           "options": [
-            "Nel callback `redirect`",
-            "In ogni `build()` di pagina",
-            "In `main()` prima di runApp",
-            "In `onGenerateRoute`"
+            "Nella callback `redirect`",
+            "Nel build di ogni schermata",
+            "In main prima di runApp",
+            "In onGenerateRoute"
           ],
-          "answer": 0,
-          "explanation": "`redirect` viene valutato a ogni navigazione e può restituire una location alternativa; con `refreshListenable` reagisce anche ai cambi di login.",
-          "difficulty": 2,
+          "explanation": "`redirect` gira prima di ogni navigazione, quindi la regola sta in un posto solo e copre anche i deep link e le sessioni ripristinate. Controllare in ogni schermata vuol dire ripetersi e dimenticarsene una.",
           "whyWrong": [
             null,
-            "Controllare in ogni `build` duplica la logica e fa vedere per un attimo la pagina protetta; `redirect` la centralizza.",
-            "In `main` il controllo avviene una volta sola e non reagisce a logout o deep link successivi.",
-            "`onGenerateRoute` appartiene al Navigator classico; con go_router il punto giusto è il callback `redirect`."
+            "Ripetuto in ogni schermata, e quella che dimentichi è il buco.",
+            "Prima di `runApp` conosci solo lo stato all'avvio, non a ogni navigazione.",
+            "`onGenerateRoute` è di Navigator 1.0 e go_router non lo usa."
           ]
         },
         {
           "id": "flutter-navigation-8",
-          "prompt": "Bottom navigation in cui ogni tab mantiene il proprio stack:",
+          "difficulty": 3,
+          "answer": 1,
+          "prompt": "Una barra in basso dove ogni scheda tiene la sua cronologia:",
           "code": null,
           "options": [
             "Un solo Navigator con pushReplacement",
-            "StatefulShellRoute o un Navigator per tab",
+            "StatefulShellRoute, o un Navigator per scheda",
             "IndexedStack senza Navigator annidati",
-            "Named routes con arguments"
+            "Rotte con nome e argomenti"
           ],
-          "answer": 1,
-          "explanation": "Serve un Navigator annidato per tab; `StatefulShellRoute` di go_router lo fa e preserva lo stato di ogni ramo.",
-          "difficulty": 3,
+          "explanation": "Ogni scheda ha bisogno della sua pila, così che entrare in profondità in una, cambiare scheda e tornare ti riporti dov'eri. `StatefulShellRoute` dà a ogni ramo il suo navigator e ne conserva lo stato.",
           "whyWrong": [
-            "Con un solo Navigator e `pushReplacement` perdi lo storico: ogni cambio tab butta via lo stack precedente.",
+            "Una pila sola vuol dire che cambiando scheda butti via il punto in cui eri nella precedente.",
             null,
-            "IndexedStack conserva lo stato dei widget, ma senza Navigator annidati non ha uno stack per tab.",
-            "Le named routes usano un unico Navigator: gli argomenti non creano stack separati per i tab."
+            "Un `IndexedStack` tiene vivi i widget ma non dà nessuna cronologia di navigazione per scheda.",
+            "Le rotte con nome non creano pile separate."
           ]
         },
         {
           "id": "flutter-navigation-9",
-          "prompt": "Limite principale delle named routes (`pushNamed`) secondo la doc Flutter?",
+          "difficulty": 3,
+          "answer": 2,
+          "prompt": "Qual è il limite principale delle rotte con nome?",
           "code": null,
           "options": [
             "Non accettano argomenti",
-            "Sono state rimosse in Flutter 3",
-            "Deep link poco personalizzabili, no forward sul web",
+            "Sono state tolte in Flutter 3",
+            "Deep link limitati, e il bottone avanti del browser non funziona",
             "Non funzionano su iOS"
           ],
-          "answer": 2,
-          "explanation": "La documentazione le sconsiglia per la maggior parte delle app per questi limiti; gli argomenti esistono ma sono `Object?` non tipizzati.",
-          "difficulty": 3,
+          "explanation": "Una pila costruita con dei push non si può ricostruire da un URL, quindi il browser non può andare avanti e un percorso con un parametro va analizzato a mano. È esattamente il buco che la Router API, e go_router sopra di lei, sono nate per riempire.",
           "whyWrong": [
-            "Le named routes accettano argomenti via `arguments`; il limite è che sono `Object?` non tipizzati.",
-            "Non sono state rimosse: esistono ancora, ma la doc le sconsiglia per la maggior parte delle app.",
+            "Gli argomenti li accettano: solo, senza tipo, e li devi convertire.",
+            "Ci sono ancora e vanno benissimo per app semplici.",
             null,
-            "Funzionano su tutte le piattaforme, iOS compreso; i limiti riguardano deep link e web."
+            "Funzionano su ogni piattaforma. È sul web che si vedono i limiti."
           ]
         },
         {
           "id": "flutter-navigation-10",
-          "prompt": "Cosa serve su iOS per aprire l'app da un link https (Universal Links)?",
+          "difficulty": 2,
+          "answer": 0,
+          "prompt": "Che cosa serve su iOS per aprire l'app da un collegamento https?",
           "code": null,
           "options": [
-            "Associated Domains + apple-app-site-association",
-            "Un MethodChannel custom obbligatorio",
-            "Solo modificare AndroidManifest",
-            "Nulla, funziona out-of-the-box"
+            "Gli Associated Domains, e il file apple-app-site-association sul sito",
+            "Un MethodChannel personalizzato",
+            "Solo una modifica all'AndroidManifest",
+            "Niente: funziona da solo"
           ],
-          "answer": 0,
-          "explanation": "iOS verifica il dominio tramite l'entitlement Associated Domains e il file AASA sul server; poi Flutter passa il path al router.",
-          "difficulty": 2,
+          "explanation": "Il sistema va a prendere quel file dal tuo sito e controlla che il sito garantisca davvero per la tua app. È quella verifica a impedire che un'altra app si prenda i tuoi collegamenti, ed è per questo che un https è più sicuro di uno schema personalizzato.",
           "whyWrong": [
             null,
-            "Non serve un MethodChannel custom: Flutter riceve già il link e lo passa al router.",
-            "AndroidManifest configura gli App Links di Android; su iOS servono Associated Domains e il file AASA.",
-            "iOS deve verificare che il dominio appartenga alla tua app: senza entitlement e AASA il link apre Safari."
+            "Nessun canale c'entra: è il sistema a consegnare il collegamento all'app.",
+            "Il manifest è la metà di Android. iOS vuole la sua configurazione.",
+            "Non funziona: senza il file e l'autorizzazione, il collegamento apre il sito."
           ]
         }
       ]
@@ -1691,240 +1691,240 @@
     {
       "id": "isolates",
       "stage": "senior",
-      "title": "Isolate e concorrenza",
+      "title": "Gli isolate: il lavoro pesante altrove",
       "icon": "cpu",
-      "summary": "Modello a isolate, SendPort e ReceivePort, compute, lavoro in background e limiti della memoria non condivisa",
+      "summary": "Dart non ha thread che condividono memoria. Che cosa ha al posto loro, perché questo elimina un'intera categoria di bug, e quando vale la pena.",
       "lesson": [
         {
-          "heading": "Il modello a isolate",
-          "body": "Dart non ha thread che condividono memoria: ha **isolate**. Ogni isolate ha il proprio heap, il proprio event loop e il proprio garbage collector, e non può toccare la memoria di un altro. L'unico modo di parlarsi è **scambiarsi messaggi**.\n\nDa qui viene la conseguenza che in colloquio conviene dire per prima: siccome nessuno condivide memoria, in Dart **non esistono lock, mutex o data race**. In cambio non puoi nemmeno mutare un oggetto \"da un altro thread\": devi mandarlo.\n\nL'app Flutter parte su un isolate solo, il **main isolate**, che è quello che costruisce i widget. `async`/`await` non ne esce: è concorrenza sullo stesso event loop, non parallelismo. Un ciclo che occupa la CPU per 300 ms blocca i frame anche se la funzione è `async`.",
-          "code": null
+          "heading": "Nessuna memoria condivisa, per scelta",
+          "language": null,
+          "body": "Nella maggior parte dei linguaggi la concorrenza vuol dire thread che condividono memoria — e con quelli arrivano i due bug più difficili che esistano: le **corse**, dove due thread toccano lo stesso valore insieme e il risultato è senza senso, e i **blocchi reciproci**, dove due thread si aspettano a vicenda per sempre.\n\nDart ha fatto un'altra scelta. Un **isolate** è una linea di esecuzione con la **sua memoria e il suo ciclo degli eventi**. Non si condivide niente. Due isolate non possono toccare lo stesso oggetto, perché nessuno dei due vede gli oggetti dell'altro.\n\nQuindi non ci sono lucchetti, perché non c'è niente da chiudere a chiave. E corse e blocchi reciproci non si evitano stando attenti: sono **impossibili**.\n\nIl prezzo è la comunicazione: gli isolate si parlano **mandandosi messaggi**, e un messaggio viene **copiato**. Un oggetto non lo puoi consegnare; dall'altra parte arriva una copia. Per risultati piccoli è niente; per quelli molto grossi la copia è a sua volta un costo da conoscere.\n\nLa seconda cosa da avere chiara: l'interfaccia della tua app gira su un isolate, quello **radice**, ed è l'unico a cui è permesso toccare i widget. Tutti gli altri sono aiutanti.",
+          "code": "// Ogni isolate ha la sua memoria: questa non è condivisa\nint counter = 0;\n\nvoid main() async {\n  await Isolate.run(() {\n    counter = 100;        // cambia la copia nell'isolate figlio\n    return counter;\n  });\n  print(counter);         // 0 — il genitore non l'ha mai visto\n}\n\n// Nessun lucchetto da nessuna parte, perché non c'è niente da chiudere"
         },
         {
-          "heading": "SendPort e ReceivePort",
-          "body": "`Isolate.spawn` avvia un nuovo isolate a partire da una funzione di ingresso, che deve essere **top-level o statica** (non una closure che cattura variabili: il nuovo isolate non ha quello stato), e le passa **un solo messaggio iniziale**.\n\nI canali sono una coppia: la **ReceivePort** è il lato che ascolta, il suo `sendPort` è il lato che scrive. Chi apre la porta tiene la ReceivePort e regala il SendPort. Per avere una risposta il padre manda il proprio SendPort dentro il messaggio iniziale: è l'*handshake* che si vede in quasi tutto il codice con gli isolate.\n\nFinché una ReceivePort resta aperta l'isolate rimane vivo: chiudila con `close()`, altrimenti resta lì a consumare memoria.",
-          "code": "Future<int> countInIsolate(String text) async {\n  final answer = ReceivePort();\n  await Isolate.spawn(_worker, [answer.sendPort, text]);\n  final result = await answer.first as int;\n  answer.close();\n  return result;\n}\n\n// top-level: il figlio non eredita lo stato del padre\nvoid _worker(List<Object> message) {\n  final send = message[0] as SendPort;\n  final text = message[1] as String;\n  send.send(text.split(' ').length);\n}"
+          "heading": "Quando conviene, e quando no",
+          "language": null,
+          "body": "È questa la domanda che fanno davvero, e la risposta è una distinzione: **aspettare non è lavorare**.\n\n**Aspettare** è una chiamata di rete, leggere un file, una query. Il processore non sta facendo niente; semplicemente non ha finito. `async`/`await` se ne occupa già benissimo: la funzione si sospende, il thread se ne va a disegnare fotogrammi, e riprende quando la risposta arriva. **Un isolate qui aggiunge costo e non guadagna niente.**\n\n**Lavorare** è calcolare: analizzare dieci megabyte di JSON, ridimensionare un'immagine, cifrare, ordinare una lista enorme. Qui il processore è davvero occupato, non si sospende niente, e nessuna quantità di `async` aiuta. Dart gira su un thread per isolate, quindi per tutto quel secondo la tua interfaccia è congelata.\n\nSedici millisecondi è il budget di un fotogramma. Tutto quello che va oltre è un fotogramma perso; qualche centinaio di millisecondi è uno scatto visibile; un secondo è un'app che sembra rotta.\n\nQuindi la regola: **un isolate per il calcolo che dura più di un fotogramma. Mai per input e output.**\n\nE una cosa da sapere prima di prenderne uno: spesso la risposta vera è non fare il lavoro. Chiedere al server meno dati, o analizzarli mentre arrivano, batte l'analizzarli più in fretta.",
+          "code": "// ASPETTARE: va già bene. Un isolate aggiungerebbe solo costo.\nfinal response = await http.get(uri);\nfinal file = await File(path).readAsString();\n\n// LAVORARE: un secondo di calcolo, e l'app è congelata\nfinal items = (jsonDecode(raw) as List).map(Item.fromJson).toList();\n\n// Lo stesso, altrove: i fotogrammi continuano ad arrivare\nfinal items = await compute(parseItems, raw);\n\n// compute vuole una funzione di primo livello o statica\nList<Item> parseItems(String raw) =>\n    (jsonDecode(raw) as List).map(Item.fromJson).toList();"
         },
         {
-          "heading": "compute e Isolate.run",
-          "body": "Per un lavoro singolo e pesante non serve tutto l'handshake: `compute(fn, arg)` (da `package:flutter/foundation.dart`) avvia un isolate usa e getta, esegue la funzione e restituisce il risultato. Da Dart 2.19 c'è l'equivalente puro `Isolate.run`, che accetta anche una closure.\n\nSono la scelta giusta per lavoro **CPU-bound**: parsing di un JSON grosso, decodifica o ridimensionamento di immagini, crittografia, ordinamenti su liste enormi. Non servono per l'**I/O**: una chiamata HTTP o una query su file sono già asincrone e non bloccano l'isolate, spostarle su un altro isolate aggiunge solo costo.\n\nPerché anche `compute` costa: avviare l'isolate e **copiare** argomento e risultato richiede qualche millisecondo. Sotto i ~10 ms di lavoro spesso conviene restare sul main isolate; se il lavoro è continuo, tieni un isolate worker vivo invece di crearne uno per ogni richiesta.",
-          "code": "// lento: il parse gira sull'isolate della UI\nfinal items = (jsonDecode(raw) as List).map(Item.fromJson).toList();\n\n// il parse gira altrove, i frame continuano\nfinal items = await compute(parseItems, raw);\n\nList<Item> parseItems(String raw) =>\n    (jsonDecode(raw) as List).map(Item.fromJson).toList();"
+          "heading": "Isolate.run e compute",
+          "language": null,
+          "body": "Raramente devi creare un isolate a mano. Due aiutanti coprono quasi tutto.\n\n**`Isolate.run`** — nella libreria standard di Dart. Gli dai una funzione, e lui avvia un isolate, la esegue, restituisce il risultato e lo chiude. Una riga, e della vita dell'isolate si occupa lui.\n\n**`compute`** — l'equivalente più vecchio di Flutter, che prende una funzione e un argomento. È ancora dappertutto nel codice esistente e funziona ancora; `Isolate.run` è solo più flessibile.\n\nIl vincolo che frega, e discende direttamente dalla memoria non condivisa: la funzione che passi **non può catturare le cose intorno nel modo solito**. Con `compute` dev'essere una funzione **di primo livello o statica**, perché quello che viene mandato dall'altra parte è di fatto un riferimento a una funzione con un nome, non una closure che si porta dietro un ambiente catturato.\n\n`Isolate.run` è più tollerante, ma il principio è lo stesso: tutto quello che serve alla funzione dev'essere inviabile, e quello che cattura viene copiato. Una closure che cattura un widget, un `BuildContext` o una connessione aperta non si può mandare, e l'errore lo dice.\n\nE avviare un isolate non è gratis: qualche millisecondo. Per un lavoro da microsecondi è peggio che farlo sul posto. Per un secondo di analisi è irrilevante.",
+          "code": "// Isolate.run: avvia, esegui, restituisci, chiudi\nfinal items = await Isolate.run(() {\n  final data = jsonDecode(hugeJson) as List;\n  return data.map(Item.fromJson).toList();\n});\n\n// compute: una funzione di primo livello o statica, e un argomento\nfinal items = await compute(parseItems, raw);\n\nList<Item> parseItems(String raw) =>\n    (jsonDecode(raw) as List).map(Item.fromJson).toList();\n\n// Questa non si può mandare: cattura una cosa non inviabile\n// await compute((_) => widget.controller.text, null);"
         },
         {
-          "heading": "Lavoro in background",
-          "body": "\"Background\" in Flutter vuol dire due cose diverse, e confonderle è un classico errore da colloquio.\n\nUn isolate secondario lavora **fuori dal thread della UI ma dentro il processo dell'app**: quando il sistema sospende l'app, gli isolate si fermano con lei. Per lavoro che deve continuare ad app chiusa servono le API native: `BGTaskScheduler`/background modes su iOS, `WorkManager` o un foreground service su Android, tipicamente tramite `workmanager` o il background handler di FCM.\n\nUn isolate secondario inoltre **non ha i binding di Flutter**: i platform channel sono legati al root isolate. Se un plugin ti serve lì, passa un `RootIsolateToken` e registra il messenger con `BackgroundIsolateBinaryMessenger.ensureInitialized`.",
-          "code": "final token = RootIsolateToken.instance!;\nawait Isolate.run(() async {\n  BackgroundIsolateBinaryMessenger.ensureInitialized(token);\n  final dir = await getTemporaryDirectory(); // ora il plugin risponde\n  return dir.path;\n});"
+          "heading": "Le porte: parlare con un isolate che resta vivo",
+          "language": null,
+          "body": "`Isolate.run` va bene per un lavoro solo. Quando ti serve un isolate che resti vivo e gestisca tante richieste — un parser che alimenti di continuo, un calcolo lungo che riferisce l'avanzamento — lo crei tu con `Isolate.spawn` e ci parli attraverso delle **porte**.\n\nUna **`ReceivePort`** è dove ricevi i messaggi. Ogni porta di ricezione ha una **`SendPort`**, ed è quella la cosa che puoi mandare a un altro isolate perché sappia come risponderti. Lo schema è sempre lo stesso: il genitore crea una porta di ricezione, manda al figlio la sua porta di invio nel primo messaggio, e il figlio risponde da lì.\n\nDue cose da ricordare:\n\n**Chiudi le porte.** Una porta di ricezione mai chiusa tiene vivo l'isolate, e hai perso una cosa molto più grossa di un oggetto.\n\n**Chiudi l'isolate quando hai finito**, o si tiene la sua memoria. `Isolate.run` fa tutte e due le cose per te, ed è per questo che è la scelta di base.\n\nC'è anche un trucco da conoscere per un risultato molto grosso: **`Isolate.exit(port, result)`** chiude l'isolate e consegna il valore **senza copiarlo** — siccome il figlio sta finendo, la sua memoria si può semplicemente trasferire. Per un risultato da decine di megabyte è la differenza fra veloce e visibilmente lento.",
+          "code": "Future<int> countInIsolate(String text) async {\n  final answer = ReceivePort();\n  await Isolate.spawn(_worker, [answer.sendPort, text]);\n  final result = await answer.first as int;\n  answer.close();                      // altrimenti l'isolate resta vivo\n  return result;\n}\n\n// Di primo livello: non eredita niente dal genitore\nvoid _worker(List<Object> message) {\n  final send = message[0] as SendPort;\n  final text = message[1] as String;\n  send.send(text.split(' ').length);\n}\n\n// Un risultato molto grosso, consegnato senza copiarlo\nvoid _bigWorker(SendPort out) {\n  final result = heavyParse();\n  Isolate.exit(out, result);           // la memoria viene trasferita, non copiata\n}"
         },
         {
-          "heading": "Cosa non passa da un isolate all'altro",
-          "body": "`send` fa una **copia profonda** del messaggio. Fanno eccezione gli oggetti immutabili (`String`, numeri, `bool`, `null`, le costanti) che vengono passati per riferimento, e le funzioni top-level o statiche, inviabili come riferimento.\n\nNon si possono inviare: closure che catturano stato mutabile, oggetti che tengono una risorsa nativa (socket, handle di database, `Pointer` di FFI), e ovviamente niente di legato alla UI — `BuildContext`, widget, `State`. Se ci provi ottieni un errore a runtime.\n\nPer i dati grossi la copia è il costo principale: `TransferableTypedData` **trasferisce** un blocco di byte senza copiarlo (chi lo manda lo perde), e `Isolate.exit(port, risultato)` restituisce il risultato chiudendo l'isolate, anche qui senza copia.",
-          "code": "// il figlio termina e consegna la lista senza copiarla\nvoid _worker(SendPort out) {\n  final result = heavyParse();\n  Isolate.exit(out, result);\n}"
-        },
-        {
-          "heading": "In colloquio",
-          "body": "Domanda tipica: **\"Dart è a thread singolo, come fai lavoro pesante senza bloccare la UI?\"** Risposta: distinguo. Se è I/O non faccio niente di speciale, è già asincrono e l'event loop resta libero. Se è CPU-bound lo sposto su un altro isolate con `compute` o `Isolate.run`, perché `async` da solo non sposta nulla: gira sempre sullo stesso thread.\n\nPoi aggiungi i limiti, che è la parte che distingue una risposta senior: memoria non condivisa quindi solo messaggi e nessun lock, messaggi copiati quindi occhio ai payload grossi (`TransferableTypedData`, `Isolate.exit`), niente plugin senza `RootIsolateToken`, e nessuna garanzia di esecuzione ad app sospesa — quella la dà solo il sistema operativo.",
-          "code": null
+          "heading": "I limiti: i plugin, e il background",
+          "language": null,
+          "body": "Due limiti saltano fuori nelle app vere, e sorprendono tutti la prima volta.\n\n**I canali verso la piattaforma appartengono all'isolate radice.** Un plugin di Flutter — `path_provider`, `shared_preferences`, qualsiasi cosa chiami codice nativo — parla su un canale agganciato all'isolate radice. Chiamalo da un altro isolate e ti arriva un errore sui binding non inizializzati.\n\nLa soluzione c'è: passa un `RootIsolateToken` al figlio e chiama `BackgroundIsolateBinaryMessenger.ensureInitialized` prima di toccare qualsiasi plugin. Ma vale la pena chiedersi prima se la chiamata al plugin debba stare davvero lì dentro. Di solito la forma pulita è: leggi col plugin sull'isolate radice, manda i dati dall'altra parte, fai il calcolo, rimanda indietro il risultato.\n\n**Un isolate non sopravvive alla sospensione dell'app.** Non è un processo a parte: appartiene alla tua app. Quando l'utente esce e il sistema sospende l'app, ogni isolate si ferma con lei. Su iOS in particolare hai qualche secondo e non di più.\n\nQuindi per un lavoro che deve davvero continuare — un caricamento, una sincronizzazione — l'isolate è lo strumento sbagliato. Serve il meccanismo della piattaforma: WorkManager su Android, BGTaskScheduler su iOS, o un pacchetto che li avvolge tutti e due.",
+          "code": "// Un plugin dentro un isolate figlio: il token va passato\nfinal token = RootIsolateToken.instance!;\n\nawait Isolate.run(() async {\n  BackgroundIsolateBinaryMessenger.ensureInitialized(token);\n  final dir = await getTemporaryDirectory();   // adesso il plugin risponde\n  return dir.path;\n});\n\n// Di solito più pulito: il plugin sull'isolate radice, il lavoro altrove\nfinal dir = await getTemporaryDirectory();        // radice\nfinal parsed = await compute(parseFile, dir.path); // altrove\n\n// Lavoro che deve sopravvivere alla chiusura: non un isolate\n// Android: WorkManager — iOS: BGTaskScheduler"
         }
       ],
       "questions": [
         {
           "id": "flutter-isolates-1",
-          "prompt": "Perché in Dart non servono lock o mutex fra isolate?",
+          "difficulty": 1,
+          "answer": 2,
+          "prompt": "Perché a Dart non servono lucchetti fra gli isolate?",
           "code": null,
           "options": [
-            "Perché il runtime mette un lock implicito su ogni oggetto",
-            "Perché gli isolate girano a turno, mai insieme",
-            "Perché ogni isolate ha la propria memoria e comunica solo con messaggi",
-            "Perché solo il main isolate può scrivere in memoria"
+            "Perché il runtime mette un lucchetto implicito su ogni oggetto",
+            "Perché gli isolate fanno a turno e non girano mai insieme",
+            "Perché ognuno ha la sua memoria e si parlano solo a messaggi",
+            "Perché solo l'isolate principale può scrivere"
           ],
-          "answer": 2,
-          "explanation": "Un isolate non può accedere all'heap di un altro: senza memoria condivisa non esistono data race, quindi non serve sincronizzare. Il prezzo è che ogni scambio passa per un messaggio.",
-          "difficulty": 1,
+          "explanation": "Non si condivide niente, quindi non c'è niente che due isolate possano toccare nello stesso momento. Così corse e blocchi reciproci diventano impossibili invece che solo evitabili — al prezzo di messaggi copiati invece che passati.",
           "whyWrong": [
-            "Non c'è nessun lock implicito: il problema proprio non si pone, perché la memoria non è condivisa.",
-            "Gli isolate girano davvero in parallelo su core diversi; è il singolo isolate a essere a thread unico.",
+            "Nessun lucchetto implicito, e costerebbe moltissimo.",
+            "Possono girare davvero insieme, su core diversi. È la mancanza di condivisione a renderlo sicuro.",
             null,
-            "Ogni isolate scrive liberamente nel proprio heap; semplicemente non vede quello degli altri."
+            "Ogni isolate scrive liberamente, nella sua memoria, che nessun altro vede."
           ]
         },
         {
           "id": "flutter-isolates-2",
-          "prompt": "Cosa fa `compute(fn, arg)`?",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "Che cosa fa `compute(fn, arg)`?",
           "code": null,
           "options": [
-            "Esegue `fn` in un isolate separato e restituisce il risultato",
-            "Mette `fn` in coda sull'event loop del main isolate",
-            "Esegue `fn` su un thread nativo della piattaforma",
-            "Memorizza il risultato di `fn` per le chiamate successive"
+            "Esegue `fn` in un isolate a parte e restituisce il risultato",
+            "Mette `fn` in coda sul ciclo degli eventi dell'isolate principale",
+            "Esegue `fn` su un thread nativo",
+            "Mette in cache il risultato per dopo"
           ],
-          "answer": 0,
-          "explanation": "`compute` avvia un isolate usa e getta, gli manda l'argomento, esegue la funzione e riporta indietro il risultato come `Future`. Da Dart 2.19 `Isolate.run` fa lo stesso senza dipendere da Flutter.",
-          "difficulty": 1,
+          "explanation": "Avvia un isolate, ci esegue la funzione, rimanda indietro il risultato e lo chiude. È per questo che è la risposta da una riga per un'analisi pesante: il calcolo avviene altrove e l'interfaccia continua a disegnare.",
           "whyWrong": [
             null,
-            "Questo è quello che fa `Future` o `scheduleMicrotask`: resta sullo stesso isolate e blocca comunque la UI se il lavoro è pesante.",
-            "Il lavoro gira in un isolate Dart, non in codice nativo: per quello servirebbero i platform channel.",
-            "`compute` non fa caching: ogni chiamata avvia un nuovo isolate ed esegue di nuovo la funzione."
+            "Metterla in coda sullo stesso isolate lo bloccherebbe comunque quando il lavoro parte.",
+            "È un isolate di Dart, non un thread nativo. Dart i thread non li espone.",
+            "Non viene messo in cache niente: ogni chiamata rifà il lavoro."
           ]
         },
         {
           "id": "flutter-isolates-3",
-          "prompt": "Questa funzione è già `async`: basta a togliere il jank durante il parsing?",
-          "code": "Future<List<Item>> load(String raw) async {\n  final list = jsonDecode(raw) as List; // payload da 8 MB\n  return list.map(Item.fromJson).toList();\n}",
-          "options": [
-            "Sì, `async` sposta il corpo su un altro thread",
-            "Sì, perché `jsonDecode` è già asincrono",
-            "No, serve `await` prima di `jsonDecode`",
-            "No: il parsing gira comunque sull'isolate della UI"
-          ],
-          "answer": 3,
-          "explanation": "`async` cambia solo come la funzione restituisce il valore, non dove gira il codice: `jsonDecode` e il `map` occupano l'event loop del main isolate e i frame saltano. Va spostato con `compute` o `Isolate.run`.",
           "difficulty": 2,
+          "answer": 3,
+          "prompt": "La funzione è già `async`. Basta per evitare lo scatto durante l'analisi?",
+          "code": "Future<List<Item>> load(String raw) async {\n  final list = jsonDecode(raw) as List; // 8 MB\n  return list.map(Item.fromJson).toList();\n}",
+          "options": [
+            "Sì: async sposta il corpo su un altro thread",
+            "Sì: jsonDecode è già asincrona",
+            "No: manca un await prima di jsonDecode",
+            "No: l'analisi gira comunque sull'isolate dell'interfaccia"
+          ],
+          "explanation": "`async` vuol dire che la funzione **può** sospendersi, non che gira altrove. `jsonDecode` è sincrona e non si sospende mai, quindi gira tutta d'un fiato sullo stesso isolate e per un secondo non viene disegnato niente. Solo un isolate sposta il lavoro.",
           "whyWrong": [
-            "`async` non crea thread né isolate: il corpo gira sullo stesso event loop finché non incontra un `await`.",
-            "`jsonDecode` è sincrono e occupa la CPU per tutta la durata del parsing.",
-            "Non si può attendere una funzione sincrona, e comunque un `await` non sposterebbe il lavoro altrove.",
+            "`async` non sposta niente: permette solo alla funzione di mettersi in pausa.",
+            "`jsonDecode` è sincrona, ed è esattamente il problema.",
+            "Non puoi aspettare una cosa che asincrona non è, e comunque non cambierebbe niente.",
             null
           ]
         },
         {
           "id": "flutter-isolates-4",
-          "prompt": "Che vincolo ha la funzione di ingresso passata a `Isolate.spawn`?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "Che vincolo ha la funzione passata a `Isolate.spawn`?",
           "code": null,
           "options": [
-            "Deve essere `async`",
-            "Deve essere top-level o statica",
-            "Deve restituire `void`",
-            "Deve stare nello stesso file del chiamante"
+            "Dev'essere async",
+            "Dev'essere di primo livello o statica",
+            "Deve restituire void",
+            "Dev'essere nello stesso file"
           ],
-          "answer": 1,
-          "explanation": "Il nuovo isolate non eredita lo stato del padre, quindi può ricevere solo un riferimento a una funzione top-level o statica: una closure che cattura variabili non è inviabile.",
-          "difficulty": 2,
+          "explanation": "L'isolate figlio non eredita niente dal genitore, quindi quello che viene mandato è di fatto un riferimento a una funzione con un nome. Una closure che cattura stato locale avrebbe bisogno che quello stato la seguisse, e non c'è da dove farlo arrivare.",
           "whyWrong": [
-            "Può essere sincrona o asincrona: non è quello il vincolo.",
+            "Può essere anche sincrona. Quello che deve essere è raggiungibile per nome.",
             null,
-            "Il tipo di ritorno non conta; il risultato viaggia comunque via `SendPort` o `Isolate.exit`.",
-            "Il file è irrilevante: conta che la funzione non catturi stato, cioè che sia top-level o statica."
+            "Può restituire qualsiasi cosa: il risultato torna indietro su una porta.",
+            "Il file non c'entra: c'entra l'essere di primo livello o statica."
           ]
         },
         {
           "id": "flutter-isolates-5",
-          "prompt": "Come fa l'isolate figlio a rispondere al padre?",
+          "difficulty": 2,
+          "answer": 2,
+          "prompt": "Come risponde l'isolate figlio al genitore?",
           "code": null,
           "options": [
             "Restituendo un valore dalla funzione di ingresso",
             "Con una variabile globale condivisa",
-            "Il padre gli manda il proprio `SendPort` nel messaggio iniziale",
+            "Il genitore gli manda la sua SendPort nel primo messaggio",
             "Con `Isolate.current.send`"
           ],
-          "answer": 2,
-          "explanation": "La `ReceivePort` resta a chi ascolta e il suo `sendPort` viene regalato all'altro lato: il padre apre la porta e passa il `SendPort` nel messaggio iniziale, così il figlio sa dove scrivere.",
-          "difficulty": 2,
+          "explanation": "Il genitore crea una `ReceivePort` e manda al figlio la sua `SendPort` nel messaggio iniziale. È l'unico modo in cui il figlio sa dove rispondere: non c'è nessuna memoria condivisa in cui lasciare una risposta.",
           "whyWrong": [
-            "Il valore di ritorno della funzione di ingresso viene ignorato: non c'è nessuno che lo raccolga.",
-            "Le variabili globali non sono condivise: ogni isolate ha la propria copia del suo heap.",
+            "Restituire dalla funzione di ingresso non dice niente al genitore: nessuno la sta aspettando.",
+            "Le globali non sono condivise: ogni isolate ha la sua copia.",
             null,
-            "`Isolate.current` non espone nessun canale verso il padre: il canale va passato esplicitamente."
+            "Una cosa del genere non esiste: un messaggio va sempre a una `SendPort` precisa."
           ]
         },
         {
           "id": "flutter-isolates-6",
-          "prompt": "Conviene spostare una chiamata HTTP in un isolate per non bloccare la UI?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "Conviene spostare una chiamata HTTP in un isolate perché non blocchi l'interfaccia?",
           "code": null,
           "options": [
-            "Sì, la rete blocca sempre il thread",
-            "No: l'I/O è già asincrono, l'isolate aggiunge solo costo",
+            "Sì: la rete blocca sempre",
+            "No: input e output sono già asincroni, l'isolate aggiunge solo costo",
             "Sì, ma solo su Android",
-            "Sì, altrimenti il `Future` non si completa"
+            "Sì, altrimenti il Future non si completa mai"
           ],
-          "answer": 1,
-          "explanation": "Durante un'attesa di rete l'event loop è libero e i frame continuano: l'isolate non serve. Ha senso solo per il lavoro CPU-bound che segue, come il parsing di una risposta molto grande.",
-          "difficulty": 2,
+          "explanation": "Una chiamata di rete è attesa, non lavoro. `await` sospende già la funzione e libera il thread per disegnare fotogrammi. Aggiungere un isolate vuol dire avviarne uno e copiare dati, senza nessun vantaggio.",
           "whyWrong": [
-            "L'I/O in Dart non è bloccante: la richiesta parte e il controllo torna subito all'event loop.",
+            "Non blocca: l'API asincrona è non bloccante per costruzione.",
             null,
-            "Il comportamento è lo stesso sulle due piattaforme: l'I/O asincrono non blocca né su iOS né su Android.",
-            "Il `Future` si completa normalmente sul main isolate quando la risposta arriva."
+            "Il comportamento è lo stesso sulle due piattaforme.",
+            "Il future si completa benissimo senza nessun isolate."
           ]
         },
         {
           "id": "flutter-isolates-7",
-          "prompt": "Quale di questi oggetti **non** puoi inviare a un altro isolate?",
+          "difficulty": 3,
+          "answer": 2,
+          "prompt": "Quale di queste cose **non** puoi mandare a un altro isolate?",
           "code": null,
           "options": [
             "Una `List<String>`",
-            "Un `SendPort`",
+            "Una `SendPort`",
             "Una closure che cattura una variabile locale",
-            "Una funzione top-level"
+            "Una funzione di primo livello"
           ],
-          "answer": 2,
-          "explanation": "I messaggi vengono copiati in profondità (gli immutabili passano per riferimento) e le funzioni top-level o statiche viaggiano come riferimento, ma una closure porta con sé stato che l'altro isolate non ha: non è inviabile.",
-          "difficulty": 3,
+          "explanation": "Una closure si porta dietro l'ambiente che ha catturato, e quell'ambiente vive nella memoria dell'isolate che manda, che l'altro non vede. Le porte sono fatte apposta per essere inviabili, e i dati normali vengono copiati.",
           "whyWrong": [
-            "Una lista di stringhe viene copiata senza problemi: le `String` sono immutabili e passano per riferimento.",
-            "Il `SendPort` è pensato proprio per essere inviato: è così che si costruiscono i canali di ritorno.",
+            "Una lista di stringhe sono dati normali: viene copiata senza problemi.",
+            "Una `SendPort` è fatta per essere mandata: è così che le due parti si trovano.",
             null,
-            "Le funzioni top-level e statiche sono inviabili: è il motivo per cui `Isolate.spawn` le richiede."
+            "Una funzione di primo livello viene mandata come riferimento per nome, ed è per questo che `compute` ne vuole una."
           ]
         },
         {
           "id": "flutter-isolates-8",
-          "prompt": "Chiami un plugin (es. `path_provider`) dentro un isolate secondario e ottieni un errore sui binding. Perché?",
+          "difficulty": 3,
+          "answer": 3,
+          "prompt": "Chiami un plugin dentro un isolate secondario e ottieni un errore sui binding. Perché?",
           "code": null,
           "options": [
-            "I plugin non funzionano in release mode",
-            "Gli isolate secondari non possono fare I/O",
-            "Serve chiamare `WidgetsFlutterBinding.ensureInitialized` nel figlio",
-            "I platform channel sono legati al root isolate"
+            "I plugin non funzionano nelle build di rilascio",
+            "Gli isolate secondari non possono fare input e output",
+            "Serve `WidgetsFlutterBinding.ensureInitialized` nel figlio",
+            "I canali verso la piattaforma sono legati all'isolate radice"
           ],
-          "answer": 3,
-          "explanation": "Il `BinaryMessenger` che porta i messaggi al nativo vive sul root isolate. Per usarlo altrove passi un `RootIsolateToken` e chiami `BackgroundIsolateBinaryMessenger.ensureInitialized(token)` dentro l'isolate.",
-          "difficulty": 3,
+          "explanation": "Un canale è il ponte verso il codice nativo, ed è agganciato all'isolate radice. Un isolate figlio quel ponte non ce l'ha finché non gliene dai uno, passando un `RootIsolateToken` e chiamando `BackgroundIsolateBinaryMessenger.ensureInitialized`.",
           "whyWrong": [
-            "In release i plugin funzionano normalmente: il problema è l'isolate, non la modalità di build.",
-            "L'I/O puro (file, socket) si può fare ovunque; è il canale verso il nativo a non essere disponibile.",
-            "Quel binding vale per il root isolate e non registra il messenger nel figlio: serve `BackgroundIsolateBinaryMessenger` con il token.",
+            "Nel rilascio funzionano. Il problema è quale isolate sta chiamando.",
+            "File li leggono e li scrivono benissimo. Il problema sono i canali.",
+            "Quello serve all'isolate radice all'avvio e qui non aiuta.",
             null
           ]
         },
         {
           "id": "flutter-isolates-9",
-          "prompt": "Devi restituire dall'isolate un risultato molto grande evitando il costo della copia. Cosa usi?",
+          "difficulty": 3,
+          "answer": 0,
+          "prompt": "Come restituisci un risultato molto grosso da un isolate senza pagare la copia?",
           "code": null,
           "options": [
-            "`Isolate.exit(port, risultato)`",
-            "`port.send(risultato)` dentro un `try`",
-            "Una variabile `static` letta dal padre",
+            "`Isolate.exit(port, result)`",
+            "`port.send(result)` dentro un try",
+            "Una variabile statica letta dal genitore",
             "`Isolate.kill` dopo aver salvato il risultato"
           ],
-          "answer": 0,
-          "explanation": "`Isolate.exit` termina l'isolate consegnando il risultato senza copiarlo: l'heap del figlio muore comunque, quindi la VM può trasferire la memoria. Per i soli byte c'è `TransferableTypedData`.",
-          "difficulty": 3,
+          "explanation": "`Isolate.exit` chiude l'isolate e consegna il valore. Siccome il figlio sta comunque finendo, la sua memoria si può trasferire invece che duplicare. Per decine di megabyte è la differenza fra istantaneo e visibilmente lento.",
           "whyWrong": [
             null,
-            "`send` copia il messaggio in profondità: è esattamente il costo che vuoi evitare.",
-            "Le variabili statiche non sono condivise fra isolate: il padre leggerebbe la propria copia.",
-            "`Isolate.kill` chiude l'isolate ma non consegna nulla: il risultato andrebbe perso."
+            "Un `send` normale copia il valore, che è esattamente il costo che stai cercando di evitare.",
+            "Le statiche non sono condivise fra isolate: il genitore non vedrebbe niente.",
+            "Chiuderlo distrugge la memoria. Non resterebbe niente da consegnare."
           ]
         },
         {
           "id": "flutter-isolates-10",
-          "prompt": "Un isolate continua a lavorare quando l'utente mette l'app in background e la lascia lì?",
+          "difficulty": 3,
+          "answer": 2,
+          "prompt": "Un isolate continua a lavorare se l'utente lascia l'app in background?",
           "code": null,
           "options": [
-            "Sì, gli isolate sono processi separati dal sistema",
+            "Sì: gli isolate sono processi separati",
             "Sì su Android, no su iOS",
-            "No: sospesa l'app, si ferma anche l'isolate",
-            "Sì, finché la `ReceivePort` resta aperta"
+            "No: quando l'app viene sospesa si ferma anche l'isolate",
+            "Sì, finché la ReceivePort resta aperta"
           ],
-          "answer": 2,
-          "explanation": "Gli isolate vivono nel processo dell'app: quando il sistema la sospende si fermano con lei. Per lavoro garantito ad app chiusa servono le API native (BGTaskScheduler, WorkManager, foreground service).",
-          "difficulty": 3,
+          "explanation": "Un isolate appartiene al processo della tua app, quindi quando il sistema sospende l'app tutto quello che c'è dentro si ferma — su iOS dopo qualche secondo, su Android quando il sistema decide. Il lavoro che deve sopravvivere vuole il meccanismo di background della piattaforma, non un isolate.",
           "whyWrong": [
-            "Sono thread dentro lo stesso processo, non processi separati: seguono il ciclo di vita dell'app.",
-            "Anche Android sospende il processo e può ucciderlo: servono WorkManager o un foreground service.",
+            "Processi non sono: sono linee di esecuzione dentro uno.",
+            "Tutte e due le piattaforme sospendono l'app, con tempi e regole diversi.",
             null,
-            "La porta aperta tiene vivo l'isolate finché l'app gira, ma non impedisce al sistema di sospenderla."
+            "Una porta aperta non tiene in funzione un'app sospesa."
           ]
         }
       ]
