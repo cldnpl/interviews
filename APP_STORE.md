@@ -365,7 +365,7 @@ Abbonamenti**: è l'unico nome visibile quando qualcuno va a disdire.
 | Availability | tutti i Paesi |
 | Introductory Offer | nessuna, per ora |
 | Family Sharing | off (`familyShareable: false` anche in `Interviews.storekit`) |
-| Tax Category | quella predefinita, app software |
+| Tax Category | `Match to parent app` (il valore già selezionato) |
 
 **Localizations** — due, come l'app, da *Display Name and Description › +*. Il
 *Display Name* è quello che compare nella finestra di acquisto di Apple; la
@@ -379,6 +379,14 @@ superi: questi stanno dentro, 14 e 54.
 
 L'*Image (Optional)* 1024×1024 serve solo se accendi la promozione dell'abbonamento
 sull'App Store: lasciala vuota, non è richiesta per la review.
+
+**Tax Category**: lascia **Match to parent app**. Non è una categoria di marketing ma
+una dichiarazione fiscale, che decide l'aliquota IVA applicata in ogni Paese, e la
+responsabilità di sceglierla giusta è di chi pubblica. "Match to parent app" fa valere
+per l'abbonamento la stessa categoria dell'app, che è la cosa corretta quando app e
+abbonamento sono lo stesso prodotto: qui l'abbonamento non vende un corso a parte, apre
+delle funzioni dentro l'app. Cambiala solo se il tuo commercialista ti dice il
+contrario. Vale comunque solo per le vendite future, non per quelle già fatte.
 
 **Review Information** (dentro il prodotto, in fondo):
 
