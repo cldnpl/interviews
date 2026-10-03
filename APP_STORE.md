@@ -197,10 +197,29 @@ Available in English and Italian.
 **What's New** (1.1)
 
 ```
-Every lesson rewritten from scratch, in plain words: nothing taken for granted,
-and every wrong answer explained. New streak screen with your calendar and your
-XP day by day. The app now speaks six languages and follows light or dark mode.
-Interviews Pro opens the Mid and Senior topics.
+Everything you read has been rewritten.
+
+LESSONS IN PLAIN WORDS
+All 40 topics, from scratch. Nothing taken for granted: every term is explained
+the first time it shows up. And when you get a question wrong you no longer just
+read the right answer — you read why the one you picked looked right, and why it
+doesn't hold.
+
+YOUR STREAK, IN FULL
+Tap the flame to see where you stand: the calendar of the last five weeks, your
+best streak, and the XP you earned day by day.
+
+SIX LANGUAGES, LIGHT AND DARK
+English, Italian, Spanish, French, German and Portuguese, in the theme you
+prefer. Lessons and questions are written by hand in English and Italian.
+
+INTERVIEWS PRO
+The Junior stage of all four tracks stays free. Pro opens the Mid and Senior
+topics too, and lets the daily quiz follow your rank: 1.99 EUR a month, or the
+equivalent in your currency, cancel any time.
+
+Also: the real mark of each language on its track, a new icon, and an opening
+screen.
 ```
 
 **What's New** (1.0)
@@ -284,10 +303,29 @@ Disponibile in inglese e in italiano: la lingua si cambia in Profilo.
 **Novità di questa versione** (1.1)
 
 ```
-Tutte le lezioni riscritte da zero, in parole semplici: niente dato per scontato,
-e ogni risposta sbagliata spiegata. Nuova schermata della serie, col calendario e
-gli XP giorno per giorno. L'app ora parla sei lingue e segue il tema chiaro o
-scuro. Con Interviews Pro si aprono gli argomenti Mid e Senior.
+Tutto quello che si legge è stato riscritto.
+
+LEZIONI IN PAROLE SEMPLICI
+Tutti e 40 gli argomenti, da zero. Niente dato per scontato: ogni termine è
+spiegato la prima volta che compare. E quando sbagli una domanda non leggi più
+solo qual era la risposta giusta: leggi perché quella che avevi scelto sembrava
+giusta, e perché non regge.
+
+LA TUA SERIE, PER INTERO
+Tocca la fiamma e vedi a che punto sei: il calendario delle ultime cinque
+settimane, la serie record e gli XP guadagnati giorno per giorno.
+
+SEI LINGUE, CHIARO E SCURO
+Inglese, italiano, spagnolo, francese, tedesco e portoghese, nel tema che
+preferisci. Lezioni e domande sono scritte a mano in inglese e in italiano.
+
+INTERVIEWS PRO
+Lo stage Junior di tutti e quattro i percorsi resta gratuito. Pro apre anche gli
+argomenti Mid e Senior e fa seguire al quiz del giorno il tuo grado: 1,99 € al
+mese, o l'equivalente nella tua valuta, si disdice quando vuoi.
+
+E poi: il marchio vero di ogni linguaggio sul suo percorso, un'icona nuova e una
+schermata di apertura.
 ```
 
 **Novità di questa versione** (1.0)
