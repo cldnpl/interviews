@@ -4,85 +4,87 @@
     {
       "id": "dart-basics",
       "stage": "junior",
-      "title": "Dart Basics",
+      "title": "The basics of Dart",
       "icon": "character.book.closed",
-      "summary": "Null safety, final/const, late, parameters, mixins, extensions and what's new in Dart 3",
+      "summary": "The language Flutter is written in: how it stops null crashes, the difference between final and const that everybody gets wrong, and what Dart 3 added.",
       "lesson": [
         {
-          "heading": "Sound null safety",
-          "body": "In Dart, types are **non-nullable by default**: a `String` can never be `null`, a `String?` can. Null safety is **sound**: if the compiler says a value isn't null, it will never be null at runtime.\n\nThe key operators are `?.` (conditional access), `??` (fallback value), `??=` (assign if null) and `!` (null assertion, throws if the value is null). Using `!` a lot is a code smell: prefer promoting the type with an `if (x != null)` check.",
-          "code": "String? name;\nfinal len = name?.length ?? 0;\nname ??= 'Anonymous';\nif (name != null) {\n  print(name.length); // promoted to String\n}"
+          "heading": "Null safety: the value that might not be there",
+          "language": null,
+          "body": "The commonest crash in most languages is using something that is not there. Dart removes it by splitting every type in two.\n\n`String` means **there is always text in here**. `String?`, with a question mark, means **there might be text, or there might be nothing**. They are different types and the compiler will not let you mix them up.\n\nThree pieces of syntax do nearly all the work:\n\n**`?.`** — carry on only if there is something; otherwise the whole thing is null.\n**`??`** — this, or if it is null, that.\n**`??=`** — assign, but only if it is currently null.\n\nAnd there is **promotion**, which is the pleasant part: once you have checked that something is not null, Dart remembers for the rest of that block and lets you use it as a normal value, with no `!` anywhere.\n\nPromotion has one limit worth knowing, because the error message confuses people: it does not work on a **field of a class**, only on a local variable. The reason is that a field could be changed by something else between your check and your use. Copy it into a local first and it works.",
+          "code": "String? name;\n\nfinal len = name?.length ?? 0;   // null-safe, with a fallback\nname ??= 'Anonymous';            // only if it was null\n\nif (name != null) {\n  print(name.length);            // promoted: no ! needed\n}\n\n// Promotion does not work on a field\nclass Box { String? item; }\n\nvoid show(Box b) {\n  // if (b.item != null) print(b.item.length);   // error\n  final local = b.item;                          // a copy\n  if (local != null) print(local.length);        // works\n}"
         },
         {
-          "heading": "final vs const",
-          "body": "A `final` is assigned **only once**, but its value can be computed at runtime. A `const` is a **compile-time constant**: its value must be known at compile time and it's deeply immutable.\n\n`const` values are **canonicalized**: two equal `const` expressions produce the same instance (`identical` returns true). In Flutter, `const` constructors let you reuse widget instances and skip work during rebuilds.",
-          "code": "final now = DateTime.now(); // ok\n// const now = DateTime.now(); // error\nconst pad = EdgeInsets.all(8);\nfinal list = [1, 2];\nlist.add(3); // ok: final doesn't mean immutable"
+          "heading": "final and const are not the same thing",
+          "language": null,
+          "body": "This is the Dart question asked more than any other, and the answer is one sentence: **`final` is decided while the app runs, `const` is decided while it is compiled**.\n\n`final` means \"assigned once\". The value can be worked out at the moment it is needed — the current time, something read from disk. You just cannot point the name at something else afterwards.\n\n`const` means \"known before the app ever runs\". It has to be a value the compiler can work out on its own, so `DateTime.now()` can never be `const`.\n\nTwo consequences, and the second is why `const` matters so much in Flutter.\n\n**Neither freezes the contents.** A `final` list can still have things added to it: what is frozen is the name, not the list. A `const` list genuinely cannot be changed, because it was built once and is shared.\n\n**Two identical `const` values are literally the same object.** The compiler creates one and reuses it everywhere. That is the whole reason a `const` widget makes Flutter faster: it is the same instance as last time, so the framework can skip it entirely.",
+          "code": "final now = DateTime.now();     // fine: worked out when it runs\n// const now = DateTime.now();  // error: not knowable in advance\n\nconst pad = EdgeInsets.all(8);  // fine: just numbers\n\nfinal list = [1, 2];\nlist.add(3);                    // allowed: final freezes the name\n\nconst frozen = [1, 2];\n// frozen.add(3);               // throws: a const list cannot change\n\n// Two identical consts are one object\nconst a = [1, 2];\nconst b = [1, 2];\nprint(identical(a, b));         // true — the same instance\n\nfinal c = [1, 2];\nprint(identical(a, c));         // false — built separately"
         },
         {
-          "heading": "late and parameters",
-          "body": "`late` tells the compiler: this non-nullable variable will be initialized **before it's used**. If you read it earlier, you get a `LateInitializationError` at runtime. `late` with an initializer makes initialization **lazy**.\n\nParameters can be required positional, **named** inside `{}` (optional by default, mandatory with `required`), or **optional positional** inside `[]`, optionally with a default value.",
-          "code": "late final String token;\nlate final config = loadConfig(); // lazy\n\nvoid f(int a, {required int b, int c = 0}) {}\nvoid g(int a, [int? b]) {}\n\nf(1, b: 2);\ng(1);"
+          "heading": "late, and the three kinds of parameter",
+          "language": null,
+          "body": "**`late`** says \"this will have a value before anyone reads it, but not yet\". It is for something that cannot be set where it is declared — a controller built in `initState`, a value that depends on something else.\n\nIt buys you a non-nullable type without a `?` on every use. The price is that if somebody does read it first, you get a clear error at that moment rather than a vague null.\n\n`late` with an initialiser is a different and useful thing: **the value is worked out the first time it is read**, not at startup. That is Dart's lazy property, and it is how you avoid paying for something expensive that may never be needed.\n\nParameters come in three kinds, and the names matter at the call site:\n\n**Positional and required** — `f(int a)`. In order, no name.\n**Named** — `f({int b = 0})`, written in braces. Given by name, in any order, and optional unless marked `required`.\n**Positional and optional** — `f([int? b])`, in square brackets. Rare.\n\nIn Flutter nearly everything is named, and it is why a widget with twelve properties is still readable.",
+          "code": "late final String token;              // set later, non-nullable\nlate final config = loadConfig();     // worked out at the first read\n\n// Three kinds of parameter\nvoid f(int a, {required int b, int c = 0}) {}\nvoid g(int a, [int? b]) {}\n\nf(1, b: 2);        // a positional, b named and compulsory, c defaulted\nf(1, b: 2, c: 5);\ng(1);              // b is optional\n\n// Reading a late before it is set: a clear error, not a null\nlate final int x;\n// print(x);       // LateInitializationError"
         },
         {
           "heading": "Mixins and extensions",
-          "body": "A **mixin** is a reusable set of members applied with `with`, without multiple inheritance. With `on` you restrict the mixin to subclasses of a type and can use that type's members (e.g. `SingleTickerProviderStateMixin` can only be applied to a `State`).\n\n**Extensions** add methods to existing types. Resolution is **static**: what matters is the variable's static type, not its runtime type, so they don't work on `dynamic`.",
-          "code": "mixin Logger on Object {\n  void log(String m) => print('[$runtimeType] $m');\n}\n\nextension StringX on String {\n  String get capitalized =>\n      isEmpty ? this : this[0].toUpperCase() + substring(1);\n}"
+          "language": null,
+          "body": "Dart has single inheritance — one parent — but two other ways of sharing behaviour.\n\nA **mixin** adds methods to a class without being its parent. A class can use as many as it likes, which is why they are so common in Flutter: `SingleTickerProviderStateMixin` is the one you meet first.\n\nThe word **`on`** limits where a mixin can be used: `mixin Logger on Widget` means only subtypes of `Widget` may use it. That is what lets the mixin call the methods of what it is mixed into, safely.\n\nAn **extension** adds a method to a type you do not own — including one from the standard library. You write `extension StringX on String` and from then on every string has your method.\n\nThe thing worth knowing, because it is asked: **extensions are chosen by the declared type, not the real one**. Call your extension through a variable declared as `Object`, and the one on `Object` is used, even if the value is really a `String`. Real methods behave the other way round. The reason is simple: an extension is not really added to the type; the compiler turns it into an ordinary function and decides which one while compiling.",
+          "code": "mixin Logger on Object {\n  void log(String m) => print('[$runtimeType] $m');\n}\n\nclass Service with Logger {}      // 'with': uses the mixin\n\nextension StringX on String {\n  String get capitalized =>\n      isEmpty ? this : this[0].toUpperCase() + substring(1);\n}\n\nprint('ada'.capitalized);          // Ada\n\n// Chosen by the declared type, not the real one\nextension on Object { String hi() => 'obj'; }\nextension on String { String hi() => 'str'; }\n\nObject s = 'x';\nprint(s.hi());                     // obj — decided while compiling"
         },
         {
-          "heading": "Dart 3: records, patterns, sealed",
-          "body": "**Records** are immutable anonymous tuples with **structural equality**: `(1, 'a') == (1, 'a')` is true. They're handy for returning multiple values without creating a class.\n\n**Patterns** enable destructuring and `switch` expressions with `when` guards. A **sealed** class has all its subtypes in the same library, so the compiler checks that the `switch` is **exhaustive**. There are also the class modifiers `base`, `interface`, `final` and `mixin class`.",
-          "code": "sealed class Result {}\nclass Ok extends Result { Ok(this.v); final int v; }\nclass Err extends Result { Err(this.msg); final String msg; }\n\nString show(Result r) => switch (r) {\n  Ok(:final v) => 'ok $v',\n  Err(:final msg) => 'error $msg',\n};"
-        },
-        {
-          "heading": "In the interview",
-          "body": "Typical question: **\"What's the difference between final and const, and why does const matter in Flutter?\"** Short answer: `final` is assigned once at runtime; `const` is known at compile time, deeply immutable and canonicalized. In Flutter, a `const` widget is the same instance on every build, so the framework can skip updating it.\n\nOn null safety, use the word **sound**, mention type promotion, and explain why overusing `!` is risky. If they ask about Dart 3, bring an example of `sealed` + an exhaustive `switch` to model UI states.",
-          "code": null
+          "heading": "Dart 3: records, patterns and sealed",
+          "language": null,
+          "body": "Dart 3 added three things that change how everyday code is written.\n\n**Records** are an anonymous group of values: `(3, 'a')`. For returning two things from a function without inventing a class for it. They compare by value, so two records with the same contents are equal — which is not what happens with ordinary classes.\n\n**Patterns** let you take things apart and match their shape in one step. You can match a record, a list, an object's fields, and add a condition with `when`. It replaces a stack of `if`s with something you can read.\n\n**`sealed`** means the subtypes are all known, because they must be in the same file. From that comes the thing that makes it worth using: a `switch` over a sealed type **does not need a default**, and the day somebody adds a subtype, every switch that does not handle it stops compiling. The compiler walks you to each place that needs updating.\n\nThe order of the cases matters and is the usual trap: the first match wins, so a specific case has to come before a general one, or the general one swallows it.",
+          "code": "// A record: two values, no class\n(int, String) parse(String s) => (1, 'ok');\nfinal (code, message) = parse('x');\n\nprint((1, 'a') == (1, 'a'));   // true: records compare by value\n\n// sealed: the subtypes are known, so the switch is checked\nsealed class Result {}\nclass Ok  extends Result { Ok(this.v);    final int v; }\nclass Err extends Result { Err(this.msg); final String msg; }\n\nString show(Result r) => switch (r) {\n  Ok(:final v)    => 'ok $v',\n  Err(:final msg) => 'error $msg',\n};   // no default needed, and adding a case breaks this on purpose\n\n// Patterns, and the order that matters\nfinal p = (3, 0);\nfinal s = switch (p) {\n  (0, 0)                  => 'origin',\n  (var x, 0) when x > 0   => 'positive x axis',   // more specific: first\n  (_, 0)                  => 'x axis',\n  _                       => 'elsewhere',\n};"
         }
       ],
       "questions": [
         {
           "id": "flutter-dart-basics-1",
-          "prompt": "What's the difference between `final` and `const`?",
+          "difficulty": 1,
+          "answer": 2,
+          "prompt": "What is the difference between `final` and `const`?",
           "code": null,
           "options": [
-            "None, they're synonyms",
-            "A `const` can be reassigned once",
-            "`final` is evaluated at runtime, `const` at compile time",
-            "`final` only applies to class fields"
+            "None, they are the same",
+            "A const can be reassigned once",
+            "`final` is decided while running, `const` while compiling",
+            "`final` only works on class fields"
           ],
-          "answer": 2,
-          "explanation": "`final` prevents reassignment but accepts values computed at runtime; `const` requires a value known at compile time and is deeply immutable.",
-          "difficulty": 1,
+          "explanation": "`final` is assigned once but the value can be worked out while the app runs — the current time, for instance. `const` has to be knowable before the app ever runs, which is also why two identical consts are literally the same object.",
           "whyWrong": [
-            "They look similar because both forbid reassignment, but `const` requires a value known at compile time and makes the object deeply immutable; `final` accepts runtime values.",
-            "Careful: a `const` variable can never be reassigned, not even once. Its value is fixed at compile time.",
+            "They are genuinely different, and in Flutter the difference affects performance.",
+            "Neither can be reassigned: that is what both of them mean.",
             null,
-            "`final` isn't limited to fields: you also use it for local and top-level variables. Everywhere, it just means single assignment."
+            "Both work on fields, local variables and parameters alike."
           ]
         },
         {
           "id": "flutter-dart-basics-2",
-          "prompt": "What does this code print?",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "What does this print?",
           "code": "int? a;\nint b = a ?? 5;\na ??= 10;\nprint('$a $b');",
           "options": [
             "10 5",
             "null 5",
             "10 10",
-            "Compilation error"
+            "It does not compile"
           ],
-          "answer": 0,
-          "explanation": "`b` gets the fallback 5 because `a` is null; then `??=` assigns 10 to `a` because it was still null. `b` doesn't change.",
-          "difficulty": 1,
+          "explanation": "`a` starts as null, so `b` takes the fallback 5. Then `??=` sets `a` to 10, because it was null. `b` was worked out before that and keeps its 5.",
           "whyWrong": [
             null,
-            "You're forgetting the effect of `a ??= 10`: since `a` is still null, the operator assigns it 10, so the output starts with 10.",
-            "`b` was computed before `??=` and is already 5: an `int` doesn't track later changes to `a`, so it doesn't become 10.",
-            "The code is valid: `a ?? 5` produces a non-nullable `int`, so null safety allows assigning it to `int b`."
+            "`a` is no longer null: the `??=` on the line before set it to 10.",
+            "`b` is 5: it was given its value while `a` was still null.",
+            "It compiles: these are the ordinary null operators."
           ]
         },
         {
           "id": "flutter-dart-basics-3",
-          "prompt": "What does this code print?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "What does this print?",
           "code": "const a = [1, 2];\nconst b = [1, 2];\nfinal c = [1, 2];\nprint(identical(a, b));\nprint(identical(a, c));",
           "options": [
             "false false",
@@ -90,38 +92,38 @@
             "false true",
             "true false"
           ],
-          "answer": 3,
-          "explanation": "Identical `const` lists are canonicalized into the same instance; `c` is a new list created at runtime, so it isn't identical to `a`.",
-          "difficulty": 2,
+          "explanation": "Identical consts are built once by the compiler and reused, so `a` and `b` are literally the same object: true. `c` is `final`, built fresh while the app runs, so it is a different object: false. This sharing is exactly why `const` widgets make Flutter faster.",
           "whyWrong": [
-            "Two `const` lists with the same contents are canonicalized into the same instance, so `identical(a, b)` is `true`, not `false`.",
-            "The first line is right, but `c` is a list created at runtime with `final`: it's a new object, so it isn't identical to the `const` `a`.",
-            "You swapped the results: it's the two `const` lists that share an instance (true), while the `final` list is distinct (false).",
+            "`a` and `b` are the same object: that is what `const` does.",
+            "`c` cannot be the same object: it is built separately at runtime.",
+            "It is the wrong way round on both.",
             null
           ]
         },
         {
           "id": "flutter-dart-basics-4",
-          "prompt": "What happens when you run this code?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "What happens here?",
           "code": "late final int x;\n\nvoid main() {\n  print(x);\n}",
           "options": [
             "It prints 0",
-            "It throws LateInitializationError at runtime",
+            "It fails at runtime with LateInitializationError",
             "It prints null",
-            "Compilation error"
+            "It does not compile"
           ],
-          "answer": 1,
-          "explanation": "`late` moves the check to runtime: reading a late variable that hasn't been assigned yet throws `LateInitializationError`. There's no default value.",
-          "difficulty": 2,
+          "explanation": "`late` is a promise that the value will be there before anyone reads it. Reading it first breaks the promise, and Dart says so clearly with a dedicated error — which is far more useful than a vague null somewhere else.",
           "whyWrong": [
-            "Dart doesn't initialize `int`s to 0 the way Java or C does: a non-nullable variable with no value is simply not assigned yet.",
+            "Dart invents no default value: that would hide the mistake.",
             null,
-            "`x` is an `int`, not an `int?`: it can't hold null. Reading it before assignment throws an error instead of returning null.",
-            "It's precisely because of `late` that the compiler accepts the declaration without an initializer and defers the check to runtime."
+            "It cannot be null: the type is `int`, not `int?`. That is the point of `late`.",
+            "It compiles: the compiler cannot know whether something will set it in time."
           ]
         },
         {
           "id": "flutter-dart-basics-5",
+          "difficulty": 1,
+          "answer": 2,
           "prompt": "Given `void f(int a, {int b = 1, required int c})`, which call is valid?",
           "code": null,
           "options": [
@@ -130,113 +132,111 @@
             "f(1, c: 3)",
             "f(1, b: 2)"
           ],
-          "answer": 2,
-          "explanation": "`a` is required positional, `c` is named and `required`, and `b` has a default. Only `f(1, c: 3)` follows all the rules.",
-          "difficulty": 1,
+          "explanation": "`a` is positional, so it is given in order with no name. `c` is named and required, so it must be given by name. `b` has a default and can be left out. Hence `f(1, c: 3)`.",
           "whyWrong": [
-            "`b` and `c` are named parameters: you can't pass them positionally, so `f(1, 2, 3)` doesn't compile.",
-            "`a` is positional, not named: writing `a: 1` is a compilation error even though the name matches.",
+            "`b` and `c` are named: they cannot be passed by position.",
+            "`a` is positional, so it must not have a name.",
             null,
-            "`c` is `required`: omitting it is a compilation error, even if you pass `b` correctly."
+            "`c` is missing, and it is required."
           ]
         },
         {
           "id": "flutter-dart-basics-6",
-          "prompt": "What does this code print?",
+          "difficulty": 3,
+          "answer": 0,
+          "prompt": "What does this print?",
           "code": "extension on Object {\n  String hi() => 'obj';\n}\nextension on String {\n  String hi() => 'str';\n}\n\nvoid main() {\n  Object s = 'x';\n  print(s.hi());\n}",
           "options": [
             "obj",
             "str",
             "Error: ambiguous extensions",
-            "NoSuchMethodError at runtime"
+            "It fails at runtime"
           ],
-          "answer": 0,
-          "explanation": "Extensions are resolved on the **static** type: `s` is declared as `Object`, so only the extension on Object applies, even though at runtime it's a String.",
-          "difficulty": 3,
+          "explanation": "Extensions are chosen while compiling, from the **declared** type. `s` is declared as `Object`, so the extension on `Object` is used, even though the value is really a `String`. Real methods behave the opposite way, which is why this surprises people.",
           "whyWrong": [
             null,
-            "You're expecting dynamic dispatch on the runtime type, but extensions are resolved statically: `s` is declared as `Object`, so `on String` doesn't apply.",
-            "Ambiguity would only arise if both extensions applied to the static type; with `Object`, only the first one applies.",
-            "There's no runtime lookup: the call is bound to the extension on `Object` at compile time, so the method can't be missing."
+            "`str` would need `s` to be declared as a `String`. The real type is not consulted.",
+            "There is no ambiguity: the declared type decides, and it is `Object`.",
+            "Nothing fails: a method is found, just not the one you expected."
           ]
         },
         {
           "id": "flutter-dart-basics-7",
-          "prompt": "What does a `sealed` class guarantee in Dart 3?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "What does `sealed` guarantee in Dart 3?",
           "code": null,
           "options": [
-            "It prevents instantiating the subclasses",
+            "It stops the subtypes being instantiated",
             "It makes the class immutable",
             "It allows extension only from other packages",
-            "Subtypes known within the library: exhaustive switches"
+            "The subtypes are all known, so a switch can be checked"
           ],
-          "answer": 3,
-          "explanation": "A sealed class is implicitly abstract and can only be extended within the same library, so the compiler knows every subtype and checks that switches are exhaustive.",
-          "difficulty": 2,
+          "explanation": "Subtypes must be in the same library, so the compiler knows them all. A `switch` over a sealed type therefore needs no default — and the day somebody adds a subtype, every switch missing it stops compiling, which is exactly what you want.",
           "whyWrong": [
-            "Subclasses of a `sealed` class are instantiated normally; it's the sealed class itself that is implicitly abstract.",
-            "`sealed` is about the type hierarchy, not immutability: the fields can stay mutable.",
-            "It's the opposite: a `sealed` class can only be extended or implemented within the same library, never from other packages.",
+            "The subtypes can be instantiated normally. It is the sealed class itself that cannot.",
+            "Immutability is a separate matter, decided by whether the fields are final.",
+            "It is the opposite: extension is limited to the same library.",
             null
           ]
         },
         {
           "id": "flutter-dart-basics-8",
+          "difficulty": 2,
+          "answer": 1,
           "prompt": "What does `print((1, 'a') == (1, 'a'));` print?",
           "code": null,
           "options": [
             "false",
             "true",
-            "Compilation error",
-            "It depends on the default hashCode"
+            "It does not compile",
+            "It depends on hashCode"
           ],
-          "answer": 1,
-          "explanation": "Records have structural equality: two records with the same shape and equal fields are `==`, unlike instances of regular classes.",
-          "difficulty": 2,
+          "explanation": "Records compare by **value**: two records with the same contents in the same order are equal. That is different from ordinary classes, where without writing `==` yourself, two separate objects are never equal.",
           "whyWrong": [
-            "That would be true for two instances of a class that doesn't override `==`; records, on the other hand, have structural equality.",
+            "`false` is what you would get from two instances of a normal class with no `==` of its own.",
             null,
-            "Records like `(1, 'a')` are valid syntax since Dart 3 and can be compared with `==` without issues.",
-            "Record equality doesn't depend on a default hashCode: it compares shape and fields, and `hashCode` is consistent with it."
+            "Records have been part of the language since Dart 3.",
+            "`hashCode` is generated from the contents too, so it agrees with `==`."
           ]
         },
         {
           "id": "flutter-dart-basics-9",
+          "difficulty": 2,
+          "answer": 2,
           "prompt": "What does `on` mean in `mixin Logger on Widget`?",
           "code": null,
           "options": [
             "The mixin extends Widget",
-            "The mixin can be applied to any class",
-            "It can only be applied to subtypes of Widget",
-            "The mixin overrides all of Widget's methods"
+            "It can be used on any class",
+            "It can only be used on subtypes of Widget",
+            "It overrides all of Widget's methods"
           ],
-          "answer": 2,
-          "explanation": "`on` is a constraint: the mixin can only be used by classes that are subtypes of Widget, and inside it you can call Widget's members.",
-          "difficulty": 2,
+          "explanation": "`on` sets the requirement for using the mixin, and that is what lets the mixin safely call `Widget`'s own methods — it knows whatever uses it will have them.",
           "whyWrong": [
-            "`on` doesn't create an inheritance relationship: the mixin doesn't extend Widget, it only requires that the class using it does.",
-            "It's the exact opposite: without `on` the mixin could be applied anywhere; with `on Widget` you restrict it to subtypes of Widget.",
+            "A mixin does not extend anything: it is added to a class, not placed above it.",
+            "Without `on` it would be usable anywhere. The whole purpose of `on` is to restrict it.",
             null,
-            "The `on` constraint doesn't override anything: it lets the mixin call Widget's members, including via `super`."
+            "It overrides nothing: it adds, and only replaces what it explicitly declares."
           ]
         },
         {
           "id": "flutter-dart-basics-10",
-          "prompt": "What does this code print?",
-          "code": "final p = (3, 0);\nfinal s = switch (p) {\n  (0, 0) => 'origin',\n  (var x, 0) when x > 0 => 'x axis+',\n  (_, 0) => 'x axis',\n  _ => 'other',\n};\nprint(s);",
+          "difficulty": 3,
+          "answer": 3,
+          "prompt": "What does this print?",
+          "code": "final p = (3, 0);\nfinal s = switch (p) {\n  (0, 0) => 'origin',\n  (var x, 0) when x > 0 => 'positive x axis',\n  (_, 0) => 'x axis',\n  _ => 'elsewhere',\n};\nprint(s);",
           "options": [
             "origin",
             "x axis",
-            "other",
-            "x axis+"
+            "elsewhere",
+            "positive x axis"
           ],
-          "answer": 3,
-          "explanation": "The first case doesn't match; the second binds `x = 3` and the guard `x > 0` is true. The switch returns the first case that matches.",
-          "difficulty": 3,
+          "explanation": "The cases are tried from the top. `(0, 0)` does not match because the first value is 3. The second matches the shape and its `when` holds, since 3 is above 0 — so it wins and nothing below is tried. Order matters: move that case lower and the general one would swallow it.",
           "whyWrong": [
-            "The pattern `(0, 0)` requires the first field to be 0, but `p.$1` is 3: the case doesn't match.",
-            "`(_, 0)` would also match, but the switch stops at the first matching case, and `(var x, 0) when x > 0` comes first.",
-            "The `_` wildcard is only evaluated if no earlier case matches, and here the second one already does.",
+            "`origin` needs both values to be 0, and the first is 3.",
+            "The more specific case came first and matched, so this one is never reached.",
+            "The catch-all is only used when nothing above matches.",
             null
           ]
         }
@@ -245,45 +245,47 @@
     {
       "id": "widgets",
       "stage": "junior",
-      "title": "Widgets and Lifecycle",
+      "title": "Widgets and the life of a screen",
       "icon": "square.on.square",
-      "summary": "Stateless vs Stateful, the State lifecycle, BuildContext, and const",
+      "summary": "Everything on screen is a widget; what the difference between stateless and stateful really is, when each method runs, and why `const` matters more than it looks.",
       "lesson": [
         {
-          "heading": "Everything is a widget",
-          "body": "A widget is an **immutable description** of part of the UI, not the UI itself. The `build` method returns a fresh configuration every time it's called and is meant to be **fast and side-effect free**.\n\nBecause widgets are lightweight objects, recreating them on every build is cheap: the heavy lifting (layout and paint) is done by Elements and RenderObjects, which get reused.",
-          "code": null
+          "heading": "Everything is a widget, and widgets are thrown away",
+          "language": null,
+          "body": "In Flutter every single thing is a **widget**: a button, a piece of text, padding, even the alignment of something. You do not change widgets — you build new ones.\n\nThat is the idea to get right first, because it explains everything else. A widget is not the thing on screen. It is a **description** of what the screen should look like, and it is immutable: once built, it never changes. When something changes, Flutter builds a **new** widget and works out the difference.\n\nUnder the description there are two more trees, and this is what the questions are really about:\n\n**The widget tree** — your descriptions. Cheap, created and thrown away constantly.\n**The element tree** — the long-lived objects that hold position in the tree and keep the state. These survive rebuilds.\n**The render tree** — the things that actually measure and paint.\n\nSo rebuilding does not mean redrawing everything. Flutter compares the new description with the old, keeps the elements where the type and key match, and only touches what genuinely differs. That is why building widgets in a `build` method is cheap, and why you are expected to do it on every frame.",
+          "code": "// A description, not an object on screen\nWidget build(BuildContext context) {\n  return Padding(\n    padding: const EdgeInsets.all(16),\n    child: Column(\n      children: [\n        Text(title),\n        const SizedBox(height: 8),\n        ElevatedButton(onPressed: onTap, child: const Text('Open')),\n      ],\n    ),\n  );\n}\n\n// Widgets are immutable: this is not how you change something\n// myText.text = 'other';   // there is no such thing\n// You rebuild with a new description instead."
         },
         {
-          "heading": "Stateless vs Stateful",
-          "body": "A `StatelessWidget` depends only on its constructor parameters and on the InheritedWidgets it reads from the context. A `StatefulWidget` creates a `State` object that **survives rebuilds** and holds mutable data.\n\n`setState` marks the Element as **dirty** and schedules a rebuild for the next frame: it doesn't rebuild immediately and doesn't recreate the State. Keep state as low in the tree as possible so less gets rebuilt.",
-          "code": "class Counter extends StatefulWidget {\n  const Counter({super.key});\n  @override\n  State<Counter> createState() => _CounterState();\n}\n\nclass _CounterState extends State<Counter> {\n  int n = 0;\n  @override\n  Widget build(BuildContext context) =>\n      TextButton(onPressed: () => setState(() => n++), child: Text('$n'));\n}"
+          "heading": "Stateless and stateful",
+          "language": null,
+          "body": "**`StatelessWidget`** describes something that depends only on what it was given. Same inputs, same output. Use it whenever you can — which is more often than people think.\n\n**`StatefulWidget`** is for something that has to remember between builds: a counter, whether a panel is open, an animation's progress, a text field's controller.\n\nThe part that confuses everybody at first is that a `StatefulWidget` is **two classes**. The widget itself is still immutable and still thrown away on every rebuild. The `State` object is the one that survives, and it is where your variables live.\n\nThat separation is the whole point: the parent can rebuild and hand down a new widget as often as it likes, and the state is not lost, because the state does not live in the widget.\n\n**`setState`** does one thing: it marks the element as needing a rebuild and asks the framework to do it before the next frame. It does not rebuild immediately, and it does not rebuild the whole app. Changing a variable without it is the classic bug — the value really does change, and the screen simply never finds out.",
+          "code": "class Counter extends StatefulWidget {\n  const Counter({super.key});\n\n  @override\n  State<Counter> createState() => _CounterState();\n}\n\nclass _CounterState extends State<Counter> {\n  int n = 0;      // lives here, and survives rebuilds\n\n  @override\n  Widget build(BuildContext context) {\n    return TextButton(\n      onPressed: () => setState(() => n++),   // change it inside setState\n      child: Text('$n'),\n    );\n  }\n}\n\n// The widget is thrown away on every rebuild; _CounterState is not.\n// Inside the State, 'widget' is always the latest version."
         },
         {
-          "heading": "The State lifecycle",
-          "body": "Order: `createState`, `initState` (called once; this is where you create controllers and subscriptions), `didChangeDependencies` (right after initState and whenever an InheritedWidget you depend on changes), `build`.\n\nWhen the parent rebuilds with a new configuration, `didUpdateWidget(oldWidget)` is called, then `build`. On removal: `deactivate` and finally `dispose`, where you release controllers, stream subscriptions, and listeners. After `dispose`, the `mounted` property is false.",
-          "code": "@override\nvoid initState() {\n  super.initState();\n  _ctrl = AnimationController(vsync: this, duration: kThemeAnimationDuration);\n}\n\n@override\nvoid dispose() {\n  _ctrl.dispose();\n  super.dispose();\n}"
+          "heading": "When each method runs",
+          "language": null,
+          "body": "A `State` has a handful of methods, and knowing which runs when is the most-asked thing in this topic.\n\n**`initState`** — once, when the state is created. Set up controllers, subscribe to a stream. You cannot use `InheritedWidget`s here — more on that below.\n**`didChangeDependencies`** — right after `initState`, and again whenever something it depends on changes. This is where `Theme.of(context)` is safe.\n**`build`** — every time something needs redrawing. Can run many times a second. Keep it cheap and free of side effects.\n**`didUpdateWidget`** — when the parent rebuilds and hands down a new widget with different values. Use it to react: if the id changed, reload.\n**`deactivate`** — removed from the tree, possibly to be reinserted elsewhere.\n**`dispose`** — gone for good. **Release everything here**: controllers, subscriptions, timers.\n\nThe pairing is the thing to remember: **whatever you create in `initState` you release in `dispose`**. A forgotten `dispose` is the most common leak in Flutter, and it shows up as an app that gets slower the longer it is used.\n\nAnd the reason `Theme.of(context)` fails in `initState`: that call registers a dependency, so the widget is rebuilt when the theme changes. In `initState` the element is not yet in a position to register one. `didChangeDependencies` is.",
+          "code": "class _S extends State<W> {\n  late final AnimationController _ctrl;\n  StreamSubscription? _sub;\n\n  @override\n  void initState() {\n    super.initState();                 // always first\n    _ctrl = AnimationController(vsync: this, duration: kThemeAnimationDuration);\n    _sub = stream.listen((_) => setState(() {}));\n  }\n\n  @override\n  void didChangeDependencies() {\n    super.didChangeDependencies();\n    final theme = Theme.of(context);   // safe here, not in initState\n  }\n\n  @override\n  void didUpdateWidget(W old) {\n    super.didUpdateWidget(old);\n    if (old.id != widget.id) reload(); // the parent handed down a new id\n  }\n\n  @override\n  void dispose() {\n    _sub?.cancel();                    // everything created above\n    _ctrl.dispose();\n    super.dispose();                   // always last\n  }\n}"
         },
         {
-          "heading": "BuildContext",
-          "body": "A `BuildContext` is actually the widget's **Element**: it represents the widget's position in the tree. `Theme.of(context)` and `Navigator.of(context)` walk up the ancestors starting from that point, which is why a context \"above\" the Scaffold can't find the Scaffold.\n\nAfter an `await`, the widget may have been unmounted: check `context.mounted` (or `mounted` inside the State) before using the context. That's exactly what the `use_build_context_synchronously` lint flags.",
-          "code": "onPressed: () async {\n  await repo.save();\n  if (!context.mounted) return;\n  Navigator.of(context).pop();\n}"
+          "heading": "BuildContext: where you are in the tree",
+          "language": null,
+          "body": "A **`BuildContext`** is not a global thing and it is not a bag of utilities. It is **your widget's element**: its position in the tree. That is why every `build` receives one, and why they are all different.\n\nThat is also the whole explanation for `Theme.of(context)` and `Navigator.of(context)`. `of` means \"climb up from here until you find one\". Using the wrong context means climbing from the wrong place, which is why a `Scaffold.of(context)` called with the context of the widget that built the Scaffold fails: from there, there is no Scaffold above.\n\nThe second thing is the one that bites in real apps: **using a context after an `await`**. During the wait, the user may have closed the screen, and the context now points at an element that is no longer in the tree. The result is a crash or something silently wrong.\n\nThe fix is one line: check `context.mounted` after every `await` before touching the context. The linter warns you about this, and it is worth leaving that warning switched on.",
+          "code": "// 'of' climbs up from here\nfinal theme = Theme.of(context);\nNavigator.of(context).pop();\n\n// The trap: after an await, the screen may be gone\nonPressed: () async {\n  await repo.save();\n  if (!context.mounted) return;    // the line people forget\n  Navigator.of(context).pop();\n}\n\n// Scaffold.of fails from the context that built the Scaffold:\n// from there, there is no Scaffold above. Use a Builder, or a key."
         },
         {
-          "heading": "const constructors",
-          "body": "A widget with a `const` constructor, instantiated with `const`, is **the same instance** on every build. When Flutter compares the old and new widget and finds them identical, it skips updating the entire subtree.\n\nThat's why the linter suggests `prefer_const_constructors`: it's a free optimization. It only works if all the parameters are constants too.",
-          "code": "const Padding(\n  padding: EdgeInsets.all(16),\n  child: Text('Static title'),\n)"
-        },
-        {
-          "heading": "In the interview",
-          "body": "Typical question: **\"Walk me through the lifecycle of a StatefulWidget.\"** Answer with the sequence createState, initState, didChangeDependencies, build, didUpdateWidget, deactivate, dispose, and say what goes in each: controllers in initState, InheritedWidget lookups in didChangeDependencies, comparing against oldWidget in didUpdateWidget, cleanup in dispose.\n\nThrow in two pitfalls that show experience: don't call `Theme.of` in initState, and check `mounted` after an async gap.",
-          "code": null
+          "heading": "const: the cheapest optimisation there is",
+          "language": null,
+          "body": "When a parent rebuilds, Flutter walks its children and compares each new widget with the old one. If it can tell nothing has changed, it skips the whole subtree.\n\nA **`const` widget** makes that comparison trivial. Because identical consts are built once by the compiler and shared, the new widget **is literally the same object** as the old one. The comparison is a pointer check, it passes, and everything below is skipped.\n\nWithout `const`, a new object is created on every build, the comparison fails, and the subtree is visited again — even though it draws exactly the same thing.\n\nThe habit worth building: **put `const` on anything that does not depend on a variable**. Separators, icons, fixed text, padding. The linter can tell you where it is possible, and it costs nothing to accept.\n\nA practical trick that follows: if part of a widget is expensive and does not change, pulling it into a `const` child — or holding it in a field — stops it being rebuilt with the rest. That is often a bigger win than anything clever.",
+          "code": "// Built once by the compiler, shared everywhere\nconst Padding(\n  padding: EdgeInsets.all(16),\n  child: Text('Fixed title'),\n)\n\n// This cannot be const: it depends on a variable\nPadding(\n  padding: const EdgeInsets.all(16),   // but this part can\n  child: Text(title),\n)\n\n// Common ones worth getting into the habit of\nconst SizedBox(height: 8)\nconst Divider()\nconst Icon(Icons.search)\nconst CircularProgressIndicator()"
         }
       ],
       "questions": [
         {
           "id": "flutter-widgets-1",
-          "prompt": "Where do you create an `AnimationController` in a StatefulWidget?",
+          "difficulty": 1,
+          "answer": 2,
+          "prompt": "Where do you create an `AnimationController` in a stateful widget?",
           "code": null,
           "options": [
             "In `build()`",
@@ -291,59 +293,59 @@
             "In `initState()`, and release it in `dispose()`",
             "In `didUpdateWidget()`"
           ],
-          "answer": 2,
-          "explanation": "`initState` is called exactly once per State: it's the place for resources with a lifecycle, which you release in `dispose`. In `build` you'd create a controller on every rebuild.",
-          "difficulty": 1,
+          "explanation": "`initState` runs once, which is what you want for something that must exist for the life of the screen. And whatever you create there you release in `dispose`, or the controller keeps ticking after the screen has gone.",
           "whyWrong": [
-            "`build()` can be called many times: you'd create a new controller on every rebuild, losing the animation and leaking memory.",
-            "The widget is an immutable configuration that gets recreated often; plus, there's no `vsync` from the State there.",
+            "`build` can run many times a second: you would create a new controller on every frame.",
+            "The widget is thrown away on every rebuild. State belongs in the `State`, not the widget.",
             null,
-            "`didUpdateWidget` only fires when the parent passes a new configuration, not on creation: it's for updating the controller, not creating it."
+            "`didUpdateWidget` only runs when the parent hands down something new, which may never happen."
           ]
         },
         {
           "id": "flutter-widgets-2",
+          "difficulty": 1,
+          "answer": 0,
           "prompt": "What does `setState` do?",
           "code": null,
           "options": [
-            "Marks the Element dirty and schedules a rebuild",
-            "Immediately rebuilds the whole tree",
+            "Marks the element as needing a rebuild, before the next frame",
+            "Rebuilds the whole tree immediately",
             "Saves the state to disk",
-            "Recreates the State object"
+            "Creates the State object again"
           ],
-          "answer": 0,
-          "explanation": "`setState` runs the callback and marks the Element to be rebuilt on the next frame. The State stays the same object.",
-          "difficulty": 1,
+          "explanation": "It does not rebuild straight away: it notes that this element is out of date and the framework rebuilds it before the next frame. That is why several `setState` calls in a row cost one rebuild, not several.",
           "whyWrong": [
             null,
-            "The rebuild is neither immediate nor global: `setState` marks only that Element dirty, and the rebuild happens on the next frame.",
-            "`setState` has nothing to do with persistence: the state lives in memory, in the State object.",
-            "The State object survives rebuilds: `setState` reruns `build` on the same State, it doesn't create a new one."
+            "Neither immediately nor the whole tree: only this element and what it builds.",
+            "Nothing is saved anywhere. It is purely about redrawing.",
+            "The `State` survives: recreating it would lose everything, which is the opposite of the point."
           ]
         },
         {
           "id": "flutter-widgets-3",
-          "prompt": "Why is calling `Theme.of(context)` in `initState` a problem?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "Why is `Theme.of(context)` a problem in `initState`?",
           "code": null,
           "options": [
-            "The Theme doesn't exist before the first frame",
-            "The context is null in initState",
-            "It's allowed, just slow",
-            "You can't depend on an InheritedWidget there: use didChangeDependencies"
+            "The Theme does not exist before the first frame",
+            "The context is null there",
+            "It is allowed, just slow",
+            "You cannot register a dependency there: use didChangeDependencies"
           ],
-          "answer": 3,
-          "explanation": "Registering a dependency isn't allowed yet in initState (it asserts in debug). `didChangeDependencies` is called right after and is the right place.",
-          "difficulty": 2,
+          "explanation": "`Theme.of` does two things: it finds the theme, and it records that this widget depends on it, so it is rebuilt when the theme changes. In `initState` the element is not yet able to register that, so it throws. `didChangeDependencies` runs immediately afterwards and is the right place.",
           "whyWrong": [
-            "The Theme already exists among the ancestors; the problem is that in `initState` you can't register a dependency on an InheritedWidget yet.",
-            "In `initState` the `context` exists and is valid; it's the dependency on an InheritedWidget that isn't allowed yet.",
-            "It's not about speed: in debug an assert fires, because the dependency wouldn't be tracked correctly.",
+            "The theme exists: the problem is the registration, not the value.",
+            "The context is perfectly valid in `initState`. It just cannot be used for this.",
+            "It is not allowed at all: it fails, it is not slow.",
             null
           ]
         },
         {
           "id": "flutter-widgets-4",
-          "prompt": "The parent rebuilds and passes a new `title` to your StatefulWidget. What gets called before `build`?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "The parent rebuilds and hands down a new `title`. What runs before `build`?",
           "code": null,
           "options": [
             "initState",
@@ -351,134 +353,132 @@
             "didChangeDependencies",
             "createState"
           ],
-          "answer": 1,
-          "explanation": "The State is reused: Flutter updates `widget` and calls `didUpdateWidget(oldWidget)`, where you can compare the old and new configuration.",
-          "difficulty": 2,
+          "explanation": "The state survives, so `initState` is not called again. `didUpdateWidget` is called instead, with the old widget as its argument, so you can compare and react — reloading if an id changed, for instance.",
           "whyWrong": [
-            "`initState` is called only once per State; when the parent just changes the parameters, the State is reused.",
+            "`initState` runs once, when the state is created. The state here already exists.",
             null,
-            "`didChangeDependencies` fires when an InheritedWidget you depend on changes, not when the widget's parameters change.",
-            "`createState` is called only when a new Element is created: with the same type and key, the existing State is reused."
+            "That runs when an inherited widget this depends on changes, which is a different event.",
+            "`createState` runs once, right at the start."
           ]
         },
         {
           "id": "flutter-widgets-5",
-          "prompt": "What's wrong with this code?",
+          "difficulty": 2,
+          "answer": 2,
+          "prompt": "What is wrong with this code?",
           "code": "ElevatedButton(\n  onPressed: () async {\n    await api.save();\n    Navigator.of(context).pop();\n  },\n  child: const Text('Save'),\n)",
           "options": [
-            "Navigator can't be used in onPressed",
+            "Navigator cannot be used in onPressed",
             "setState is missing after the await",
-            "It uses the context after an async gap without a check",
-            "`const` isn't allowed on Text"
+            "It uses the context after an await, with no check",
+            "const is not allowed on Text"
           ],
-          "answer": 2,
-          "explanation": "The widget can be unmounted during the await, leaving the context invalid. You need to check `context.mounted` before using it.",
-          "difficulty": 2,
+          "explanation": "During the `await` the user may have left the screen. The context would then point at an element no longer in the tree, and using it crashes or misbehaves. The fix is `if (!context.mounted) return;` straight after the await.",
           "whyWrong": [
-            "Using Navigator in `onPressed` is perfectly normal; the risk is doing it after an `await` without checking `context.mounted`.",
-            "You're not changing the widget's state here, you're navigating: `setState` isn't needed and wouldn't fix the context problem.",
+            "It can: that is the normal place for it.",
+            "Nothing here needs a rebuild: the screen is being closed.",
             null,
-            "`const Text('Save')` is valid and actually recommended, since the content is constant."
+            "`const Text('Save')` is correct and is exactly what you should write."
           ]
         },
         {
           "id": "flutter-widgets-6",
-          "prompt": "When is a StatelessWidget the right choice?",
+          "difficulty": 1,
+          "answer": 3,
+          "prompt": "When is a `StatelessWidget` the right choice?",
           "code": null,
           "options": [
-            "When the widget has no children",
+            "When it has no children",
             "When it makes network calls",
-            "Never: it's deprecated",
-            "When it depends only on parameters and InheritedWidgets"
+            "Never: it is outdated",
+            "When it depends only on its parameters and on inherited widgets"
           ],
-          "answer": 3,
-          "explanation": "A StatelessWidget can still rebuild when an InheritedWidget it reads changes; it just has no mutable state of its own.",
-          "difficulty": 1,
+          "explanation": "If everything it draws comes from what it was given, there is nothing to remember and nothing to keep between builds. Stateless widgets are simpler, cheaper and easier to test — reach for stateful only when something genuinely has to survive a rebuild.",
           "whyWrong": [
-            "The number of children doesn't matter: even a widget with many children can be stateless if it has no mutable state of its own.",
-            "A network call means loading and results that change over time: that needs state, not a StatelessWidget.",
-            "StatelessWidget isn't deprecated at all: it's the preferred choice when there's no local mutable state.",
+            "It can have as many children as you like: that has nothing to do with it.",
+            "Network calls belong somewhere else entirely, not inside a widget's build.",
+            "It is the most common kind of widget there is.",
             null
           ]
         },
         {
           "id": "flutter-widgets-7",
+          "difficulty": 3,
+          "answer": 0,
           "prompt": "Why does a `const` widget save work when the parent rebuilds?",
           "code": null,
           "options": [
-            "It's the same instance: Flutter skips the update",
-            "It's painted on a separate layer",
-            "It has no associated Element",
-            "It's compiled to native code"
+            "It is literally the same instance, so Flutter skips the subtree",
+            "It is painted on its own layer",
+            "It has no element",
+            "It is compiled to native code"
           ],
-          "answer": 0,
-          "explanation": "If the new widget is identical to the old one, `updateChild` doesn't update the Element and its `build` doesn't run again.",
-          "difficulty": 3,
+          "explanation": "Identical consts are built once by the compiler and shared, so the new widget is the same object as the old one. The comparison is a pointer check, it passes, and everything below is skipped — no rebuild, no comparison, nothing.",
           "whyWrong": [
             null,
-            "`const` doesn't create separate layers: that's what `RepaintBoundary` does, for example. The benefit is skipping the Element update.",
-            "A `const` widget still has its own Element in the tree; that Element simply doesn't get updated.",
-            "`const` is about compile-time canonicalization of the Dart instance, not special compilation to native code."
+            "Layers are about painting and have nothing to do with `const`.",
+            "It has an element like any other widget. What changes is that the comparison succeeds instantly.",
+            "`const` is about when the value is created, not about how it is compiled."
           ]
         },
         {
           "id": "flutter-widgets-8",
+          "difficulty": 2,
+          "answer": 1,
           "prompt": "What exactly is a `BuildContext`?",
           "code": null,
           "options": [
-            "A global app singleton",
-            "The widget's Element in the tree",
-            "The widget's RenderObject",
+            "A global singleton",
+            "The widget's element, its position in the tree",
+            "The widget's render object",
             "A copy of the State"
           ],
-          "answer": 1,
-          "explanation": "`Element` implements `BuildContext`: the context is a reference to the widget's position in the Element tree.",
-          "difficulty": 2,
+          "explanation": "It is the element: where this widget sits in the tree. That is why `Theme.of(context)` works by climbing upwards from there, and why using the context of the wrong widget looks in the wrong place.",
           "whyWrong": [
-            "Every mounted widget has its own context: it isn't global, it represents that widget's position in the tree.",
+            "There is nothing global about it: every widget has its own, and they differ.",
             null,
-            "The RenderObject handles layout and paint and is a separate object; it's the Element that implements `BuildContext`.",
-            "The context doesn't copy the State: it's the Element, which at most holds a reference to the State."
+            "The render object is what measures and paints. The context sits above that.",
+            "It has nothing to do with the State: stateless widgets have a context too."
           ]
         },
         {
           "id": "flutter-widgets-9",
-          "prompt": "What's missing from this State?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "What is missing from this State?",
           "code": "class _S extends State<W> {\n  late final StreamSubscription sub;\n\n  @override\n  void initState() {\n    super.initState();\n    sub = stream.listen((_) => setState(() {}));\n  }\n  // build omitted\n}",
           "options": [
-            "A call to `super.build()`",
+            "A call to super.build()",
             "setState inside initState",
-            "Making `sub` nullable",
-            "`dispose()` with `sub.cancel()`"
+            "Making sub nullable",
+            "dispose() with sub.cancel()"
           ],
-          "answer": 3,
-          "explanation": "Without cancel, the subscription stays active after removal: a memory leak plus `setState() called after dispose()`.",
-          "difficulty": 2,
+          "explanation": "The subscription is created in `initState` and never cancelled, so it carries on after the screen is gone — calling `setState` on a state that no longer exists. Whatever you create in `initState` you release in `dispose`. It is the most common leak in Flutter.",
           "whyWrong": [
-            "`build` in State is abstract and isn't called via `super.build()`; the real problem is the resource that's never released.",
-            "`setState` in `initState` isn't needed: the first build happens right after anyway.",
-            "`late final` is fine because `sub` is assigned in `initState`; the problem is that nobody cancels it.",
+            "`super.build()` is only needed with certain mixins, and it has nothing to do with the leak.",
+            "`setState` in `initState` would be pointless: a build is already coming.",
+            "Making it nullable changes nothing: it would still never be cancelled.",
             null
           ]
         },
         {
           "id": "flutter-widgets-10",
-          "prompt": "A widget is inserted and then permanently removed. What's the correct order?",
+          "difficulty": 3,
+          "answer": 2,
+          "prompt": "A widget is inserted and then permanently removed. What is the right order?",
           "code": null,
           "options": [
             "initState, build, dispose, deactivate",
             "createState, build, initState, dispose",
-            "createState, initState, didChangeDeps, build, deactivate, dispose",
+            "createState, initState, didChangeDependencies, build, deactivate, dispose",
             "initState, didUpdateWidget, build, dispose"
           ],
-          "answer": 2,
-          "explanation": "`didChangeDependencies` always follows `initState`; on removal, `deactivate` comes first and then, if the Element isn't reinserted within the same frame, `dispose`.",
-          "difficulty": 3,
+          "explanation": "The state is created, set up, told about its dependencies, built, then taken out of the tree (`deactivate`) and finally destroyed (`dispose`). `deactivate` comes first because a widget can be removed and reinserted elsewhere; only when that does not happen does `dispose` follow.",
           "whyWrong": [
-            "`deactivate` always comes before `dispose`, and `createState` is missing at the start.",
-            "`initState` is called before the first `build`, not after; and `deactivate` is missing before `dispose`.",
+            "`dispose` is always last: `deactivate` comes before it.",
+            "`build` cannot come before `initState`: nothing would be set up yet.",
             null,
-            "`didUpdateWidget` isn't part of the initial mount: it only fires when the parent provides a new configuration."
+            "`didUpdateWidget` only happens if the parent hands down a new widget, which is not part of a simple insert and remove."
           ]
         }
       ]
@@ -486,85 +486,87 @@
     {
       "id": "layout",
       "stage": "junior",
-      "title": "Layout",
+      "title": "Layout: how sizes are decided",
       "icon": "rectangle.split.3x1",
-      "summary": "Constraints, Row/Column/Expanded, Stack, overflow, LayoutBuilder, and slivers",
+      "summary": "One rule explains almost every layout problem in Flutter — and once you have it, the yellow-and-black stripes stop being a mystery.",
       "lesson": [
         {
-          "heading": "Constraints go down, sizes go up",
-          "body": "The golden rule: **constraints go down, sizes go up, the parent sets the position**. The parent passes the child a `BoxConstraints` (min/max width and height), the child picks a size within those limits, and the parent positions it.\n\n**Tight** constraints (min == max) force an exact size: that's why a `Container(width: 100)` at the root of the app still fills the screen. **Loose** constraints (min 0) give the child freedom.",
-          "code": "// The root receives tight constraints = screen size\nrunApp(\n  Center( // loosens the constraints\n    child: Container(width: 100, height: 100, color: Colors.red),\n  ),\n);"
+          "heading": "The one rule",
+          "language": null,
+          "body": "Flutter decides sizes in three steps, and almost every layout question is really about this one sentence:\n\n**Constraints go down, sizes go up, the parent decides the position.**\n\nIn detail: a parent tells each child what sizes are allowed — a minimum and a maximum width and height. The child picks a size **within those limits** and reports it back. The parent then decides where to put it.\n\nThree consequences follow, and they explain the most common surprises:\n\n**A widget cannot choose its position.** It only reports a size; where it goes is its parent's decision. So \"why is my widget not in the middle?\" is always a question about the parent.\n\n**A constraint can be tight** — minimum equals maximum — in which case the child has no choice at all. That is why a `Container(width: 100)` placed directly at the root fills the whole screen: the root gives tight constraints the size of the screen, and the container has no say.\n\n**Some widgets loosen constraints and some pass them on.** `Center`, `Align` and `Padding` loosen them, which is why wrapping that container in a `Center` suddenly makes it 100 by 100.\n\nWhen a layout does something you did not expect, the question to ask is never \"what is wrong with this widget?\" but **\"what constraints is its parent giving it?\"**",
+          "code": "// The root gives tight constraints: the size of the screen\nrunApp(\n  Container(width: 100, height: 100, color: Colors.red),\n);\n// Result: red fills the whole screen. The 100s are ignored.\n\n// Center loosens them: now the container can choose\nrunApp(\n  Center(\n    child: Container(width: 100, height: 100, color: Colors.red),\n  ),\n);\n// Result: a 100x100 square in the middle.\n\n// To see the constraints at any point\nLayoutBuilder(\n  builder: (context, constraints) {\n    print(constraints);   // BoxConstraints(w=..., h=...)\n    return const SizedBox();\n  },\n)"
         },
         {
-          "heading": "Row, Column, and Expanded",
-          "body": "`Row` and `Column` are `Flex` widgets: they have a **main axis** and a **cross axis**, controlled by `mainAxisAlignment` and `crossAxisAlignment`. Non-flexible children receive **unbounded** constraints on the main axis and are measured first.\n\n`Expanded` makes the child fill the remaining space (`FlexFit.tight`); `Flexible` lets it be smaller (`FlexFit.loose`). The `flex` parameter splits the space proportionally.",
-          "code": "Row(\n  children: [\n    const Icon(Icons.person),\n    Expanded(\n      child: Text(name, overflow: TextOverflow.ellipsis),\n    ),\n    const Icon(Icons.chevron_right),\n  ],\n)"
+          "heading": "Row, Column and Expanded",
+          "language": null,
+          "body": "`Row` lays children out side by side, `Column` one above the other. They behave identically; only the direction differs.\n\nEach has a **main axis** — horizontal for a `Row`, vertical for a `Column` — and a **cross axis**, the other one. `mainAxisAlignment` spreads the children along the main axis; `crossAxisAlignment` lines them up across it. Mixing those two up is the most common small confusion in Flutter layout.\n\nThe children are laid out in order and each gets as much as it asks for, until the space runs out — and then you get the overflow stripes.\n\n**`Expanded`** is the answer to \"take whatever is left\". It gives its child tight constraints filling the remaining space, after the fixed-size children have had theirs. With several, `flex` shares the space in proportion.\n\n**`Flexible`** is the gentler version: the child **may** use up to the available space but does not have to, so it can stay smaller. `Expanded` is exactly `Flexible` with a tight fit.\n\nThe practical rule: a `Text` that might be long, inside a `Row`, goes in an `Expanded`. That one habit removes most overflow errors before they happen.",
+          "code": "Row(\n  children: [\n    const Icon(Icons.person),              // takes what it needs\n    Expanded(                               // takes everything left over\n      child: Text(name, overflow: TextOverflow.ellipsis),\n    ),\n    const Icon(Icons.chevron_right),       // takes what it needs\n  ],\n)\n\n// Sharing the leftover space: a third and two thirds\nRow(\n  children: [\n    Expanded(flex: 1, child: Container(color: Colors.red)),\n    Expanded(flex: 2, child: Container(color: Colors.blue)),\n  ],\n)\n\n// Along the main axis, and across it\nColumn(\n  mainAxisAlignment: MainAxisAlignment.center,       // vertically\n  crossAxisAlignment: CrossAxisAlignment.start,      // horizontally\n  children: [...],\n)"
         },
         {
-          "heading": "Overflow errors",
-          "body": "Yellow-and-black stripes and `A RenderFlex overflowed by N pixels` mean the children exceed the available space: usually you fix it with `Expanded`/`Flexible` or by making the content scrollable.\n\nThe `Vertical viewport was given unbounded height` error comes from putting a `ListView` inside a `Column`: the Column gives infinite height and the list wants to expand forever. Fix: wrap the ListView in `Expanded`.",
-          "code": "Column(\n  children: [\n    const Header(),\n    Expanded(\n      child: ListView.builder(\n        itemCount: items.length,\n        itemBuilder: (_, i) => ItemTile(items[i]),\n      ),\n    ),\n  ],\n)"
+          "heading": "Overflow, and the unbounded error",
+          "language": null,
+          "body": "Two errors come up constantly, and they look similar but have opposite causes.\n\n**The yellow-and-black stripes** mean the children asked for more space than there was. Something must either shrink or scroll. Usually the answer is wrapping a `Text` in `Expanded`, or the whole thing in a `SingleChildScrollView`.\n\n**\"viewport was given unbounded height\"** is the opposite: a scrollable child was given **no limit at all** on how tall it could be. A `ListView` inside a `Column` is the classic case. The column says \"be as tall as you like\", the list says \"I need to know how tall I can be before I can decide what to show\", and neither can proceed.\n\nThe fix depends on what you want:\n\n**`Expanded`** — the list takes the space left after the other children. This is almost always the right answer.\n**`SizedBox(height: 200)`** — a fixed height, when you want one.\n**`shrinkWrap: true`** — the list measures itself by laying out **every** child. It works, and with a long list it is slow, because it defeats the whole point of a lazy list. Only for a short list you know is short.\n\nThe habit worth having: a `ListView` inside a `Column` almost always wants an `Expanded` around it.",
+          "code": "// The error: the column gives no height limit\nColumn(\n  children: [\n    const Header(),\n    ListView(children: items),     // \"unbounded height\"\n  ],\n)\n\n// The fix, nearly always\nColumn(\n  children: [\n    const Header(),\n    Expanded(\n      child: ListView.builder(\n        itemCount: items.length,\n        itemBuilder: (_, i) => ItemTile(items[i]),\n      ),\n    ),\n  ],\n)\n\n// Overflow in a Row: give the text somewhere to shrink into\nRow(\n  children: [\n    const Icon(Icons.tag),\n    Expanded(child: Text(veryLongTitle, overflow: TextOverflow.ellipsis)),\n  ],\n)"
         },
         {
-          "heading": "Stack and LayoutBuilder",
-          "body": "`Stack` layers its children on top of each other; `Positioned` anchors them to the edges, and `alignment` places the non-positioned ones. `clipBehavior` decides whether anything that spills out gets clipped.\n\n`LayoutBuilder` gives you the **parent's constraints**, ideal for making a single component responsive. `MediaQuery.sizeOf(context)`, on the other hand, gives the size of the whole screen and is preferable to `MediaQuery.of` because it rebuilds only when the size changes.",
-          "code": "LayoutBuilder(\n  builder: (context, constraints) {\n    return constraints.maxWidth > 600\n        ? const TwoPaneView()\n        : const SinglePaneView();\n  },\n)"
+          "heading": "Stack, LayoutBuilder and MediaQuery",
+          "language": null,
+          "body": "**`Stack`** puts children on top of one another, in the order given — the last one is on top. By itself it sizes to its largest child.\n\nInside it, **`Positioned`** pins a child to one or more edges: `Positioned(bottom: 16, right: 16, ...)` places something in the bottom-right corner with a margin. Children that are not positioned are aligned according to the stack's `alignment`.\n\nFor adapting to size, there are two tools, and choosing between them is a real question:\n\n**`MediaQuery`** gives you facts about the **screen**: its size, the safe area, the text scale, whether dark mode is on. Use it for things that genuinely depend on the device.\n\n**`LayoutBuilder`** gives you the constraints **this widget** has been given. Use it for anything that should adapt to the space it actually has — because a widget might be in a side panel, in a dialog, or in a split view, where the screen size tells you nothing useful.\n\nThe rule: **`LayoutBuilder` for layout, `MediaQuery` for the device.** A widget that decides its layout from the screen size breaks the moment somebody puts it in a smaller container.",
+          "code": "Stack(\n  children: [\n    const Positioned.fill(child: Background()),\n    Positioned(\n      bottom: 16,\n      right: 16,\n      child: FloatingActionButton(onPressed: onAdd, child: const Icon(Icons.add)),\n    ),\n  ],\n)\n\n// Adapting to the space I actually have\nLayoutBuilder(\n  builder: (context, constraints) {\n    return constraints.maxWidth > 600\n        ? const TwoPaneView()\n        : const SinglePaneView();\n  },\n)\n\n// Facts about the device\nfinal padding = MediaQuery.paddingOf(context);     // the notch, the home bar\nfinal isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;"
         },
         {
-          "heading": "Scrolling and slivers",
-          "body": "`ListView.builder` and `GridView.builder` build **only the visible items**: essential for long lists. `shrinkWrap: true`, by contrast, forces every child to be measured and defeats lazy building.\n\nTo combine collapsing headers, lists, and grids in **a single scroll view**, use `CustomScrollView` with slivers: `SliverAppBar`, `SliverList`, `SliverGrid`, `SliverToBoxAdapter`.",
-          "code": "CustomScrollView(\n  slivers: [\n    const SliverAppBar(pinned: true, expandedHeight: 200),\n    SliverList.builder(\n      itemCount: items.length,\n      itemBuilder: (_, i) => ItemTile(items[i]),\n    ),\n  ],\n)"
-        },
-        {
-          "heading": "In the interview",
-          "body": "Typical question: **\"Why do I get 'unbounded height' with a ListView inside a Column?\"** Explain the constraints rule: the Column passes unlimited height to non-flexible children, the ListView wants to take up the whole main axis, so the layout is undefined. Fix: `Expanded` (preferred) or a fixed height; `shrinkWrap` only for short lists.\n\nShow that you know the \"constraints go down, sizes go up, parent sets position\" rule and the difference between tight and loose: it's the key to explaining almost any layout bug.",
-          "code": null
+          "heading": "Lists and slivers",
+          "language": null,
+          "body": "**`ListView.builder`** only builds the items that are visible, plus a few just off screen. That is what lets a list of ten thousand rows exist at all. Using the plain `ListView(children: [...])` builds every one up front, so it is only for short lists.\n\nWhen you need more than a plain list in one scroll — a header that collapses, then a list, then a grid, all scrolling together — you need **slivers**.\n\nA sliver is a piece of a scrolling area that knows how to build only the part of itself that is visible. **`CustomScrollView`** holds several of them and scrolls them as one.\n\nThe common ones: `SliverAppBar` for a header that collapses or stays pinned, `SliverList` and `SliverGrid` for the content, `SliverToBoxAdapter` for fitting an ordinary widget in among them.\n\nThe mistake to avoid is nesting one scrollable inside another with `shrinkWrap`. It works, it looks right, and it builds every item of the inner list immediately — which is exactly what the lazy list was there to prevent. Slivers are the proper answer.",
+          "code": "// Only the visible items are built\nListView.builder(\n  itemCount: items.length,\n  itemBuilder: (context, i) => ItemTile(items[i]),\n)\n\n// A collapsing header, a list and a grid in one scroll\nCustomScrollView(\n  slivers: [\n    const SliverAppBar(pinned: true, expandedHeight: 200),\n    SliverList.builder(\n      itemCount: items.length,\n      itemBuilder: (_, i) => ItemTile(items[i]),\n    ),\n    SliverGrid.count(crossAxisCount: 2, children: photos),\n  ],\n)\n\n// Avoid: builds everything at once\n// Column(children: [\n//   ListView(shrinkWrap: true, children: manyItems),\n// ])"
         }
       ],
       "questions": [
         {
           "id": "flutter-layout-1",
-          "prompt": "What's the basic layout rule in Flutter?",
+          "difficulty": 1,
+          "answer": 2,
+          "prompt": "What is the basic layout rule in Flutter?",
           "code": null,
           "options": [
-            "The child chooses its position and size",
+            "The child chooses its own position and size",
             "The parent always forces the exact size",
             "Constraints go down, sizes go up, the parent positions",
-            "Layout is computed at compile time"
+            "Layout is worked out while compiling"
           ],
-          "answer": 2,
-          "explanation": "The parent passes constraints, the child picks its own size within those limits, and the parent decides where to put it.",
-          "difficulty": 1,
+          "explanation": "The parent says what sizes are allowed, the child picks one within those limits and reports it, and the parent then decides where to put it. Almost every layout surprise is explained by looking at what constraints the parent is giving.",
           "whyWrong": [
-            "The child only picks its own size within the constraints it receives; the position is always decided by the parent.",
-            "The parent imposes constraints, not necessarily an exact size: with loose constraints the child can be smaller.",
+            "A child never chooses its position: that is always the parent's decision.",
+            "Only with tight constraints. Many widgets, like `Center`, deliberately loosen them.",
             null,
-            "Layout happens at runtime, on every frame that needs it, because it depends on the screen and the content."
+            "It is worked out while the app runs, which is how it adapts to any screen."
           ]
         },
         {
           "id": "flutter-layout-2",
+          "difficulty": 2,
+          "answer": 0,
           "prompt": "What happens with this layout?",
           "code": "Column(\n  children: [\n    const Text('Title'),\n    ListView(children: items),\n  ],\n)",
           "options": [
-            "Error: viewport with unbounded height",
-            "The ListView takes up the remaining space",
-            "A 0 px yellow-and-black overflow",
-            "The ListView is visible but doesn't scroll"
+            "An error: the viewport is given unbounded height",
+            "The list takes the remaining space",
+            "A zero-pixel overflow",
+            "The list is visible but does not scroll"
           ],
-          "answer": 0,
-          "explanation": "The Column gives unlimited height to non-flexible children and the ListView wants to expand across the whole main axis: you need `Expanded` around the ListView.",
-          "difficulty": 2,
+          "explanation": "A `Column` gives its children no height limit, and a `ListView` needs one to know how much to show. Neither can proceed, so Flutter reports it. The fix is `Expanded` around the list, which gives it exactly the space left over.",
           "whyWrong": [
             null,
-            "Taking up the remaining space requires `Expanded`: without it, the Column passes unlimited height and the ListView doesn't know how tall to be.",
-            "It's not a visible overflow: the ListView gets unbounded height and Flutter throws a layout error.",
-            "The ListView can't even lay out with infinite height, so it isn't shown at all: you get an error."
+            "That is what `Expanded` would do. Without it, nothing tells the list how much space it has.",
+            "Overflow is a different error: that is asking for more space than there is, not for an unlimited amount.",
+            "There is nothing on screen to scroll: the error happens during layout."
           ]
         },
         {
           "id": "flutter-layout-3",
-          "prompt": "How do you make a Row child take up all the remaining space?",
+          "difficulty": 1,
+          "answer": 3,
+          "prompt": "How do you make a child of a Row take all the remaining space?",
           "code": null,
           "options": [
             "With `SizedBox.expand`",
@@ -572,139 +574,139 @@
             "With `Container(width: double.infinity)`",
             "By wrapping it in `Expanded`"
           ],
-          "answer": 3,
-          "explanation": "`Expanded` gives the child the remaining space on the main axis. An infinite width inside a Row causes a layout error instead.",
-          "difficulty": 1,
+          "explanation": "`Expanded` tells the row to give this child everything left after the fixed-size children have taken theirs. It is also the usual way to stop a long text overflowing.",
           "whyWrong": [
-            "Inside a Row the width is unbounded: `SizedBox.expand` tries to become infinite and causes a layout error.",
-            "`mainAxisSize` controls how much space the Row itself takes up, not how it's distributed among the children.",
-            "An infinite width in a Row, which passes unbounded constraints, throws an error instead of filling the space.",
+            "`SizedBox.expand` fills its own constraints, which does not tell the row to share the space.",
+            "That changes how much space the row itself takes, not how it divides it among its children.",
+            "An infinite width inside a row is unbounded and produces an error.",
             null
           ]
         },
         {
           "id": "flutter-layout-4",
-          "prompt": "What's the difference between `Expanded` and `Flexible`?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "What is the difference between `Expanded` and `Flexible`?",
           "code": null,
           "options": [
             "Expanded only works in a Column",
-            "Expanded is Flexible with `FlexFit.tight`",
-            "Flexible ignores the flex parameter",
+            "Expanded is Flexible with a tight fit",
+            "Flexible ignores the flex value",
             "Flexible forces the child to fill the space"
           ],
-          "answer": 1,
-          "explanation": "`Expanded` extends `Flexible` and forces `fit: FlexFit.tight`; with `Flexible` (loose) the child can be smaller than the space it's given.",
-          "difficulty": 2,
+          "explanation": "`Flexible` says the child **may** use up to that much space; `Expanded` says it **must** fill it. So `Expanded` is literally `Flexible(fit: FlexFit.tight)`. Use `Flexible` when the child should be allowed to stay smaller.",
           "whyWrong": [
-            "Both work in any Flex: Row, Column, and Flex.",
+            "Both work in a Row and a Column alike.",
             null,
-            "Flexible absolutely respects `flex`: it uses it to split the space, just like Expanded.",
-            "It's the other way around: Expanded (tight) forces the child to fill; Flexible (loose) lets it be smaller."
+            "Both use `flex` to share the space in proportion.",
+            "It is the other way round: `Flexible` allows, `Expanded` forces."
           ]
         },
         {
           "id": "flutter-layout-5",
-          "prompt": "What size is the Container?",
+          "difficulty": 2,
+          "answer": 2,
+          "prompt": "What size is the container here?",
           "code": "void main() {\n  runApp(\n    Container(width: 100, height: 100, color: Colors.red),\n  );\n}",
           "options": [
             "100x100 in the top-left corner",
-            "100x100, centered",
-            "The whole screen: tight constraints",
-            "Error: MaterialApp is missing"
+            "100x100, centred",
+            "The whole screen: the constraints are tight",
+            "An error: MaterialApp is missing"
           ],
-          "answer": 2,
-          "explanation": "The root receives tight constraints equal to the screen, so the Container's width and height are ignored. You need a `Center` or `Align` to loosen them.",
-          "difficulty": 2,
+          "explanation": "The root gives tight constraints the size of the screen — minimum equal to maximum — so the container has no choice and the 100s are ignored. Wrap it in a `Center` and the constraints are loosened, and then it really is 100 by 100.",
           "whyWrong": [
-            "The root receives tight constraints equal to the screen: the Container's width and height can't be honored.",
-            "Centering it would require a `Center`, which loosens the constraints; without one, the Container is forced to fill the screen.",
+            "For it to be 100x100 the constraints would have to be loose, and at the root they are not.",
+            "Nothing centres it: the root gives no such instruction.",
             null,
-            "MaterialApp isn't required: `runApp` accepts any widget, and a red Container doesn't need Material."
+            "`MaterialApp` is not required: `runApp` takes any widget."
           ]
         },
         {
           "id": "flutter-layout-6",
-          "prompt": "When should you use `LayoutBuilder` instead of `MediaQuery`?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "When should you use `LayoutBuilder` rather than `MediaQuery`?",
           "code": null,
           "options": [
             "Never, MediaQuery is always better",
             "To read the pixel density",
             "To handle the safe area",
-            "To adapt to the parent's constraints"
+            "To adapt to the space this widget has actually been given"
           ],
-          "answer": 3,
-          "explanation": "LayoutBuilder gives the space actually available to that widget, not the screen size: ideal for reusable components that live in different contexts.",
-          "difficulty": 2,
+          "explanation": "`MediaQuery` tells you about the screen; `LayoutBuilder` tells you about the box this widget is in. A widget that decides its layout from the screen size breaks the moment somebody puts it in a side panel or a dialog.",
           "whyWrong": [
-            "MediaQuery gives the screen size, not the space actually available to the widget: they aren't interchangeable.",
-            "Density comes from `MediaQuery.devicePixelRatioOf`; LayoutBuilder provides constraints, not display information.",
-            "For the safe area you use `SafeArea` or `MediaQuery.paddingOf`; LayoutBuilder knows nothing about notches or system bars.",
+            "They answer different questions: neither is always better.",
+            "Pixel density is a property of the device, so that is `MediaQuery`.",
+            "The safe area is also a device fact, and also `MediaQuery`.",
             null
           ]
         },
         {
           "id": "flutter-layout-7",
-          "prompt": "A Row with long text shows \"RenderFlex overflowed\". What's the idiomatic fix?",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "A Row with a long text shows the overflow stripes. What is the idiomatic fix?",
           "code": null,
           "options": [
-            "Wrap the Text in Expanded or Flexible",
-            "Reduce the fontSize",
+            "Wrap the text in Expanded or Flexible",
+            "Make the font smaller",
             "Replace the Row with a Stack",
-            "Set `mainAxisSize: MainAxisSize.min`"
+            "Set mainAxisSize to min"
           ],
-          "answer": 0,
-          "explanation": "Inside a Flexible, the Text receives a finite width and can wrap or use an ellipsis instead of overflowing.",
-          "difficulty": 1,
+          "explanation": "The text is asking for all the width it needs. `Expanded` gives it the space that is actually left, and with `overflow: TextOverflow.ellipsis` it ends in three dots instead of overflowing.",
           "whyWrong": [
             null,
-            "Shrinking the font only hides the problem for that text on that screen: with longer text, the overflow comes back.",
-            "A Stack would layer the children instead of placing them side by side: you'd change the layout instead of constraining the text's width.",
-            "`MainAxisSize.min` makes the Row shrink, but the Text still gets unbounded width and keeps overflowing."
+            "A smaller font hides the problem for one string and brings it back for a longer one.",
+            "A `Stack` overlaps children: it does not solve a width problem in a row.",
+            "That changes how much space the row takes, not how it shares it out."
           ]
         },
         {
           "id": "flutter-layout-8",
+          "difficulty": 3,
+          "answer": 1,
           "prompt": "Why is `ListView(shrinkWrap: true)` with thousands of items a bad idea?",
           "code": null,
           "options": [
-            "shrinkWrap disables scrolling",
-            "It has to lay out every child to measure itself",
-            "It's deprecated in Flutter 3",
+            "shrinkWrap turns off scrolling",
+            "It has to lay out every child in order to measure itself",
+            "It is deprecated",
             "It causes horizontal overflow"
           ],
-          "answer": 1,
-          "explanation": "To know its own height, a shrink-wrapped list has to measure all of its content, losing the benefits of lazy building.",
-          "difficulty": 3,
+          "explanation": "To report its own height, the list has to know the height of everything in it — so it builds every item, immediately. That throws away the whole benefit of a lazy list. For a long list, `Expanded` or a sliver is the right answer.",
           "whyWrong": [
-            "A shrink-wrapped list still scrolls; the problem is that it measures every child and loses lazy building.",
+            "Scrolling still works. The problem is the cost of measuring.",
             null,
-            "`shrinkWrap` isn't deprecated: it's handy for short lists and only expensive with many items.",
-            "`shrinkWrap` is about the extent along the scroll axis and doesn't cause horizontal overflow."
+            "It is not deprecated: it is right for a short list whose length you know.",
+            "It concerns height, not width."
           ]
         },
         {
           "id": "flutter-layout-9",
-          "prompt": "You want a collapsing header + a list + a grid in a single scroll view. What do you use?",
+          "difficulty": 3,
+          "answer": 2,
+          "prompt": "You want a collapsing header, then a list, then a grid, all in one scroll. What do you use?",
           "code": null,
           "options": [
             "A Column with a ListView and a GridView",
             "NestedScrollView, necessarily",
-            "CustomScrollView with SliverAppBar, SliverList, SliverGrid",
+            "A CustomScrollView with SliverAppBar, SliverList and SliverGrid",
             "SingleChildScrollView with shrinkWrap"
           ],
-          "answer": 2,
-          "explanation": "Slivers share a single viewport and stay lazy. Nesting scrollable lists in a Column creates multiple scroll views or forces you into shrinkWrap.",
-          "difficulty": 3,
+          "explanation": "Slivers are made for exactly this: several pieces that scroll as one, each building only what is visible. A `CustomScrollView` holds them, and `SliverAppBar` gives you the collapsing header for free.",
           "whyWrong": [
-            "A ListView and a GridView in a Column get unbounded height: an error, or else separate scroll views and costly shrinkWrap.",
-            "NestedScrollView is for when the header has to coordinate with separate inner scroll views; here a single viewport is enough.",
+            "That nests scrollables inside a column, which gives the unbounded error or forces `shrinkWrap`.",
+            "`NestedScrollView` is for coordinating two separate scroll areas, such as tabs. It is not needed here.",
             null,
-            "Putting everything in a SingleChildScrollView builds every item up front, losing lazy building."
+            "`shrinkWrap` would build everything at once, which is what you are trying to avoid."
           ]
         },
         {
           "id": "flutter-layout-10",
-          "prompt": "In a Stack, how do you position a child 16 px from the bottom and right edges?",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "In a Stack, how do you place a child 16 pixels from the bottom and the right?",
           "code": null,
           "options": [
             "`Positioned(bottom: 16, right: 16, child: ...)`",
@@ -712,14 +714,12 @@
             "Transform.translate",
             "Align with bottomRight and a margin"
           ],
-          "answer": 0,
-          "explanation": "`Positioned` anchors the child to the Stack's edges. It must be a direct child of the Stack.",
-          "difficulty": 1,
+          "explanation": "`Positioned` is the widget made for this and only works inside a `Stack`. You give it the distances from the edges you care about and leave out the ones you do not.",
           "whyWrong": [
             null,
-            "Padding alone doesn't move the child to the bottom right: by default a Stack aligns non-positioned children to the top left.",
-            "`Transform.translate` only shifts the painting and requires you to know the sizes: it doesn't anchor the child to the edges.",
-            "Align has no `margin` property: you'd need an extra Padding, whereas `Positioned` does it directly."
+            "Padding adds space around a child; it does not pin it to the edges of the stack.",
+            "`Transform.translate` moves something visually without changing where the layout thinks it is, which causes trouble with taps.",
+            "`Align` works, but it is less direct and more awkward to get exact distances from."
           ]
         }
       ]
@@ -729,43 +729,45 @@
       "stage": "mid",
       "title": "Asynchronous Dart",
       "icon": "clock.arrow.2.circlepath",
-      "summary": "Futures, async/await, Streams, the event loop with microtasks, and isolates",
+      "summary": "Dart runs on one thread, so nothing may block it. Futures, streams, the two queues that decide the order of everything, and isolates for the heavy work.",
       "lesson": [
         {
-          "heading": "Futures and async/await",
-          "body": "A `Future<T>` represents a value (or an error) that will be available later. An `async` function always returns a Future, and inside it `await` suspends execution until the Future completes, **without blocking** the thread.\n\nImportant: the body of an `async` function runs **synchronously up to the first `await`**. Handle errors with `try/catch` around the `await`; without `await`, the exception ends up in the Future and isn't caught.",
-          "code": "Future<User> loadUser() async {\n  try {\n    final res = await http.get(uri);\n    return User.fromJson(jsonDecode(res.body));\n  } on SocketException {\n    throw const OfflineException();\n  }\n}"
+          "heading": "Future and async/await",
+          "language": null,
+          "body": "A **`Future`** is a promise of a value that is not here yet: the reply to a network call, a file being read. It has three states — waiting, done with a value, done with an error.\n\nYou could handle it with `.then()` and `.catchError()`, and with three steps that becomes unreadable. **`async`/`await`** says the same thing in a straight line: mark the function `async`, write `await` where you need the value, and the code below carries on after it has arrived.\n\nTwo things to be clear about, because both get asked:\n\n**An `async` function always returns a `Future`.** Write `return 42` inside one and the type is `Future<int>`, not `int`. It cannot be otherwise: the caller may have to wait.\n\n**`await` does not block the thread.** The function is suspended and the thread goes off to do other things — draw a frame, handle a tap. That is what keeps the interface alive while something slow happens.\n\nErrors behave as you would hope: inside an `async` function you use `try`/`catch` exactly as in normal code. The catch is that you have to **actually await** the thing. Calling an `async` function without `await` starts it and carries on, so the error pops out somewhere else entirely, long after your `try` has finished.",
+          "code": "Future<User> loadUser() async {\n  try {\n    final res = await http.get(uri);\n    return User.fromJson(jsonDecode(res.body));\n  } on SocketException {\n    throw const OfflineException();\n  }\n}\n\n// Always a Future, even though it looks like an int\nFuture<int> answer() async => 42;\n\n// The trap: without await, the try catches nothing\nFuture<void> fail() async => throw 'x';\n\nvoid main() {\n  try {\n    fail();            // started and left running: the error escapes\n  } catch (e) {\n    print('caught');   // never printed\n  }\n}"
         },
         {
-          "heading": "The event loop and microtasks",
-          "body": "Dart runs an isolate's code on **a single thread** with an event loop and two queues. The **microtask queue** is drained completely before moving on to the next event in the **event queue** (timers, I/O, gestures, frames).\n\n`scheduleMicrotask` and `Future.microtask` go into the microtask queue, as do continuations of already completed Futures. `Future(() {})` and `Future.delayed`, on the other hand, create a Timer, and therefore an event. An infinite chain of microtasks freezes the whole app.",
-          "code": "print('A');\nFuture(() => print('B'));        // event queue\nscheduleMicrotask(() => print('C')); // microtask\nprint('D');\n// Output: A D C B"
+          "heading": "The event loop: two queues",
+          "language": null,
+          "body": "Dart runs your code on **one thread**. There is no parallelism inside an isolate — what there is, is a loop that takes one thing at a time from a queue and runs it to the end.\n\nThe part that explains all the surprising output orders is that there are **two** queues, and one always wins.\n\n**The microtask queue** — small internal jobs, including everything that continues after an `await`.\n**The event queue** — everything else: timers, taps, I/O, anything created with `Future(...)`.\n\nThe rule: **the microtask queue is emptied completely before a single event is taken from the event queue.** Not one microtask — all of them, including any added while it is draining.\n\nFrom that comes the standard interview question. Normal code runs first, right through to the end of the current function. Then all the microtasks. Then one event. That is why `scheduleMicrotask` and `Future.microtask` always come before a plain `Future(...)`, whatever order you wrote them in.\n\nAnd the practical consequence of there being one thread: **a long calculation blocks everything**. No await helps, because nothing is waiting — it is working. That is what isolates are for.",
+          "code": "import 'dart:async';\n\nvoid main() {\n  print('A');\n  Future(() => print('B'));              // event queue\n  scheduleMicrotask(() => print('C'));   // microtask\n  Future.microtask(() => print('D'));    // microtask\n  print('E');\n}\n// A E C D B\n// normal code first, then every microtask, then the events\n\n// What happens at an await\nFuture<void> f() async {\n  print('B');\n  await Future(() {});   // suspends here\n  print('D');            // continues as a microtask, later\n}\n\nvoid main() {\n  print('A');\n  f();          // not awaited: it runs up to the await and comes back\n  print('C');\n}\n// A B C D"
         },
         {
-          "heading": "Streams",
-          "body": "A `Stream<T>` is an asynchronous sequence of events. A **single-subscription** stream accepts only one listener (e.g. reading a file); a **broadcast** stream accepts many but drops events emitted while nobody is listening.\n\nYou consume them with `listen` (remembering to call `cancel()` on the subscription) or with `await for`. You produce them with a `StreamController` or with `async*` generator functions and `yield`.",
-          "code": "Stream<int> ticks(int n) async* {\n  for (var i = 0; i < n; i++) {\n    await Future.delayed(const Duration(seconds: 1));\n    yield i;\n  }\n}\n\nawait for (final t in ticks(3)) {\n  print(t);\n}"
+          "heading": "Streams: many values over time",
+          "language": null,
+          "body": "A `Future` gives one value. A **`Stream`** gives a sequence of them over time: what a user types, the position from a sensor, messages from a socket.\n\nYou make one with `async*` and `yield`, and you read it with `await for` or `.listen()`. The same operators as a list are available — `map`, `where`, `reduce` — plus ones that only make sense over time.\n\nThe distinction that matters, and gets asked:\n\n**Single-subscription** — the default. It can be listened to **once**. Listening twice throws. It is for a sequence of things that belong to one consumer: reading a file, a single HTTP response.\n\n**Broadcast** — many listeners at once, and each only sees what arrives **after** it joined. For events several parts of the app care about.\n\nThe rule for the common bug: if you get a `StateError` about a stream already being listened to, you have a single-subscription stream and two listeners. Either call `.asBroadcastStream()`, or restructure so there is only one.\n\nAnd like everything that subscribes, a subscription has to be **cancelled** — in `dispose`, when the screen goes. Otherwise it carries on, holding the state alive.",
+          "code": "Stream<int> ticks(int n) async* {\n  for (var i = 0; i < n; i++) {\n    await Future.delayed(const Duration(seconds: 1));\n    yield i;                      // one value at a time\n  }\n}\n\nawait for (final t in ticks(3)) {\n  print(t);                       // 0, 1, 2 — one per second\n}\n\n// Operators, as on a list\nfinal total = await ticks(3).reduce((a, b) => a + b);   // 3\n\n// Single-subscription: this throws\nfinal s = ticks(3);\ns.listen(print);\n// s.listen(print);               // StateError\n\n// Many listeners: say so\nfinal b = ticks(3).asBroadcastStream();"
         },
         {
-          "heading": "Isolates and compute",
-          "body": "Async doesn't mean parallel: a heavy computation inside a Future **still blocks** the UI thread and causes jank. For true parallelism you need **isolates**: each one has its own heap and event loop, they **don't share memory**, and they communicate via messages (`SendPort`/`ReceivePort`).\n\n`Isolate.run` (Dart 2.19+) and Flutter's `compute` run a function in a new isolate and return the result. Typical use cases: parsing very large JSON, image processing, cryptography.",
-          "code": "final items = await Isolate.run(() {\n  final data = jsonDecode(hugeJson) as List;\n  return data.map(Item.fromJson).toList();\n});"
+          "heading": "Isolates: real parallelism",
+          "language": null,
+          "body": "`await` solves waiting. It does nothing for **working**: parsing ten megabytes of JSON takes a second of pure calculation, and during that second the thread cannot draw anything. The result is a visible freeze.\n\nAn **isolate** is a separate line of execution with its **own memory**. That is the key difference from a thread: isolates share nothing at all, so there are no locks and no races — the two bugs that make concurrent code hard in other languages simply cannot happen.\n\nThe price is that communication happens by **copying messages**, over ports. You cannot hand an object across; you send a copy. For large amounts of data that copy is itself a cost worth knowing about.\n\nIn practice you rarely create one by hand. **`Isolate.run`** does the whole thing in one line: it starts one, runs your function, hands back the result and shuts it down. (`compute` is the older Flutter equivalent.)\n\nThe rule for when: use an isolate when the work is **calculation** lasting more than a few milliseconds — parsing a lot of JSON, image processing, encryption. Do not use one for network or disk work, which is waiting, not working, and is already handled by `await`.",
+          "code": "// A second of calculation on the main thread: the app freezes\nfinal items = (jsonDecode(hugeJson) as List).map(Item.fromJson).toList();\n\n// The same thing, elsewhere\nfinal items = await Isolate.run(() {\n  final data = jsonDecode(hugeJson) as List;\n  return data.map(Item.fromJson).toList();\n});\n\n// Not for this: waiting is already handled by await\n// await Isolate.run(() => http.get(uri));   // pointless\n\n// Isolates share nothing: they talk by copying messages\nfinal port = ReceivePort();\nawait Isolate.spawn(worker, port.sendPort);"
         },
         {
-          "heading": "Combining Futures",
-          "body": "`Future.wait` runs several Futures **in parallel** (concurrently on the event loop) and completes when all of them have finished, or fails on the first error. `Future.any` completes with the first result.\n\nWatch out for \"forgotten\" Futures: an un-awaited Future that fails produces an unhandled error. If it's intentional, make that explicit with `unawaited()` and handle the errors.",
-          "code": "final (user, posts) = await (\n  api.user(id),\n  api.posts(id),\n).wait; // Dart 3: record of Futures\n\nfinal all = await Future.wait([a(), b(), c()]);"
-        },
-        {
-          "heading": "In the interview",
-          "body": "Typical question: **\"What's the output order?\"** with a mix of `print`, `Future`, `scheduleMicrotask`, and `await`. The method: first all the synchronous code, then the entire microtask queue, then one event at a time (draining the microtasks again after each one).\n\nAnother common one: **\"Does async mean multithreaded?\"** No: it's concurrency on a single thread. CPU-bound work needs an isolate (`Isolate.run` or `compute`), and since isolates don't share memory, you don't need locks.",
-          "code": null
+          "heading": "Waiting for several things",
+          "language": null,
+          "body": "Three network calls one after another, each `await`ed, take the sum of their times. If they do not depend on each other, that is time thrown away.\n\n**`Future.wait`** starts them all and waits for all of them. Three calls of one second each take one second in total. The results come back as a list, in the order you asked for them, however they actually finished.\n\nThe detail worth knowing: if one fails, `Future.wait` throws straight away — but the others are **not** cancelled, they carry on in the background. If you want every outcome, failures included, pass `eagerError: false` and catch each one, or wrap each future so it cannot throw.\n\n**`Future.any`** gives you the first to finish, for when you have two sources and want whichever answers first.\n\nAnd in Dart 3 there is a neater form for a fixed set: put the futures in a record and use `.wait`. You get a record back, with each value keeping its own type, instead of a list of a common supertype you then have to cast.",
+          "code": "// Three seconds\nfinal a = await api.a();\nfinal b = await api.b();\nfinal c = await api.c();\n\n// One second\nfinal results = await Future.wait([api.a(), api.b(), api.c()]);\n\n// Dart 3: the types are kept\nfinal (user, posts) = await (\n  api.user(id),      // Future<User>\n  api.posts(id),     // Future<List<Post>>\n).wait;              // (User, List<Post>)\n\n// The first to answer\nfinal fastest = await Future.any([fromCache(), fromNetwork()]);"
         }
       ],
       "questions": [
         {
           "id": "flutter-dart-async-1",
-          "prompt": "What does this code print?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "What does this print?",
           "code": "import 'dart:async';\n\nvoid main() {\n  print('A');\n  Future(() => print('B'));\n  scheduleMicrotask(() => print('C'));\n  Future.microtask(() => print('D'));\n  print('E');\n}",
           "options": [
             "A B C D E",
@@ -773,19 +775,19 @@
             "A E B C D",
             "A C D E B"
           ],
-          "answer": 1,
-          "explanation": "First the synchronous code (A, E), then the microtasks in order (C, D), and finally the event from the Timer created by `Future(...)` (B).",
-          "difficulty": 2,
+          "explanation": "Normal code runs first, right to the end of `main`: A and E. Then the microtask queue is emptied completely, in the order the microtasks were added: C then D. Only then is an event taken from the event queue: B.",
           "whyWrong": [
-            "Not everything runs in the order it's written: `Future(...)` and the microtasks are deferred, so the synchronous E comes right after A.",
+            "B and C cannot run before E: nothing scheduled interrupts code that is already running.",
             null,
-            "`Future(...)` schedules a Timer on the event queue, which is only served after the microtask queue is drained: B comes last.",
-            "Microtasks don't interrupt synchronous code: `print('E')` runs before the event loop executes C and D."
+            "B is an event and the microtasks always go first, whatever order they were written in.",
+            "E is normal code and runs before anything that was scheduled."
           ]
         },
         {
           "id": "flutter-dart-async-2",
-          "prompt": "What does this code print?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "What does this print?",
           "code": "Future<void> f() async {\n  print('B');\n  await Future(() {});\n  print('D');\n}\n\nvoid main() {\n  print('A');\n  f();\n  print('C');\n}",
           "options": [
             "A C B D",
@@ -793,99 +795,99 @@
             "A B D C",
             "A B C D"
           ],
-          "answer": 3,
-          "explanation": "The body of `f` runs synchronously up to the first `await`, so B prints right after A. Then `main` continues with C, and only after that D.",
-          "difficulty": 2,
+          "explanation": "An `async` function runs normally until the first `await`: so A, then B. At the `await` it suspends and control returns to `main`, which prints C. Only afterwards does the continuation run, printing D.",
           "whyWrong": [
-            "Calling an `async` function doesn't defer its body: it runs synchronously up to the first `await`, so B prints before C.",
-            "`main` prints A before it even calls `f()`, so B can't come first.",
-            "The first `await` suspends `f` and hands control back to `main`, which prints C before D can resume.",
+            "B comes before C: `f()` really does run, as far as the first await.",
+            "A is first: it is printed before `f()` is even called.",
+            "D cannot come before C: at the await, control goes back to `main`.",
             null
           ]
         },
         {
           "id": "flutter-dart-async-3",
-          "prompt": "An `async` function that does `return 42;` has the return type:",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "An `async` function whose body is `return 42;` has what return type?",
           "code": null,
           "options": [
             "`Future<int>`",
             "`int`",
             "`Stream<int>`",
-            "`FutureOr<int>`, necessarily"
+            "`FutureOr<int>`"
           ],
-          "answer": 0,
-          "explanation": "An `async` function always wraps its return value in a Future. To produce a Stream you need `async*`.",
-          "difficulty": 1,
+          "explanation": "Marking a function `async` means it may suspend, so the caller may have to wait. The value is therefore always wrapped in a `Future`, even when nothing is actually awaited inside.",
           "whyWrong": [
             null,
-            "Inside you write `return 42`, but an `async` function always wraps the result in a Future: the caller gets a `Future<int>`.",
-            "You get a Stream with `async*` and `yield`; an `async` function produces a single future value.",
-            "`FutureOr<int>` is an allowed return type, but not a required one: the idiomatic and most common one is `Future<int>`."
+            "A plain `int` would mean the value is available immediately, and `async` is exactly the promise that it might not be.",
+            "A `Stream` is for several values over time. A function returns one.",
+            "`FutureOr` is a type you can write in a signature, but an `async` function always produces a `Future`."
           ]
         },
         {
           "id": "flutter-dart-async-4",
-          "prompt": "What happens if you call `listen` twice on a single-subscription Stream?",
+          "difficulty": 2,
+          "answer": 2,
+          "prompt": "What happens if you call `listen` twice on a single-subscription stream?",
           "code": null,
           "options": [
             "The second listener only gets new events",
-            "Both receive every event",
-            "A StateError is thrown",
-            "The first listener is canceled"
+            "Both get everything",
+            "It throws a StateError",
+            "The first listener is cancelled"
           ],
-          "answer": 2,
-          "explanation": "A single-subscription stream accepts only one listener: the second `listen` throws `StateError: Stream has already been listened to`. You need `asBroadcastStream()` or a broadcast controller.",
-          "difficulty": 2,
+          "explanation": "A single-subscription stream is designed for exactly one consumer — reading a file, one HTTP response — so a second listener is an error, not a silent surprise. If you need several, call `.asBroadcastStream()`.",
           "whyWrong": [
-            "That's how a broadcast stream behaves; a single-subscription stream rejects the second listener outright.",
-            "No kind of Stream replays every event to a second listener; here the second `listen` fails immediately.",
+            "That is what a broadcast stream does. This one refuses outright.",
+            "It is not built to send the same values to two places.",
             null,
-            "The first listener stays active: it's the second `listen` that throws `StateError`."
+            "Nothing is cancelled: the second call simply fails."
           ]
         },
         {
           "id": "flutter-dart-async-5",
-          "prompt": "Why parse a 10 MB JSON with `Isolate.run` or `compute`?",
+          "difficulty": 1,
+          "answer": 1,
+          "prompt": "Why parse a 10 MB JSON with `Isolate.run`?",
           "code": null,
           "options": [
-            "Because `jsonDecode` is asynchronous",
-            "To avoid blocking the UI thread and causing jank",
+            "Because jsonDecode is asynchronous",
+            "To avoid blocking the thread that draws the interface",
             "Because isolates share memory",
-            "So you can `await` the result"
+            "So that the result can be awaited"
           ],
-          "answer": 1,
-          "explanation": "`jsonDecode` is synchronous and CPU-bound: on the main isolate it blocks frames. A separate isolate runs it in parallel.",
-          "difficulty": 1,
+          "explanation": "Parsing is pure calculation, and Dart runs on one thread. A second of calculation is a second with no frames drawn, which the user sees as a freeze. An isolate does the work elsewhere and sends the result back.",
           "whyWrong": [
-            "`jsonDecode` is synchronous and CPU-bound: that's exactly why it blocks the main isolate if you call it there.",
+            "`jsonDecode` is synchronous, which is precisely the problem: it runs to the end without yielding.",
             null,
-            "Isolates don't share memory: each has its own heap, and the result is passed back as a message.",
-            "You can `await` any Future; the point isn't the await, it's moving the heavy work off the UI thread."
+            "Isolates share nothing at all. That is what makes them safe and why they communicate by copying.",
+            "You can await a `Future` without an isolate. Awaiting is not the point."
           ]
         },
         {
           "id": "flutter-dart-async-6",
+          "difficulty": 2,
+          "answer": 3,
           "prompt": "How do two isolates communicate?",
           "code": null,
           "options": [
             "Through shared static variables",
-            "With locks and mutexes",
-            "By accessing the same heap",
-            "With messages over SendPort/ReceivePort"
+            "With locks",
+            "By using the same heap",
+            "By sending messages over ports"
           ],
-          "answer": 3,
-          "explanation": "Isolates don't share memory: each has its own heap, and they exchange messages through ports. A static variable has a separate copy in each isolate.",
-          "difficulty": 2,
+          "explanation": "Each isolate has its own memory, so nothing is shared and messages are copies sent over `SendPort` and `ReceivePort`. That is why races and deadlocks cannot happen — and why sending a very large object has a cost of its own.",
           "whyWrong": [
-            "Each isolate has its own copy of static variables: changing it in one has no effect on the other.",
-            "Locks and mutexes are for shared memory, which isolates don't have: they communicate only through messages.",
-            "Each isolate has a separate heap; that isolation is precisely what prevents data races.",
+            "A static variable in one isolate is invisible to the other: each has its own copy.",
+            "There is nothing to lock, because nothing is shared.",
+            "The heaps are separate: that is the whole design.",
             null
           ]
         },
         {
           "id": "flutter-dart-async-7",
-          "prompt": "What does this code print?",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "What does this print?",
           "code": "Stream<int> count() async* {\n  for (var i = 1; i <= 3; i++) {\n    yield i;\n  }\n}\n\nvoid main() async {\n  final sum = await count().reduce((a, b) => a + b);\n  print(sum);\n}",
           "options": [
             "6",
@@ -893,74 +895,72 @@
             "[1, 2, 3]",
             "Instance of Stream<int>"
           ],
-          "answer": 0,
-          "explanation": "The `async*` generator emits 1, 2, 3 and `reduce` adds them up, returning a Future whose value is 6.",
-          "difficulty": 1,
+          "explanation": "`reduce` combines the values as they arrive, two at a time: 1+2 is 3, then 3+3 is 6. It gives back a single `Future` with the final result, which is why it is awaited.",
           "whyWrong": [
             null,
-            "3 is just the last emitted value; `reduce` combines all the elements with `a + b`, so 1 + 2 + 3 = 6.",
-            "`reduce` doesn't collect the events into a list (that's what `toList` does); it combines them into a single value.",
-            "Thanks to the `await`, `sum` is the value of the Future returned by `reduce`, not the Stream itself."
+            "3 is the number of values, not their total.",
+            "A list is what `toList()` would give. `reduce` collapses them into one value.",
+            "That is what you would print without the `await`."
           ]
         },
         {
           "id": "flutter-dart-async-8",
-          "prompt": "What happens when you run this code?",
+          "difficulty": 3,
+          "answer": 2,
+          "prompt": "What happens here?",
           "code": "Future<void> fail() async => throw 'x';\n\nvoid main() {\n  try {\n    fail();\n  } catch (e) {\n    print('caught');\n  }\n}",
           "options": [
             "It prints 'caught'",
             "Nothing, and no error",
-            "Unhandled error: `await` is missing",
-            "Compile error"
+            "An unhandled error: the await is missing",
+            "A compile error"
           ],
-          "answer": 2,
-          "explanation": "An `async` function doesn't throw synchronously: the exception completes the Future with an error. Without `await`, the `try/catch` never sees it and the error goes unhandled.",
-          "difficulty": 3,
+          "explanation": "Without `await`, `fail()` is started and `main` carries on. The error appears later, inside the future, with nothing attached to catch it — so it surfaces as an unhandled error. The `try` finished long before. The fix is `await fail();`.",
           "whyWrong": [
-            "An `async` function doesn't throw synchronously: the error completes the Future, and without `await` the `try/catch` has already been left behind.",
-            "The error doesn't vanish: a failed Future with no handler becomes an unhandled error reported by the Zone.",
+            "The `try` has already finished by the time the error happens.",
+            "There is definitely an error: it is just reported where you were not looking.",
             null,
-            "Ignoring a Future is valid code: at most a lint like `unawaited_futures` flags it, but it compiles."
+            "It compiles: the linter warns about the unawaited future, but it is valid Dart."
           ]
         },
         {
           "id": "flutter-dart-async-9",
-          "prompt": "You have three independent network calls. How do you run them in parallel and wait for all of them?",
+          "difficulty": 1,
+          "answer": 1,
+          "prompt": "Three independent network calls. How do you run them together and wait for all?",
           "code": null,
           "options": [
-            "Three `await`s in sequence",
+            "Three awaits in a row",
             "`await Future.wait([a(), b(), c()])`",
             "`await Future.any([a(), b(), c()])`",
-            "One `compute` for each"
+            "One isolate each"
           ],
-          "answer": 1,
-          "explanation": "`Future.wait` starts all the calls and completes when they've all finished. Three `await`s in a row serialize them; `Future.any` returns only the first.",
-          "difficulty": 1,
+          "explanation": "`Future.wait` starts all three at once and finishes when the last one does, so three one-second calls take one second instead of three. The results come back in the order you asked for them.",
           "whyWrong": [
-            "Three `await`s in a row serialize the calls: the second only starts once the first has finished.",
+            "Three awaits in a row run them one after another: the times add up.",
             null,
-            "`Future.any` completes with the first Future to finish and ignores the others' results, so you don't wait for all of them.",
-            "Network calls are asynchronous I/O, not CPU work: `compute` would move them into an isolate for no benefit at all."
+            "`Future.any` gives you the first to answer and ignores the rest. That is a different question.",
+            "Isolates are for calculation. Network calls are waiting, and `await` already handles that."
           ]
         },
         {
           "id": "flutter-dart-async-10",
-          "prompt": "When is the microtask queue drained?",
+          "difficulty": 3,
+          "answer": 0,
+          "prompt": "When is the microtask queue emptied?",
           "code": null,
           "options": [
-            "Completely, before processing each event",
-            "On every frame, every 16 ms",
-            "After Timers, but not after I/O",
+            "Completely, before each event is taken from the event queue",
+            "Once a frame, every 16 ms",
+            "After timers but not after I/O",
             "Only when the event queue is empty"
           ],
-          "answer": 0,
-          "explanation": "The event loop runs all pending microtasks before taking the next event from the event queue. That's why an infinite chain of microtasks freezes the app.",
-          "difficulty": 3,
+          "explanation": "The loop empties the microtask queue entirely — including microtasks added while it is draining — and only then takes one event. That is why a continuation after an `await` always runs before a plain `Future(...)`, and also why an endless microtask loop freezes the app completely.",
           "whyWrong": [
             null,
-            "It isn't tied to frames: the event loop drains the microtask queue before every event, regardless of the 16 ms.",
-            "The event loop doesn't distinguish between event types: before a Timer, I/O, or any other event, it always drains the microtasks.",
-            "It's the other way around: microtasks take priority and run before the next event is taken, even when the event queue is full."
+            "It has nothing to do with frames: it happens between events, as often as needed.",
+            "It applies between every event, of whatever kind.",
+            "It is the other way round: the microtasks are emptied first, then one event is taken."
           ]
         }
       ]
