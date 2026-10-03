@@ -1450,240 +1450,240 @@
     {
       "id": "threading-ui",
       "stage": "mid",
-      "title": "Threading e UI",
+      "title": "Il thread principale e il lavoro in sottofondo",
       "icon": "cpu",
-      "summary": "Main thread, GCD, OperationQueue, DispatchGroup e race condition.",
+      "summary": "Perché l'interfaccia si tocca da un thread solo, come mandare altrove il lavoro lento, e gli errori che bloccano l'app o rovinano i dati.",
       "lesson": [
         {
-          "heading": "La regola del main thread",
-          "body": "UIKit non è thread-safe: quasi tutte le API di `UIView` e `UIViewController` vanno usate **solo dal main thread**, che esegue anche il run loop di rendering ed eventi. Da Swift Concurrency queste classi sono annotate `@MainActor`, e il **Main Thread Checker** di Xcode segnala le violazioni a runtime.\n\nIl lavoro pesante (rete, parsing, decode di immagini) va fatto in background, poi si torna sul main per aggiornare la UI.",
-          "code": "URLSession.shared.dataTask(with: url) { data, _, _ in\n    let image = data.flatMap(UIImage.init(data:))\n    DispatchQueue.main.async {\n        self.imageView.image = image\n    }\n}.resume()"
+          "heading": "Un thread solo per l'interfaccia",
+          "language": null,
+          "body": "Un **thread** è una fila di lavoro che il processore segue. Un'app ne ha diversi, ma uno è speciale: il **thread principale**. È quello che disegna l'interfaccia, riceve i tocchi e tiene vivo lo schermo.\n\nLa regola è una, ed è assoluta: **tutto quello che riguarda UIKit avviene sul thread principale.** Impostare il testo di un'etichetta, aggiungere una view, spingere una schermata.\n\nIl motivo non è arbitrario. UIKit non è fatto per essere toccato da due thread insieme; non ha lucchetti, apposta, perché mettere lucchetti dappertutto lo renderebbe più lento per tutti. E il disegno avviene sul run loop del thread principale, quindi una modifica fatta altrove può essere vista a metà.\n\nI sintomi quando la rompi sono brutti proprio perché non sono costanti: un'etichetta che non si aggiorna, una view che compare nel posto sbagliato, un crash una volta a settimana con uno stack che non ha senso. Xcode te lo può segnalare: il Main Thread Checker è acceso di base e stampa un avviso nel momento in cui succede.\n\nL'altra metà della regola: **il lavoro lento non deve stare sul thread principale.** Mentre è occupato non si disegna niente e non risponde niente. Un terzo di secondo si nota; due secondi e l'utente pensa che l'app sia morta.\n\nQuindi: lavoro lento altrove, risultato di ritorno sul thread principale. Ogni callback di rete è scritto così.",
+          "code": "// Lo scaricamento avviene altrove; la callback NON è sul thread principale\nURLSession.shared.dataTask(with: url) { data, _, _ in\n    let image = data.flatMap(UIImage.init(data:))\n\n    // Di ritorno sul thread principale per toccare l'interfaccia\n    DispatchQueue.main.async {\n        self.imageView.image = image\n    }\n}.resume()\n\n// Giusto anche così, nel codice moderno\nTask {\n    let image = await loadImage()\n    await MainActor.run { imageView.image = image }\n}"
         },
         {
-          "heading": "Grand Central Dispatch",
-          "body": "GCD offre code **seriali** (un task alla volta, FIFO) e **concorrenti**: `DispatchQueue.main` è seriale, le code `global(qos:)` sono concorrenti. `async` accoda e ritorna subito, `sync` blocca il chiamante finché il task termina.\n\nChiamare `DispatchQueue.main.sync` dal main thread causa un **deadlock** (libdispatch lo rileva e crasha). Per il pattern reader/writer si usa una coda concorrente custom con `.barrier` sulle scritture: sulle code globali la barrier non ha effetto.",
-          "code": "let queue = DispatchQueue(label: \"cache\", attributes: .concurrent)\nfunc read(_ k: String) -> Data? { queue.sync { storage[k] } }\nfunc write(_ k: String, _ v: Data) {\n    queue.async(flags: .barrier) { self.storage[k] = v }\n}"
+          "heading": "Le code: async, sync, seriale, concorrente",
+          "language": null,
+          "body": "I thread non li crei a mano. Metti il lavoro in una **coda**, e il sistema decide su quale thread farlo girare. Lo strumento è **GCD**, e quattro parole coprono quasi tutto.\n\n**`async`** — consegni il lavoro e prosegui subito. È quello che vuoi quasi sempre.\n**`sync`** — lo consegni e **aspetti** lì finché non è finito. Pericoloso.\n**Seriale** — un lavoro alla volta, in ordine. Sicuro: due lavori non possono mai toccare gli stessi dati insieme.\n**Concorrente** — più lavori insieme. Veloce, e insicuro se condividono qualcosa.\n\nL'errore che blocca l'app del tutto: **`DispatchQueue.main.sync` chiamato dal thread principale**. Stai dicendo \"aspetta qui finché la coda principale non ha eseguito questa cosa\" — ma la coda principale è quella su cui sei in piedi, e non può eseguire niente finché non la lasci. Si aspettano per sempre. Non è un rallentamento, è un'app morta.\n\nL'altra cosa da sapere è il **QoS**, la priorità: `.userInteractive` per qualcosa che l'utente sta guardando succedere, `.userInitiated` per qualcosa che ha appena chiesto, `.utility` per una barra di avanzamento, `.background` per un backup. Sceglierne una bassa non è solo educazione: risparmia batteria e lascia che il sistema faccia prima le cose urgenti.",
+          "code": "// Lo schema normale: altrove, poi di ritorno\nDispatchQueue.global(qos: .userInitiated).async {\n    let result = expensiveWork()\n    DispatchQueue.main.async { self.show(result) }\n}\n\n// Mai dal thread principale: l'app si blocca per sempre\n// DispatchQueue.main.sync { label.text = \"Fatto\" }\n\n// Una coda seriale: uno alla volta, quindi il dizionario è al sicuro\nlet serial = DispatchQueue(label: \"cache\")\nserial.async { storage[key] = value }\n\n// Concorrente con barriera: tanti lettori, uno scrittore per volta\nlet queue = DispatchQueue(label: \"cache\", attributes: .concurrent)\nfunc read(_ k: String) -> Data? { queue.sync { storage[k] } }\nfunc write(_ k: String, _ v: Data) {\n    queue.async(flags: .barrier) { storage[k] = v }   // da solo mentre gira\n}"
         },
         {
-          "heading": "OperationQueue",
-          "body": "`OperationQueue` è un livello sopra GCD: le `Operation` supportano **dipendenze** (`addDependency`), **cancellazione** (`cancel()` e controllo di `isCancelled`), priorità e `maxConcurrentOperationCount` per limitare il parallelismo.\n\nÈ utile per pipeline di download o elaborazioni che devi poter annullare, per esempio quando una cella esce dallo schermo.",
-          "code": null
+          "heading": "Aspettare più cose insieme",
+          "language": null,
+          "body": "Spesso devi far partire tre scaricamenti e fare qualcosa quando tutti e tre sono finiti. **`DispatchGroup`** conta per te: `enter()` prima di ogni lavoro, `leave()` quando finisce, e `notify` parte quando il conto torna a zero.\n\nLa regola non perdona ed è il bug classico: **a ogni `enter` deve corrispondere esattamente un `leave`, su ogni via d'uscita, compresa quella del fallimento.** Se salti un `leave` il conto non arriva mai a zero, quindi `notify` non viene chiamato e la schermata aspetta per sempre. Se chiami `leave` due volte, l'app si ferma di colpo.\n\nLa difesa è `defer`, che parte comunque tu esca. Metti `defer { group.leave() }` come prima riga della closure e dimenticarlo non si può.\n\nL'altra trappola nello stesso codice: i risultati di solito vengono aggiunti a un array condiviso da più code insieme. Quella è una **corsa**, e rovina l'array. Fai le aggiunte su una coda seriale, o su quella principale.\n\n**`OperationQueue`** sta un piano sopra. Costa un pelo di più e ti dà tre cose che GCD non ha: dipendenze fra i lavori, annullamento, e un limite su quanti ne girano insieme.",
+          "code": "let group = DispatchGroup()\nlet lock = DispatchQueue(label: \"results\")   // le aggiunte passano da qui\nvar results: [Item] = []\n\nfor url in urls {\n    group.enter()\n    api.fetch(url) { result in\n        defer { group.leave() }              // parte su ogni via d'uscita\n        guard case .success(let item) = result else { return }\n        lock.async { results.append(item) }  // uno alla volta: niente corsa\n    }\n}\n\ngroup.notify(queue: .main) { self.reload() }\n\n// OperationQueue: dipendenze, annullamento, un limite\nlet queue = OperationQueue()\nqueue.maxConcurrentOperationCount = 3\nresize.addDependency(download)               // resize aspetta download\nqueue.addOperations([download, resize], waitUntilFinished: false)"
         },
         {
-          "heading": "DispatchGroup",
-          "body": "`DispatchGroup` coordina più task asincroni: `enter()` prima di ciascuno, `leave()` al termine (**su ogni percorso**, anche di errore) e `notify(queue:)` quando tutti hanno finito. `wait()` blocca il thread corrente: mai sul main.\n\nCon Swift Concurrency lo stesso risultato si ottiene con `async let` o `withTaskGroup`.",
-          "code": "let group = DispatchGroup()\nfor url in urls {\n    group.enter()\n    api.fetch(url) { result in\n        defer { group.leave() }\n        results.append(result)   // attenzione: serializzare!\n    }\n}\ngroup.notify(queue: .main) { self.reload() }"
+          "heading": "Le corse: quando due thread toccano la stessa cosa",
+          "language": null,
+          "body": "Una **race condition** è due pezzi di codice che toccano gli stessi dati nello stesso momento, con almeno uno dei due che scrive.\n\nLa cosa da capire è perché perfino `count += 1` non sia sicuro. Quella riga in realtà sono tre passi: leggi il valore, aggiungi uno, riscrivilo. Due thread possono leggere tutti e due 5, calcolare tutti e due 6, e scrivere tutti e due 6. Due incrementi, un risultato. Non si rompe niente: il numero è solo silenziosamente sbagliato.\n\nÈ questo a rendere le corse il peggior tipo di bug: nessun errore, nessun crash, solo un valore che ogni tanto non è quello che dovrebbe essere, su un dispositivo, una volta su mille.\n\nLe difese, dalla più vecchia alla più nuova:\n\n**Una coda seriale.** Tutto quello che tocca i dati passa da una coda sola. Semplice ed efficace.\n**Una coda concorrente con barriera.** Tanti lettori insieme, uno scrittore da solo. Va bene per una cache letta molto più di quanto venga scritta.\n**Un actor.** La risposta moderna: un tipo che garantisce uno alla volta, e a farlo rispettare è il compilatore invece che la tua memoria.\n\nPer trovarle, Xcode ha il **Thread Sanitizer**: lo accendi nello schema e ti segnala le corse mentre succedono, con tutti e due gli stack. È lento, ed è per questo che si accende apposta.",
+          "code": "// Insicuro: += è leggi, somma, scrivi — e due thread si possono incrociare\nvar count = 0\nDispatchQueue.concurrentPerform(iterations: 1000) { _ in\n    count += 1\n}\nprint(count)   // spesso meno di 1000, e un numero diverso ogni volta\n\n// Sicuro, alla vecchia maniera\nlet lock = DispatchQueue(label: \"counter\")\nlock.async { count += 1 }\n\n// Sicuro, alla maniera moderna: il compilatore non ti lascia sbagliare\nactor Counter {\n    private var value = 0\n    func increment() { value += 1 }\n    func current() -> Int { value }\n}"
         },
         {
-          "heading": "Race condition e Swift Concurrency",
-          "body": "Una **data race** si verifica quando più thread accedono alla stessa memoria e almeno uno scrive, senza sincronizzazione: il risultato non è deterministico. Si previene con una coda seriale, un lock (`NSLock`, `OSAllocatedUnfairLock`) o un **actor**, e si individua con il **Thread Sanitizer**.\n\nIn Swift Concurrency un `Task {}` creato da un contesto `@MainActor` (come un VC) eredita l'isolamento: il codice sincrono al suo interno gira sul main thread.",
-          "code": "actor ImageCache {\n    private var images: [URL: UIImage] = [:]\n    func image(for url: URL) -> UIImage? { images[url] }\n    func insert(_ image: UIImage, for url: URL) { images[url] = image }\n}"
-        },
-        {
-          "heading": "In colloquio",
-          "body": "Domanda tipica: **\"Perché la UI va aggiornata sul main thread?\"** Risposta concisa: UIKit non è thread-safe e il main run loop gestisce eventi e rendering; aggiornare da altri thread porta a glitch o crash non deterministici. Poi mostra come torni sul main (`DispatchQueue.main.async` o `@MainActor`) e come proteggi lo stato condiviso con code seriali o actor.",
-          "code": null
+          "heading": "Dove gira davvero il codice async moderno",
+          "language": null,
+          "body": "Con `async/await` la domanda cambia forma, e la risposta sorprende.\n\n**`Task { }` eredita il contesto in cui è stato creato.** Fatto partire da una classe `@MainActor` — e un `UIViewController` lo è — tutto il corpo gira sul thread principale. Quindi una funzione sincrona lenta chiamata lì dentro blocca l'interfaccia esattamente come prima. Il `Task` non ha spostato niente da nessuna parte.\n\nPer uscire davvero dal thread principale ti serve qualcosa che non sia legato a lui: un metodo di un `actor`, una funzione segnata `nonisolated`, o `Task.detached` come ultima spiaggia.\n\n**`await` non blocca.** In quel punto la funzione viene messa da parte e il thread viene liberato. È per questo che un `await` sul thread principale va bene — l'interfaccia continua a girare — mentre `DispatchQueue.main.sync` è fatale.\n\n**`@MainActor` sostituisce il salto a mano.** Segnare il view model vuol dire che il compilatore controlla per te, in costruzione, che l'interfaccia sia toccata solo dal posto giusto — invece di scoprirlo ad app avviata, una volta a settimana.",
+          "code": "@MainActor\nfinal class ProfileViewController: UIViewController {\n\n    func sbagliato() {\n        Task {\n            let items = heavyParse(data)   // SEMPRE sul thread principale\n            show(items)                    // l'interfaccia era congelata intanto\n        }\n    }\n\n    func giusto() {\n        Task {\n            let items = await parser.parse(data)   // parser è un actor: altrove\n            show(items)                            // di ritorno qui, garantito\n        }\n    }\n}\n\nactor Parser {\n    func parse(_ data: Data) -> [Item] { heavyParse(data) }\n}"
         }
       ],
       "questions": [
         {
           "id": "uikit-threading-ui-1",
-          "prompt": "Su quale thread viene eseguita la completion di `URLSession.shared.dataTask`?",
+          "difficulty": 1,
+          "answer": 1,
+          "prompt": "Su quale thread gira la callback di `URLSession.shared.dataTask`?",
           "code": null,
           "options": [
-            "Sempre sul main thread",
-            "Su una coda in background: per la UI bisogna tornare sul main",
+            "Sempre sul thread principale",
+            "Su una coda in sottofondo: per toccare l'interfaccia devi tornare indietro",
             "Sul thread che ha chiamato `resume()`",
-            "Sul thread della `DispatchQueue.global()` con QoS `.userInteractive`"
+            "Su una coda globale con priorità `.userInteractive`"
           ],
-          "answer": 1,
-          "explanation": "La sessione condivisa usa una delegate queue seriale in background, quindi gli aggiornamenti di UI vanno riportati sul main.",
-          "difficulty": 1,
+          "explanation": "La callback arriva su una delle code in sottofondo della sessione. Toccare l'interfaccia da lì rompe la regola del thread principale, ed è per questo che ogni callback di rete finisce con un `DispatchQueue.main.async` o un `await MainActor.run`.",
           "whyWrong": [
-            "`URLSession.shared` non torna in automatico sul main: la completion gira sulla sua delegate queue in background.",
+            "Se lo fosse, non servirebbe il `main.async` che vedi in ogni esempio.",
             null,
-            "`resume()` avvia il task e ritorna subito: la completion non viene eseguita sul thread chiamante, ma sulla coda della sessione.",
-            "La sessione usa la propria delegate queue (una `OperationQueue` seriale), non una specifica coda global con QoS `.userInteractive`."
+            "Quale thread ha chiamato `resume` non cambia niente: la callback arriva dalle code della sessione.",
+            "La priorità non è fissa, e comunque non è mai il thread principale."
           ]
         },
         {
           "id": "uikit-threading-ui-2",
-          "prompt": "Cosa succede eseguendo questo codice dal main thread?",
+          "difficulty": 2,
+          "answer": 0,
+          "prompt": "Che succede se questo gira sul thread principale?",
           "code": "DispatchQueue.main.sync {\n    label.text = \"Fatto\"\n}",
           "options": [
-            "Deadlock: libdispatch lo rileva e l'app crasha",
-            "Il testo viene aggiornato subito",
-            "Il blocco viene eseguito al prossimo ciclo del run loop",
-            "Viene convertito automaticamente in `async`"
+            "Si blocca per sempre: il sistema se ne accorge e l'app muore",
+            "Il testo si aggiorna subito",
+            "Il blocco parte al giro successivo del run loop",
+            "Viene trasformato in `async` da solo"
           ],
-          "answer": 0,
-          "explanation": "`sync` attende la fine del blocco, che però non può partire perché il main è occupato ad aspettare.",
-          "difficulty": 2,
+          "explanation": "`sync` vuol dire \"aspetta qui finché la coda principale non ha eseguito questa cosa\". Ma la coda principale è quella su cui sei in piedi, e non può cominciare niente finché non la lasci. Si aspettano a vicenda, per sempre. Il sistema lo rileva e ferma l'app.",
           "whyWrong": [
             null,
-            "`sync` sul main dal main non può partire: il main è bloccato ad aspettare sé stesso, quindi il testo non viene mai aggiornato.",
-            "Questo sarebbe il comportamento di `async`: con `sync` il main resta bloccato e il run loop non avanza più.",
-            "GCD non converte `sync` in `async`: rileva il deadlock e fa crashare l'app."
+            "Per partire subito la coda dovrebbe essere libera. Non lo è: la stai occupando tu.",
+            "Rimandare al giro dopo è quello che fa `async`, e quella versione qui è tranquillissima.",
+            "Non lo converte niente. `sync` vuol dire `sync`, che è esattamente il problema."
           ]
         },
         {
           "id": "uikit-threading-ui-3",
-          "prompt": "Cosa stampa questo codice eseguito sul main thread?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "Che cosa stampa, girando sul thread principale?",
           "code": "print(\"1\")\nDispatchQueue.main.async { print(\"2\") }\nprint(\"3\")",
           "options": [
             "1, 2, 3",
             "1, 3, 2",
             "2, 1, 3",
-            "L'ordine non è deterministico"
+            "L'ordine è imprevedibile"
           ],
-          "answer": 1,
-          "explanation": "Il blocco viene accodato sul main e parte solo quando il codice corrente ha finito.",
-          "difficulty": 2,
+          "explanation": "`async` mette il blocco in coda e prosegue dritto. La coda principale è occupata a eseguire proprio questa funzione, quindi il blocco aspetta il suo turno: parte solo quando il lavoro corrente è finito. Quindi 1, 3, e poi 2.",
           "whyWrong": [
-            "`async` non esegue il blocco subito: lo accoda sul main, che è occupato fino alla fine del codice corrente.",
+            "Sarebbe quello che darebbe `sync`, solo che `sync` qui bloccherebbe l'app invece.",
             null,
-            "Il blocco non può scavalcare `print(\"1\")`, che è già stato eseguito prima ancora dell'accodamento.",
-            "Tutto avviene sulla stessa coda seriale, il main: l'ordine è deterministico, il blocco accodato parte per ultimo."
+            "Prima della riga 1 non parte niente: `async` non salta la fila.",
+            "Di imprevedibile non c'è niente: la coda principale è seriale, quindi l'ordine è sempre lo stesso."
           ]
         },
         {
           "id": "uikit-threading-ui-4",
-          "prompt": "In questo codice `notify` a volte non viene mai chiamato. Perché?",
+          "difficulty": 2,
+          "answer": 0,
+          "prompt": "Qui `notify` a volte non viene mai chiamato. Perché?",
           "code": "group.enter()\napi.fetch { result in\n    guard case .success(let v) = result else { return }\n    values.append(v)\n    group.leave()\n}",
           "options": [
-            "Nel ramo di errore manca `group.leave()`",
-            "`enter` va chiamato dentro la closure",
-            "`notify` va chiamato prima di `enter`",
-            "`DispatchGroup` non funziona con le closure"
+            "La strada del fallimento non chiama mai `group.leave()`",
+            "`enter` dev'essere dentro la closure",
+            "`notify` deve venire prima di `enter`",
+            "I gruppi non funzionano con le closure"
           ],
-          "answer": 0,
-          "explanation": "Ogni `enter` deve avere il suo `leave` su tutti i percorsi: usa `defer { group.leave() }`.",
-          "difficulty": 2,
+          "explanation": "Il `guard` esce senza chiamare `leave`, quindi in caso di fallimento il conto non torna mai giù e `notify` aspetta per sempre. Si risolve con `defer { group.leave() }` come prima riga, che parte su ogni via d'uscita.",
           "whyWrong": [
             null,
-            "`enter` va chiamato **prima** di avviare il lavoro asincrono: dentro la closure il group potrebbe risultare già vuoto.",
-            "`notify` può essere registrato in qualunque momento; il problema è il `leave` mancante nel ramo di errore.",
-            "`DispatchGroup` funziona benissimo con le closure; qui si blocca solo perché l'`enter` non viene sempre bilanciato."
+            "`enter` va prima che il lavoro parta, che è esattamente dove sta.",
+            "`notify` si registra quando ti pare: scatta quando il conto arriva a zero.",
+            "Con le closure funzionano benissimo. Il problema è il `leave` che manca."
           ]
         },
         {
           "id": "uikit-threading-ui-5",
-          "prompt": "Cosa succede usando `.barrier` su `DispatchQueue.global()`?",
+          "difficulty": 3,
+          "answer": 0,
+          "prompt": "Che cosa fa `.barrier` su `DispatchQueue.global()`?",
           "code": null,
           "options": [
-            "Nessun effetto barrier: si comporta come un normale `async`",
+            "Niente: si comporta come un `async` normale",
             "Blocca tutte le code globali",
-            "Serializza solo i task con la stessa QoS",
-            "Crash a runtime"
+            "Mette in fila solo i lavori con la stessa priorità",
+            "L'app si ferma"
           ],
-          "answer": 0,
-          "explanation": "Le barrier funzionano solo su code concorrenti create da te; le code globali sono condivise con il sistema.",
-          "difficulty": 3,
+          "explanation": "Una barriera funziona solo su una coda concorrente creata da te, perché deve poter trattenere tutto il resto. Le code globali sono condivise da tutto il sistema, quindi il flag viene ignorato — in silenzio, ed è per questo che il bug è difficile da vedere.",
           "whyWrong": [
             null,
-            "Una barrier su una coda globale non blocca nulla: le code globali sono condivise con il sistema e la ignorano.",
-            "La QoS non c'entra con le barrier: su una coda globale il flag `.barrier` viene semplicemente ignorato.",
-            "Nessun crash: il flag viene ignorato e il blocco gira come un normale `async` concorrente."
+            "Bloccare le code condivise sarebbe impensabile: le usano altre parti dell'app e il sistema.",
+            "La priorità non c'entra. Il flag viene semplicemente ignorato.",
+            "Non si ferma niente. È inefficace in silenzio, che è peggio di un errore."
           ]
         },
         {
           "id": "uikit-threading-ui-6",
-          "prompt": "Perché gli aggiornamenti di UIKit devono avvenire sul main thread?",
+          "difficulty": 1,
+          "answer": 1,
+          "prompt": "Perché UIKit si deve usare solo dal thread principale?",
           "code": null,
           "options": [
-            "Il main thread ha più memoria a disposizione",
-            "UIKit non è thread-safe e il main run loop gestisce il rendering",
-            "Gli altri thread non possono allocare view",
-            "Lo richiede solo il simulatore"
+            "Il thread principale ha più memoria",
+            "UIKit non è fatto per due thread insieme, e il disegno avviene sul suo run loop",
+            "Gli altri thread non possono creare view",
+            "Lo pretende solo il simulatore"
           ],
-          "answer": 1,
-          "explanation": "Accessi concorrenti allo stato di UIKit producono glitch e crash non deterministici.",
-          "difficulty": 1,
+          "explanation": "UIKit non ha lucchetti al suo interno, apposta: metterli dappertutto lo renderebbe più lento per tutti. E il disegno avviene sul run loop principale, quindi una modifica fatta altrove può essere raccolta a metà. Il risultato è imprevedibile, che è il peggior tipo di bug.",
           "whyWrong": [
-            "Tutti i thread condividono la stessa memoria del processo: il motivo è la mancanza di thread-safety di UIKit.",
+            "La memoria è condivisa da tutti i thread: non c'entra niente.",
             null,
-            "Tecnicamente si può allocare una view su un altro thread; il problema è che accedere allo stato di UIKit in concorrenza non è sicuro.",
-            "Vale anche sul dispositivo: UIKit non è thread-safe ovunque, e il Main Thread Checker lo segnala in entrambi."
+            "Crearle possono: è proprio il problema, niente te lo impedisce, e poi si comporta male.",
+            "Vale allo stesso modo su un dispositivo. Il simulatore ha solo più controlli accesi."
           ]
         },
         {
           "id": "uikit-threading-ui-7",
-          "prompt": "Quale vantaggio offre `OperationQueue` rispetto a GCD puro?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "Che cosa ti dà `OperationQueue` che GCD liscio non ha?",
           "code": null,
           "options": [
-            "È sempre più veloce di GCD",
-            "Esegue i task sul main thread per default",
-            "Evita automaticamente le race condition",
-            "Dipendenze tra task, cancellazione e limite di concorrenza"
+            "È sempre più veloce",
+            "Gira sul thread principale di base",
+            "Evita le corse da sola",
+            "Dipendenze fra i lavori, annullamento e un limite su quanti insieme"
           ],
-          "answer": 3,
-          "explanation": "`addDependency`, `cancel()` e `maxConcurrentOperationCount` sono integrati, mentre in GCD vanno costruiti a mano.",
-          "difficulty": 2,
+          "explanation": "Quelle tre cose sono il motivo per cui vale la pena pagare il costo un po' più alto. \"Ridimensiona solo dopo che lo scaricamento è finito\", \"annulla quello che è in corso quando la schermata si chiude\", \"mai più di tre insieme\" sono una riga l'una.",
           "whyWrong": [
-            "`OperationQueue` è costruita sopra GCD e aggiunge overhead: il vantaggio è nelle funzionalità, non nella velocità.",
-            "Una `OperationQueue()` creata da te esegue in background; solo `OperationQueue.main` usa il main thread.",
-            "Nessuna coda evita le race condition da sola: con più operazioni concorrenti devi comunque sincronizzare lo stato condiviso.",
+            "È leggermente più lenta: è costruita sopra a GCD e aggiunge la sua contabilità.",
+            "Gira dove le dici tu. `OperationQueue.main` è quella sul thread principale.",
+            "Non evita niente da sola: i dati condivisi vanno comunque protetti.",
             null
           ]
         },
         {
           "id": "uikit-threading-ui-8",
-          "prompt": "Quale valore stampa questo codice?",
+          "difficulty": 3,
+          "answer": 3,
+          "prompt": "Che cosa stampa questo codice?",
           "code": "var count = 0\nDispatchQueue.concurrentPerform(iterations: 1000) { _ in\n    count += 1\n}\nprint(count)",
           "options": [
             "Sempre 1000",
             "Sempre 0",
-            "Errore di compilazione in Swift 5",
-            "Un valore non deterministico, spesso minore di 1000"
+            "Non si costruisce in Swift 5",
+            "Un numero imprevedibile, di solito meno di 1000"
           ],
-          "answer": 3,
-          "explanation": "`count += 1` non è atomico: letture e scritture concorrenti si sovrappongono (data race).",
-          "difficulty": 3,
+          "explanation": "`+= 1` sono tre passi: leggi, somma, scrivi. Più thread leggono lo stesso valore, calcolano lo stesso risultato e lo scrivono. Si perdono degli incrementi, e il numero è diverso a ogni esecuzione. Questa è una corsa, e non ti avvisa niente.",
           "whyWrong": [
-            "Sembra ovvio che faccia 1000, ma le iterazioni girano in parallelo e `count += 1` non è atomico: alcuni incrementi si perdono.",
-            "`concurrentPerform` è sincrono: quando arriva il `print` tutte le iterazioni sono finite, quindi il valore non resta a 0.",
-            "In Swift 5 compila senza errori: la data race non viene rilevata dal compilatore, al massimo emerge a runtime.",
+            "1000 richiederebbe che ogni incremento fosse indivisibile. Non lo è.",
+            "Qualcosa viene contato: semplicemente meno del dovuto.",
+            "Si costruisce. Swift 5 questo non lo controlla, ed è per questo che Swift 6 ha stretto le regole.",
             null
           ]
         },
         {
           "id": "uikit-threading-ui-9",
-          "prompt": "Quale caratteristica ha una coda seriale?",
+          "difficulty": 1,
+          "answer": 2,
+          "prompt": "Che cosa definisce una coda seriale?",
           "code": null,
           "options": [
-            "Esegue sempre sul main thread",
-            "Esegue i task in parallelo ma in ordine",
-            "Esegue un task alla volta in ordine FIFO",
-            "Usa un solo thread fisso per tutta la vita dell'app"
+            "Gira sempre sul thread principale",
+            "Esegue i lavori in parallelo ma in ordine",
+            "Esegue un lavoro alla volta, nell'ordine di arrivo",
+            "Usa un thread fisso per tutta la vita dell'app"
           ],
-          "answer": 2,
-          "explanation": "Seriale significa un task alla volta; il thread sottostante può cambiare tra un task e l'altro.",
-          "difficulty": 1,
+          "explanation": "Uno alla volta, primo arrivato primo servito. È questo che la rende sicura per i dati condivisi: mentre gira un lavoro, nessun altro può toccare la stessa cosa.",
           "whyWrong": [
-            "Solo la main queue è legata al main thread: le code seriali create da te girano su thread in background.",
-            "Parallelo e seriale si escludono: una coda seriale esegue un task per volta, mai due insieme.",
+            "La coda principale è seriale, ma non ogni coda seriale è quella principale. Le tue te le crei.",
+            "\"In parallelo ma in ordine\" è una contraddizione: parallelo vuol dire nello stesso momento.",
             null,
-            "GCD non dedica un thread fisso alla coda: il thread sottostante può cambiare tra un task e l'altro."
+            "Il sistema può usare thread diversi per lavori diversi. Quello che garantisce è l'ordine, non il thread."
           ]
         },
         {
           "id": "uikit-threading-ui-10",
-          "prompt": "In un `UIViewController`, su quale thread gira `heavyParse()` (funzione sincrona non isolata)?",
+          "difficulty": 3,
+          "answer": 0,
+          "prompt": "Su quale thread gira `heavyParse()` qui, dentro un view controller?",
           "code": "override func viewDidLoad() {\n    super.viewDidLoad()\n    Task {\n        let items = heavyParse(data)\n        show(items)\n    }\n}",
           "options": [
-            "Sul main thread: il Task eredita l'isolamento `@MainActor`",
-            "Su un thread in background del cooperative pool",
+            "Sul thread principale: il Task eredita l'isolamento del controller",
+            "Su un thread in sottofondo preso dal pool",
             "Su un thread nuovo creato apposta",
-            "Dipende dalla QoS del dispositivo"
+            "Dipende dal dispositivo"
           ],
-          "answer": 0,
-          "explanation": "Una funzione sincrona gira sull'executor del chiamante: per spostare il lavoro serve `Task.detached` o una funzione `@concurrent`.",
-          "difficulty": 3,
+          "explanation": "`Task { }` eredita il posto in cui è stato creato, e un `UIViewController` è `@MainActor`. Quindi il corpo gira sul thread principale, e una funzione sincrona lenta lì dentro congela l'interfaccia esattamente come prima. Un `Task` non è un modo per uscire dal thread principale.",
           "whyWrong": [
             null,
-            "Il `Task` eredita l'isolamento `@MainActor` del VC, e una funzione sincrona gira sull'executor del chiamante: resta sul main.",
-            "`Task` non crea thread dedicati: usa gli executor esistenti, e qui eredita quello del main actor.",
-            "La QoS influenza la priorità, non l'isolamento: il codice gira sul main perché il `Task` eredita `@MainActor`."
+            "Quello è quello che darebbe `Task.detached` o il metodo di un actor. Un `Task` normale eredita.",
+            "Qui non viene creato nessun thread: il corpo viene semplicemente messo in coda sul main actor.",
+            "Non dipende da niente: la regola è fissa e il risultato è sempre lo stesso."
           ]
         }
       ]
@@ -1691,85 +1691,87 @@
     {
       "id": "architecture",
       "stage": "senior",
-      "title": "Architetture",
+      "title": "Organizzare il codice",
       "icon": "building.columns",
-      "summary": "MVC, MVVM, VIPER, coordinator e pattern di comunicazione tra oggetti.",
+      "summary": "MVC, MVVM, VIPER e coordinator: quale problema risolve davvero ciascuno, e come dovrebbero parlarsi gli oggetti.",
       "lesson": [
         {
-          "heading": "MVC e Massive View Controller",
-          "body": "Nel MVC di Apple il `UIViewController` fa da mediatore tra model e view, ma è molto accoppiato alla view (ne gestisce il ciclo di vita). Il rischio è il **Massive View Controller**: networking, formattazione, validazione, navigazione e data source tutti nello stesso file.\n\nSi alleggerisce con child view controller, data source separati, servizi iniettati e l'estrazione della navigazione.",
-          "code": null
+          "heading": "MVC, e perché va storto",
+          "language": null,
+          "body": "Lo schema con cui Apple ha consegnato UIKit è **MVC**: Model, View, Controller. Il model tiene i dati, la view li mostra, il controller sta in mezzo.\n\nSulla carta il controller è un sottile strato di colla. In pratica ci finisce dentro tutto quello che non ha un altro posto: la chiamata di rete, la formattazione delle date, la data source della tabella, la navigazione, le validazioni, le statistiche. Dopo sei mesi una schermata è lunga duemila righe, e la battuta si scrive da sola: **Massive View Controller**.\n\nIl costo non è estetico. Un file così lungo nessuno lo legge in una volta, due persone non lo possono modificare senza scontrarsi, e niente di quello che contiene si può provare — perché ogni pezzo di logica è intrecciato con un view controller che per esistere ha bisogno di un'app intera in funzione.\n\nLa radice del guaio è che `UIViewController` **fa parte** della view: possiede le view, segue il loro ciclo di vita e non si può creare senza UIKit. La logica messa lì dentro eredita tutto questo.\n\nQuindi ogni architettura venuta dopo risponde a una domanda sola: **dove va la logica, perché non stia dentro al view controller?**",
+          "code": "// In cosa si trasforma un view controller quando niente lo ferma\nfinal class ProfileViewController: UIViewController {\n    func viewDidLoad() {\n        URLSession.shared.dataTask(with: url) { ... }   // rete\n        let text = DateFormatter().string(from: date)   // formattazione\n        guard email.contains(\"@\") else { ... }          // validazione\n        navigationController?.pushViewController(...)   // navigazione\n        Analytics.log(\"profile_opened\")                 // tracciamento\n    }\n    // ...più la data source, più i delegate, più altre 1800 righe\n}"
         },
         {
-          "heading": "MVVM",
-          "body": "Il **ViewModel** trasforma i dati del model in stato pronto per la view (stringhe formattate, flag di loading) ed espone input come metodi. Non importa UIKit e non ha riferimenti alla view, quindi si testa con semplici unit test.\n\nIl binding si realizza con closure, Combine (`@Published`) oppure `@Observable`. Da iOS 26 UIKit traccia automaticamente le proprietà `@Observable` lette in metodi come `layoutSubviews` (in iOS 18 serve una chiave in Info.plist).",
-          "code": "final class ProfileViewModel {\n    @Published private(set) var title = \"\"\n    func load() async {\n        let user = try? await service.fetchUser()\n        title = user.map { \"Ciao, \\($0.name)\" } ?? \"Errore\"\n    }\n}"
+          "heading": "MVVM: uno strato che della schermata non sa niente",
+          "language": null,
+          "body": "**MVVM** aggiunge un oggetto fra il model e la view: il **ViewModel**. Il suo mestiere è prendere i dati grezzi e trasformarli in **esattamente quello che la schermata deve mostrare**, già formattato e pronto.\n\nL'unica regola che lo fa funzionare: **il ViewModel non deve importare UIKit.** Niente view, niente view controller, niente vincoli. Consegna testo, numeri e booleani, e non gli interessa chi li disegna.\n\nQuella sola regola ti compra due cose. Si può provare senza nessuna schermata: lo crei, chiami `load()`, controlli cosa espone. E lo stesso ViewModel può servire una schermata UIKit e una SwiftUI senza cambiare.\n\nIl view controller si restringe a quello in cui è bravo: guarda il ViewModel, mette i valori nelle etichette e gli ripassa le azioni dell'utente.\n\nLe trappole da nominare: un ViewModel che va a toccare la view butta via tutto, e così uno che importa UIKit \"solo per un `UIColor`\". E non deve mai tenere il view controller: in quel verso è un ciclo di ritenzione.",
+          "code": "// Qui dentro non c'è un filo di UIKit\nimport Foundation\n\n@MainActor\nfinal class ProfileViewModel: ObservableObject {\n    @Published private(set) var title = \"\"\n    @Published private(set) var isLoading = false\n\n    private let service: UserService\n    init(service: UserService) { self.service = service }   // passato da fuori, così si può finto\n\n    func load() async {\n        isLoading = true\n        defer { isLoading = false }\n        let user = try? await service.fetchUser()\n        title = user.map { \"Ciao, \\($0.name)\" } ?? \"Non è stato possibile caricare\"\n    }\n}\n\n// Provabile senza nessuna schermata\nfunc testTitle() async {\n    let vm = ProfileViewModel(service: FakeService())\n    await vm.load()\n    XCTAssertEqual(vm.title, \"Ciao, Ada\")\n}"
         },
         {
-          "heading": "VIPER e Clean Architecture",
-          "body": "VIPER divide un modulo in **View**, **Interactor** (business logic), **Presenter** (logica di presentazione), **Entity** e **Router** (navigazione). Ogni parte comunica tramite protocol, quindi tutto è mockabile.\n\nIl costo è molto boilerplate: ha senso in team grandi con moduli indipendenti, è eccessivo per app piccole. In colloquio conta saper valutare il trade-off, non recitare l'acronimo.",
-          "code": null
+          "heading": "VIPER e Clean: una scatola per mestiere",
+          "language": null,
+          "body": "**VIPER** divide la schermata in cinque oggetti, ognuno con un mestiere:\n\n**View** — mostra quello che le danno e riferisce i tocchi. Non decide niente.\n**Interactor** — le regole di business e i dati. Niente UIKit.\n**Presenter** — prende quello che produce l'Interactor, lo formatta, lo consegna alla View.\n**Entity** — i tipi di dato nudi.\n**Router** — decide quale schermata viene dopo.\n\nViene dalla **Clean Architecture**, la cui unica idea vera vale la pena saperla anche se non scrivi mai una riga di VIPER: **le dipendenze puntano verso l'interno**. Le regole al centro non sanno niente del database né della schermata; è l'esterno a conoscere il centro. Così puoi cambiare database o interfaccia senza toccare le regole.\n\nIl giudizio onesto: VIPER produce cinque file e un protocollo per ogni schermata, e su una pagina di impostazioni con due interruttori è puro peso morto. Si ripaga in una base di codice grande, con tante persone e regole complicate — banche, sanità — dove avere una risposta ovvia alla domanda \"dove va questa cosa?\" vale più dei file in più.\n\nPer la maggior parte delle app, MVVM più un coordinator porta quasi tutto il vantaggio a una frazione del costo.",
+          "code": "// I cinque ruoli, come protocolli\nprotocol ProfileView: AnyObject {              // cosa sa fare la schermata\n    func show(title: String)\n    func showLoading(_ on: Bool)\n}\n\nprotocol ProfileInteractorInput {              // le regole\n    func loadUser() async throws -> User\n}\n\nfinal class ProfilePresenter {                 // formatta e collega\n    weak var view: ProfileView?                // weak: non deve tenere la schermata\n    let interactor: ProfileInteractorInput\n    let router: ProfileRouter\n\n    func viewDidLoad() async {\n        view?.showLoading(true)\n        let user = try? await interactor.loadUser()\n        view?.show(title: user.map { \"Ciao, \\($0.name)\" } ?? \"Errore\")\n        view?.showLoading(false)\n    }\n}"
         },
         {
-          "heading": "Coordinator",
-          "body": "Il coordinator estrae la navigazione dai view controller: i VC (o i ViewModel) segnalano l'intenzione, per esempio \"utente selezionato\", e il coordinator decide cosa mostrare. Combinato con MVVM si parla di **MVVM-C**.\n\nVantaggi: VC riutilizzabili, deep link centralizzati, flussi testabili. Attenzione a gestire il ciclo di vita dei coordinator figli.",
-          "code": null
+          "heading": "Come dovrebbero parlarsi gli oggetti",
+          "language": null,
+          "body": "Qualunque sia l'architettura, gli oggetti devono passarsi dei messaggi. I meccanismi sono quattro, e sceglierne uno sbagliato è da dove viene quasi tutto il disordine.\n\n**Closure.** Una o due cose da riferire, un solo ascoltatore. La più corta e la più leggibile. Attento al ciclo di ritenzione: `[weak self]`.\n\n**Delegate.** Più eventi collegati fra loro, un ascoltatore, e la possibilità di fare una domanda e avere una risposta (\"posso permettere questa cosa?\"). Il protocollo va `: AnyObject` e la proprietà va `weak`.\n\n**Osservazione.** Qualcuno vuole sapere ogni volta che un valore cambia. Combine con `@Published`, o il più recente `@Observable`. La sottoscrizione va **conservata**, altrimenti viene annullata nell'istante in cui nasce: una riga che rompe tutto in silenzio.\n\n**NotificationCenter.** Più ascoltatori che non c'entrano niente fra loro, e chi manda non sa chi sono. Giusto per \"l'utente ha fatto logout\". Sbagliato per tutto il resto, perché rende invisibile il flusso dell'app: nel codice non c'è niente che dica chi riceve cosa.\n\nL'ordine pratico: closure se l'ascoltatore è uno, delegate se gli eventi collegati sono più d'uno o serve una risposta, osservazione se si tratta di un valore che cambia, notifiche solo quando gli ascoltatori sono davvero diversi e sconosciuti.",
+          "code": "// Osservazione con Combine: e va conservata\nprivate var cancellables = Set<AnyCancellable>()\n\nviewModel.$title\n    .receive(on: DispatchQueue.main)\n    .sink { [weak self] title in self?.titleLabel.text = title }\n    .store(in: &cancellables)          // senza questa si ferma subito\n\n// Delegate: più eventi collegati, e weak\nprotocol EditorDelegate: AnyObject {\n    func editorDidSave(_ editor: Editor)\n    func editor(_ editor: Editor, shouldClose: Bool) -> Bool   // una risposta indietro\n}\n\n// Notifica: più ascoltatori sconosciuti\nNotificationCenter.default.post(name: .userDidLogout, object: nil)"
         },
         {
-          "heading": "Pattern di comunicazione",
-          "body": "**Delegation**: uno-a-uno, adatta a più callback correlate o a metodi che restituiscono valori. **Closure**: uno-a-uno leggera, per una singola callback. **NotificationCenter**: uno-a-molti, disaccoppiata ma poco tipizzata. **KVO**: osserva proprietà `@objc dynamic` di sottoclassi di `NSObject`. **Combine**: stream dichiarativi, con subscription da conservare in `AnyCancellable`.\n\nIn tutti i casi attenzione alla memoria: delegate `weak`, `[weak self]` nelle closure, token e cancellable conservati per il tempo giusto.",
-          "code": "viewModel.$title\n    .receive(on: DispatchQueue.main)\n    .sink { [weak self] in self?.titleLabel.text = $0 }\n    .store(in: &cancellables)"
-        },
-        {
-          "heading": "In colloquio",
-          "body": "Domanda tipica: **\"Che architettura useresti e perché?\"** Risposta concisa: non esiste quella giusta in assoluto; MVVM con coordinator è un buon default per testabilità e separazione, VIPER solo se team e dominio giustificano il costo. Motiva sempre con testabilità, dimensione del team e manutenzione, e mostra di sapere perché MVC tende a degenerare.",
-          "code": null
+          "heading": "Il ciclo di ritenzione che può colpire ogni architettura",
+          "language": null,
+          "body": "Qualunque sia la forma dei tuoi strati, c'è una forma di bug che hanno tutte in comune: un legame strong che va in tutti e due i versi.\n\nTre posti in cui si nasconde:\n\n**Un riferimento all'indietro.** Il ViewModel o il Presenter che tiene il view controller in modo strong, mentre il controller tiene lui. La regola è semplice: quello sotto non tiene mai quello sopra in modo strong. `weak`.\n\n**Una notifica con una closure.** `addObserver(forName:object:queue:using:)` consegna il suo risultato al centro, che tiene la closure, che cattura `self`. Anche conservando il token, il ciclo c'è, a meno che la closure non sia scritta `[weak self]`.\n\n**Una sottoscrizione non conservata, o il contrario.** Non conservarla vuol dire che non funziona mai; conservarla in un oggetto che la sottoscrizione cattura a sua volta vuol dire che nessuno dei due viene mai liberato.\n\nIl controllo non costa niente e li becca tutti e tre: metti un `print` nel `deinit`, apri la schermata, chiudila. Se non stampa niente c'è ancora qualcuno che la tiene, e il Memory Graph Debugger ti fa vedere chi.",
+          "code": "// La perdita: il centro tiene la closure, la closure tiene self\ntoken = NotificationCenter.default.addObserver(\n    forName: .userDidLogout, object: nil, queue: .main\n) { _ in\n    self.reset()          // strong: la schermata non viene mai liberata\n}\n\n// La soluzione\ntoken = NotificationCenter.default.addObserver(\n    forName: .userDidLogout, object: nil, queue: .main\n) { [weak self] _ in\n    self?.reset()\n}\n\n// Il controllo che non costa niente\ndeinit { print(\"\\(type(of: self)) liberata\") }"
         }
       ],
       "questions": [
         {
           "id": "uikit-architecture-1",
-          "prompt": "Qual è la causa tipica di un Massive View Controller?",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "Che cosa fa diventare un view controller enorme?",
           "code": null,
           "options": [
-            "Il VC accumula networking, formattazione, navigazione e data source",
-            "L'uso di storyboard invece del codice",
-            "Troppe subview nella gerarchia",
-            "L'uso di Auto Layout"
+            "Rete, formattazione, navigazione e data source si accumulano tutte lì",
+            "Usare gli storyboard invece del codice",
+            "Troppe subview",
+            "Usare Auto Layout"
           ],
-          "answer": 0,
-          "explanation": "Il VC diventa il posto di default per ogni responsabilità perché è il punto d'incontro tra model e view.",
-          "difficulty": 1,
+          "explanation": "Il controller è il posto più facile dove mettere qualsiasi cosa, quindi ci atterra tutto quello che non ha un altro posto. Duemila righe dopo non lo legge più nessuno e non si può provare niente, perché ogni pezzo di logica per esistere ha bisogno di un'app in funzione.",
           "whyWrong": [
             null,
-            "Gli storyboard spostano la costruzione della UI fuori dal codice: se mai alleggeriscono il VC, non lo rendono massive.",
-            "Molte subview rendono pesante la gerarchia, ma il problema del Massive VC è il numero di **responsabilità**, non di view.",
-            "Auto Layout è solo un sistema di layout; il VC si gonfia quando accumula networking, logica e navigazione."
+            "Uno storyboard cambia dove viene descritta l'interfaccia. La logica finisce comunque nel controller.",
+            "Tante subview sono una questione di layout, non di architettura.",
+            "Auto Layout descrive le posizioni. Con quanta logica c'è nel file non c'entra."
           ]
         },
         {
           "id": "uikit-architecture-2",
-          "prompt": "In MVVM, quale di queste caratteristiche deve avere il ViewModel?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "In MVVM, quale di queste cose dovrebbe valere per il ViewModel?",
           "code": null,
           "options": [
-            "Possiede un riferimento strong alla view",
-            "Estende `UIViewController`",
-            "Gestisce direttamente le constraint",
-            "Non dipende da UIKit ed espone stato già formattato"
+            "Tiene la view in modo strong",
+            "Eredita da `UIViewController`",
+            "Imposta lui i vincoli",
+            "Non dipende da UIKit ed espone uno stato già formattato"
           ],
-          "answer": 3,
-          "explanation": "Senza UIKit e senza riferimenti alla view il ViewModel si testa con semplici unit test.",
-          "difficulty": 2,
+          "explanation": "È tutta la regola, e da lì discende tutto il bello di MVVM. Niente UIKit vuol dire che si può provare senza schermata, e che lo stesso oggetto può servire una schermata UIKit e una SwiftUI senza cambiare una riga.",
           "whyWrong": [
-            "È la view a osservare il ViewModel, non il contrario: un riferimento strong alla view lo accoppierebbe a UIKit.",
-            "Un ViewModel che estende `UIViewController` torna a essere un view controller e perde tutta la testabilità.",
-            "Le constraint appartengono alla view: il ViewModel espone stato, non gestisce layout né oggetti UIKit.",
+            "Tenere la view in modo strong è un ciclo di ritenzione pronto a scattare. Se proprio deve riferirsi indietro, quel riferimento è `weak`.",
+            "Ereditare da un view controller si tirerebbe dietro UIKit e tutto il ciclo di vita delle view, che è esattamente quello che MVVM evita.",
+            "I vincoli sono affari della view. Un ViewModel che li tocca è un view controller con un altro nome.",
             null
           ]
         },
         {
           "id": "uikit-architecture-3",
-          "prompt": "In VIPER, quale componente contiene la business logic?",
+          "difficulty": 2,
+          "answer": 2,
+          "prompt": "In VIPER, quale parte contiene le regole di business?",
           "code": null,
           "options": [
             "Il Presenter",
@@ -1777,19 +1779,19 @@
             "L'Interactor",
             "L'Entity"
           ],
-          "answer": 2,
-          "explanation": "L'Interactor esegue i casi d'uso; il Presenter prepara i dati per la view e il Router gestisce la navigazione.",
-          "difficulty": 2,
+          "explanation": "L'Interactor è il centro: le regole e i dati, senza nessun UIKit. Tenerlo libero dall'interfaccia è quello che lo rende provabile e quello che ti permette di cambiare la schermata senza toccare le regole.",
           "whyWrong": [
-            "Il Presenter fa da ponte: prepara i dati per la view e reagisce agli input, ma delega i casi d'uso all'Interactor.",
-            "Il Router si occupa solo della navigazione tra moduli, non della logica di business.",
+            "Il Presenter formatta e collega: prende quello che produce l'Interactor e lo rende pronto da mostrare.",
+            "Il Router decide solo quale schermata viene dopo.",
             null,
-            "L'Entity è il modello dei dati, di solito semplici struct senza logica: i casi d'uso stanno nell'Interactor."
+            "Un'Entity è un tipo di dato nudo. Contiene valori, non regole."
           ]
         },
         {
           "id": "uikit-architecture-4",
-          "prompt": "Devi avvisare più schermate indipendenti che l'utente ha fatto logout. Quale meccanismo è più adatto?",
+          "difficulty": 1,
+          "answer": 1,
+          "prompt": "Devi avvisare più schermate scollegate fra loro che l'utente ha fatto logout. Cosa va meglio?",
           "code": null,
           "options": [
             "Un delegate",
@@ -1797,134 +1799,132 @@
             "Una closure di callback",
             "KVO su `UIApplication`"
           ],
-          "answer": 1,
-          "explanation": "Delegate e closure sono uno-a-uno; `NotificationCenter` è pensato per broadcast uno-a-molti.",
-          "difficulty": 1,
+          "explanation": "È l'unico caso in cui le notifiche sono davvero giuste: più ascoltatori, chi manda non sa chi siano, e non c'è niente da collegare. In tutti gli altri casi vale la pena evitarle, perché rendono invisibile il flusso dell'app.",
           "whyWrong": [
-            "Un delegate collega un oggetto a **un solo** destinatario: per avvisare molte schermate servirebbero tanti delegate.",
+            "Un delegate è un ascoltatore solo. Per averne più d'uno serve un elenco, e a quel punto hai rifatto male le notifiche.",
             null,
-            "Una closure di callback è uno-a-uno come il delegate: non si presta a un broadcast verso schermate indipendenti.",
-            "`UIApplication` non espone una property di logout da osservare, e KVO richiede `@objc dynamic`: non è lo strumento giusto."
+            "Anche una closure è un ascoltatore solo, e chi manda dovrebbe conoscere ogni schermata.",
+            "KVO serve a guardare una proprietà che cambia, e `UIApplication` una proprietà \"ha fatto logout\" non ce l'ha."
           ]
         },
         {
           "id": "uikit-architecture-5",
-          "prompt": "Quando un delegate è preferibile a una closure?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "Quando un delegate è meglio di una closure?",
           "code": null,
           "options": [
-            "Quando serve una sola callback",
-            "Quando i destinatari sono molti",
-            "Mai: le closure sono sempre preferibili",
-            "Con più callback correlate o metodi che restituiscono valori"
+            "Quando ti serve una sola callback",
+            "Quando gli ascoltatori sono tanti",
+            "Mai: le closure sono sempre meglio",
+            "Quando gli eventi collegati sono più d'uno, o un metodo deve restituire una risposta"
           ],
-          "answer": 3,
-          "explanation": "È il modello di `UITableViewDataSource`: un protocol raggruppa molte interazioni con un contratto chiaro.",
-          "difficulty": 2,
+          "explanation": "Un protocollo raccoglie in un posto solo gli eventi collegati ed è l'unico dei due che può fare una domanda e ricevere una risposta — \"posso permettere questa cosa?\". Tre o quattro proprietà closure separate è il punto in cui diventa chiaramente peggiore.",
           "whyWrong": [
-            "Con una sola callback la closure è di solito più semplice e leggibile: il delegate rende di più con molte callback correlate.",
-            "Né delegate né closure sono pensati per molti destinatari: per il broadcast c'è `NotificationCenter`.",
-            "Le closure non vincono sempre: con molti metodi correlati, o che restituiscono valori, un protocol è più chiaro.",
+            "Per una callback sola una closure è più corta e si legge meglio dove crei l'oggetto.",
+            "Un delegate è un ascoltatore solo. Tanti ascoltatori vuol dire notifiche o osservazione.",
+            "Il \"sempre\" è sbagliato: tutto UIKit è costruito sui delegate, e per buoni motivi.",
             null
           ]
         },
         {
           "id": "uikit-architecture-6",
-          "prompt": "Cosa serve per osservare con KVO una property di una tua classe Swift?",
+          "difficulty": 3,
+          "answer": 3,
+          "prompt": "Che cosa serve per osservare con KVO una proprietà di una tua classe Swift?",
           "code": null,
           "options": [
-            "Solo il property wrapper `@Published`",
-            "La conformità a `Observable`",
-            "Una `struct` con `didSet`",
-            "Sottoclasse di `NSObject` e property `@objc dynamic`"
+            "Basta `@Published`",
+            "Aderire a `Observable`",
+            "Una struct con `didSet`",
+            "Ereditare da `NSObject` e una proprietà `@objc dynamic`"
           ],
-          "answer": 3,
-          "explanation": "KVO si basa sul runtime Objective-C: servono `@objc dynamic` e il token `NSKeyValueObservation` va conservato.",
-          "difficulty": 3,
+          "explanation": "KVO è un meccanismo di Objective-C: funziona scambiando a runtime il metodo della classe, cosa che esiste solo in quel mondo. È per questo che servono sia la classe base sia la parola `dynamic` — e per questo nel codice Swift nuovo si usano Combine o `@Observable`.",
           "whyWrong": [
-            "`@Published` è di Combine: si osserva con `$property`, non con KVO, che richiede il runtime Objective-C.",
-            "Il protocollo `Observable` appartiene al framework Observation, non a KVO; i due meccanismi sono distinti.",
-            "KVO funziona solo con istanze di classi `NSObject`: una `struct` con `didSet` non è osservabile via KVO.",
+            "`@Published` è di Combine, che è un meccanismo del tutto diverso.",
+            "`Observable` è la macro moderna di Swift, e con KVO non c'entra.",
+            "Le struct con KVO non si osservano proprio: non c'è nessun oggetto e nessun runtime in cui scambiare qualcosa.",
             null
           ]
         },
         {
           "id": "uikit-architecture-7",
-          "prompt": "Cosa succede con questa subscription dentro `viewDidLoad`?",
+          "difficulty": 2,
+          "answer": 2,
+          "prompt": "Che succede con questa sottoscrizione dentro `viewDidLoad`?",
           "code": "_ = viewModel.$title.sink { [weak self] title in\n    self?.titleLabel.text = title\n}",
           "options": [
-            "Funziona finché il VC è in vita",
-            "Crash: il cancellable non può essere scartato",
-            "Si cancella subito: arriva al più il valore iniziale",
-            "Non riceve nessun valore, nemmeno quello iniziale"
+            "Funziona finché il controller è vivo",
+            "Si chiude di colpo: il cancellable non si può scartare",
+            "Viene annullata subito: al massimo arriva il primo valore",
+            "Non riceve proprio niente"
           ],
-          "answer": 2,
-          "explanation": "Scartando l'`AnyCancellable` la subscription si cancella alla deallocazione; `@Published` invia però subito il valore corrente in modo sincrono.",
-          "difficulty": 2,
+          "explanation": "`sink` restituisce un `AnyCancellable`, e quando quello viene buttato la sottoscrizione finisce. Il `_ =` lo butta sul posto. Va conservato, di solito con `.store(in: &cancellables)`. È un bug da una riga che produce una schermata che si aggiorna una volta e poi si ferma.",
           "whyWrong": [
-            "L'`AnyCancellable` scartato viene deallocato subito, e la sua deallocazione cancella la subscription: non vive quanto il VC.",
-            "Scartare il cancellable è permesso (con `_ =` non c'è nemmeno warning): nessun crash, solo una subscription che muore subito.",
+            "Funzionerebbe, se il cancellable fosse conservato. Buttato, finisce subito.",
+            "Non si chiude niente: il risultato di `sink` si può scartare, ed è proprio questo a rendere il bug silenzioso.",
             null,
-            "`@Published` invia il valore corrente in modo sincrono durante `sink`, quindi quello iniziale arriva prima della cancellazione."
+            "Il primo valore di solito arriva, perché `@Published` manda subito quello corrente. È questo che la fa sembrare funzionante."
           ]
         },
         {
           "id": "uikit-architecture-8",
-          "prompt": "In MVVM-C, chi decide di mostrare la schermata di dettaglio dopo un tap su una riga?",
+          "difficulty": 3,
+          "answer": 2,
+          "prompt": "In MVVM coi coordinator, chi decide di mostrare la schermata di dettaglio dopo il tocco su una riga?",
           "code": null,
           "options": [
-            "Il ViewModel, facendo push sul navigation controller",
-            "La cella, tramite `UIResponder`",
-            "Il coordinator, avvisato dal ViewModel o dal VC",
-            "Il model, con una notification"
+            "Il ViewModel, facendo il push sul navigation controller",
+            "La cella, tramite la catena dei responder",
+            "Il coordinator, avvisato dal ViewModel o dal controller",
+            "Il model, con una notifica"
           ],
-          "answer": 2,
-          "explanation": "ViewModel e VC segnalano l'intenzione; la navigazione resta nel coordinator, che conosce i flussi.",
-          "difficulty": 3,
+          "explanation": "È il senso di avere un coordinator: la navigazione è il suo unico mestiere. Il ViewModel dice \"l'utente ha scelto questo\" e si ferma lì, il che lo tiene libero da UIKit e permette di usare la stessa schermata in un flusso diverso senza cambiarla.",
           "whyWrong": [
-            "Così il ViewModel dipenderebbe da UIKit e dal navigation controller: in MVVM-C segnala l'intenzione, non naviga.",
-            "La cella conosce solo la sua riga: decidere la navigazione lì mescola la view con i flussi dell'app.",
+            "Se il ViewModel toccasse il navigation controller gli servirebbe UIKit, e tutto il vantaggio sparisce.",
+            "Una cella dei flussi non sa niente: il suo mestiere è mostrare una riga.",
             null,
-            "Il model non sa nulla di UI: la navigazione è una decisione di flusso, che nel pattern spetta al coordinator."
+            "Un model contiene dati. Decidere quale schermata viene dopo non è una questione di dati."
           ]
         },
         {
           "id": "uikit-architecture-9",
-          "prompt": "Nel MVC di Apple, perché il view controller è difficile da testare?",
+          "difficulty": 1,
+          "answer": 0,
+          "prompt": "Nell'MVC di Apple, perché il view controller è difficile da provare?",
           "code": null,
           "options": [
-            "È fortemente accoppiato alla view e al suo ciclo di vita",
+            "È legato alla view e al suo ciclo di vita",
             "Non può avere dipendenze",
             "Non può contenere logica",
-            "Viene creato solo dagli storyboard"
+            "Si può creare solo da uno storyboard"
           ],
-          "answer": 0,
-          "explanation": "Per testarlo serve caricare la view e simulare il ciclo di vita; spostare la logica in oggetti separati risolve.",
-          "difficulty": 1,
+          "explanation": "Per provare la logica dentro a un controller devi creare il controller, e quello si tira dietro la view, il ciclo di vita e un UIKit in funzione. Tirare fuori la logica in un oggetto senza UIKit — un ViewModel, un Interactor — è quello che la rende provabile in millisecondi.",
           "whyWrong": [
             null,
-            "Un VC può avere dipendenze senza problemi, per esempio iniettate via init: non è questo a renderlo difficile da testare.",
-            "Il VC può contenere logica, ed è proprio il problema: la logica è legata alla view e al suo ciclo di vita.",
-            "I VC si possono creare anche via codice con `init`: gli storyboard non sono l'unico modo di istanziarli."
+            "Dipendenze ne può avere quante vuoi. Il problema è tutto il resto che si porta dietro.",
+            "Logica può contenerne: è esattamente il problema, non un limite.",
+            "Si può creare anche in codice. Anche così, la view e il suo ciclo di vita arrivano lo stesso."
           ]
         },
         {
           "id": "uikit-architecture-10",
-          "prompt": "Questo VC non viene mai deallocato. Perché?",
+          "difficulty": 3,
+          "answer": 1,
+          "prompt": "Questo controller non viene mai liberato. Perché?",
           "code": "token = NotificationCenter.default.addObserver(\n    forName: .userDidLogout, object: nil, queue: .main\n) { _ in\n    self.reset()\n}",
           "options": [
-            "`queue: .main` trattiene il VC",
-            "Il center trattiene la closure, che cattura `self` in modo strong",
-            "`token` è strong e crea un ciclo con il center",
-            "Manca `@objc` sul metodo `reset`"
+            "`queue: .main` tiene il controller",
+            "Il centro tiene la closure, e la closure tiene `self` in modo strong",
+            "`token` è strong e crea un ciclo col centro",
+            "A `reset` serve `@objc`"
           ],
-          "answer": 1,
-          "explanation": "Con l'API a blocchi il center conserva la closure finché non chiami `removeObserver(token)`: serve `[weak self]`.",
-          "difficulty": 3,
+          "explanation": "Il centro delle notifiche tiene viva la closure, e la closure cattura `self` in modo strong, quindi il controller non può mai essere liberato. `[weak self]` lo spezza. Conservare il token e togliere l'osservatore è comunque buona pratica, ma non è quello che causa questa perdita.",
           "whyWrong": [
-            "La coda indica solo dove eseguire la closure: `OperationQueue.main` non trattiene il view controller.",
+            "La coda dice solo dove gira il blocco. Non tiene niente.",
             null,
-            "Il `token` trattiene l'osservatore, non il VC; il ciclo nasce perché il center trattiene la closure che cattura `self` strong.",
-            "Con l'API a blocchi non serve `@objc`: basta al metodo che la closure lo chiami. `@objc` serve solo con `#selector`."
+            "Il token è una ricevuta, non un riferimento di ritorno al tuo controller. Da solo non crea nessun ciclo.",
+            "`@objc` serve solo alla vecchia forma coi selettori, e con la memoria non c'entra."
           ]
         }
       ]
@@ -1932,65 +1932,67 @@
     {
       "id": "memory-performance",
       "stage": "senior",
-      "title": "Memoria e performance",
+      "title": "Memoria e fluidità",
       "icon": "gauge.with.dots.needle.67percent",
-      "summary": "Retain cycle, Instruments, rendering offscreen, frame vs bounds e CALayer.",
+      "summary": "Che cosa tiene viva una schermata dopo che l'hai lasciata, perché le immagini costano molto più del loro file, e come trovare la cosa che fa scattare lo scorrimento.",
       "lesson": [
         {
-          "heading": "ARC e retain cycle",
-          "body": "ARC dealloca un oggetto quando il suo retain count arriva a zero. Due oggetti che si referenziano in modo strong formano un **retain cycle** e non vengono mai liberati. Per questo i delegate sono `weak` e i protocol sono vincolati ad `AnyObject`.\n\n`weak` è opzionale e diventa `nil` alla deallocazione; `unowned` non è opzionale e accedervi dopo la deallocazione **crasha**: usalo solo se l'oggetto referenziato vive sicuramente più a lungo.",
-          "code": null
+          "heading": "Chi sta ancora tenendo la schermata",
+          "language": null,
+          "body": "Swift libera un oggetto quando non lo tiene più nessuno: conta chi lo tiene, e a zero la memoria torna indietro. Un **ciclo di ritenzione** succede quando due oggetti si tengono a vicenda, quindi il conto non arriva mai a zero e nessuno dei due viene mai liberato.\n\nIn un'app fatta di schermate, questo di solito vuol dire che un'intera schermata — con le sue view, le sue immagini, i suoi dati — resta in memoria dopo che l'utente se n'è andato. Fallo qualche volta e l'app sta usando centinaia di megabyte per schermate che non vede nessuno.\n\nI quattro posti in cui si nasconde, in ordine di frequenza:\n\n**Un delegate tenuto in modo strong.** La regola è: un figlio non tiene mai il genitore in modo strong. `weak var delegate`, e il protocollo dichiarato `: AnyObject` perché si possa.\n\n**Una closure conservata in una proprietà.** L'oggetto tiene la closure, la closure nomina `self`. `[weak self]`.\n\n**Un `Timer` ripetuto.** Lo vediamo qui sotto, perché `[weak self]` non lo risolve.\n\n**Un osservatore o una sottoscrizione mai rilasciati.** Una notifica con una closure, un `AnyCancellable` di Combine, un token di KVO.\n\nIl controllo costa una riga: un `print` nel `deinit`. Apri la schermata, chiudila, e se non compare niente c'è ancora qualcuno che la tiene.",
+          "code": "// Il controllo che non costa niente\ndeinit { print(\"\\(type(of: self)) liberata\") }\n\n// Delegate: il figlio non tiene il genitore\nprotocol ListDelegate: AnyObject { func didSelect(_ i: Int) }\nfinal class ListView { weak var delegate: ListDelegate? }\n\n// Closure conservata: [weak self]\nfinal class VM {\n    var onUpdate: (() -> Void)?\n    func bind() {\n        onUpdate = { [weak self] in self?.refresh() }\n    }\n    func refresh() {}\n}"
         },
         {
-          "heading": "Closure e timer",
-          "body": "Una closure conservata da `self` che cattura `self` in modo strong crea un ciclo: si usa `[weak self]`. Non serve per closure non trattenute da `self`, come i blocchi di `UIView.animate` o `DispatchQueue.main.async`, che vengono rilasciati dopo l'esecuzione.\n\n`Timer.scheduledTimer(target:selector:)` trattiene il target e il run loop trattiene il timer: `deinit` non viene mai chiamato finché non fai `invalidate()`. Meglio la versione a blocco con `[weak self]`, invalidando il timer quando la schermata sparisce.",
-          "code": "timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in\n    self?.tick()\n}\n// in viewWillDisappear: timer?.invalidate()"
+          "heading": "I timer, e quando [weak self] non basta",
+          "language": null,
+          "body": "Un `Timer` ripetuto è la perdita che sopravvive alla soluzione solita, ed è per questo che lo chiedono.\n\nIl ciclo non è fra la tua closure e il tuo controller. È che **il run loop tiene il timer**. Quindi anche con `[weak self]` il timer resta vivo e continua a scattare — su un `self` che adesso è `nil`, senza fare niente, per sempre, svegliando il processore una volta al secondo per niente.\n\nVa fermato esplicitamente: `invalidate()`. Il posto giusto di solito è `viewWillDisappear`, oppure `deinit` se il controller verrà davvero liberato.\n\nCon la vecchia forma a selettore è peggio: `scheduledTimer(timeInterval:target:selector:...)` tiene il suo target in modo **strong**, quindi il controller non viene mai liberato, quindi il `deinit` non parte mai, quindi l'`invalidate()` che hai messo nel `deinit` non avviene mai. Un giro perfetto. O usi la forma a closure con `[weak self]`, o lo fermi in un posto che gira di sicuro.\n\nL'alternativa moderna evita tutto il discorso: un `Task` con dentro un'attesa, annullato quando la schermata se ne va.\n\nE già che ci siamo: **`UIView.animate` non ha bisogno di `[weak self]`**. La closure la tiene l'animazione, che la molla quando ha finito. Ritarda la liberazione di un terzo di secondo; non la impedisce.",
+          "code": "// La forma vecchia: tiene self, quindi il deinit non parte, quindi invalidate mai\n// timer = Timer.scheduledTimer(timeInterval: 1, target: self,\n//                              selector: #selector(tick), userInfo: nil, repeats: true)\n\n// Meglio, e comunque non basta da sola\ntimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in\n    self?.tick()\n}\n\noverride func viewWillDisappear(_ animated: Bool) {\n    super.viewWillDisappear(animated)\n    timer?.invalidate()        // è questa la riga che conta\n    timer = nil\n}\n\n// Niente [weak self]: l'animazione poi la molla\nUIView.animate(withDuration: 0.3) {\n    self.panel.alpha = 0\n}"
         },
         {
-          "heading": "Instruments e debug della memoria",
-          "body": "Gli strumenti da citare: **Memory Graph Debugger** di Xcode per vedere chi trattiene un oggetto, **Leaks** e **Allocations** in Instruments per leak e crescita della memoria, **Time Profiler** per il lavoro sul main thread e **Animation Hitches** per i frame persi.\n\nUn trucco rapido: un `print` in `deinit` dei view controller rivela subito quelli che non vengono deallocati dopo un pop o un dismiss.",
-          "code": null
+          "heading": "Le immagini: il costo nascosto",
+          "language": null,
+          "body": "La sorpresa di memoria più grossa in un'app iOS sono quasi sempre le immagini, e il motivo è che **la dimensione di un file non c'entra niente con la memoria che occupa**.\n\nUn JPEG è compresso. Per disegnarlo, il sistema lo deve decomprimere in pixel grezzi, e da lì in poi occupa **larghezza × altezza × 4 byte** — quattro byte per pixel, uno per il rosso, uno per il verde, uno per il blu, uno per la trasparenza.\n\nUna foto da 4000 per 3000 sono dodici milioni di pixel, cioè **48 MB** in memoria. Il file su disco era due. Mostrarne venti in un elenco è un gigabyte, e iOS chiuderà l'app molto prima.\n\nE la miniatura è la trappola: rimpicciolire una `UIImageView` non cambia niente. L'immagine intera viene comunque decompressa a dimensione piena; viene solo disegnata più piccola.\n\nLa risposta è **decomprimerla alla dimensione che ti serve**, che è quello che fa `prepareThumbnail(of:)` — oppure `ImageIO` con `kCGImageSourceThumbnailMaxPixelSize`, che la versione a dimensione piena non ce l'ha mai in memoria.\n\nIl conticino da ricordare: pixel per 4. Spiega a colpo d'occhio un numero sorprendente di problemi di memoria.",
+          "code": "// Una foto 4000x3000: 12 milioni di pixel x 4 byte = circa 48 MB in memoria\n// Il file su disco era 2 MB.\n\n// Sbagliato: viene decompressa tutta, e poi disegnata piccola\nimageView.image = UIImage(contentsOfFile: path)\n\n// Giusto: decompressa direttamente alla dimensione che si vedrà\nlet image = UIImage(contentsOfFile: path)\nlet thumb = await image?.byPreparingThumbnail(ofSize: CGSize(width: 120, height: 120))\nimageView.image = thumb\n\n// Giusto anche così, e la versione intera non la tiene mai\nlet options: [CFString: Any] = [\n    kCGImageSourceCreateThumbnailFromImageAlways: true,\n    kCGImageSourceThumbnailMaxPixelSize: 240\n]"
         },
         {
-          "heading": "Rendering e performance delle celle",
-          "body": "Il **rendering offscreen** costringe la GPU a disegnare in un buffer separato: lo causano ombre senza `shadowPath`, maschere e, in alcuni casi, `cornerRadius` con `masksToBounds` sul contenuto. Si mitiga impostando `shadowPath`, usando `cornerCurve`/`cornerRadius` senza maschere quando possibile, o `shouldRasterize` per contenuti statici.\n\nNelle celle: niente lavoro pesante in `cellForRowAt`, immagini ridimensionate alla dimensione mostrata (downsampling con ImageIO o `preparingThumbnail(of:)`) e cache. Un'immagine decodificata occupa circa `larghezza × altezza × 4` byte, indipendentemente dal peso del file.",
-          "code": "card.layer.shadowOpacity = 0.2\ncard.layer.shadowRadius = 8\ncard.layer.shadowPath = UIBezierPath(\n    roundedRect: card.bounds, cornerRadius: 12).cgPath"
+          "heading": "Perché lo scorrimento scatta",
+          "language": null,
+          "body": "Lo schermo viene ridisegnato sessanta volte al secondo, il che lascia circa sedici millisecondi per fotogramma. Tutto quello che ci mette di più vuol dire un fotogramma perso, e un fotogramma perso è uno scatto che si vede.\n\nLe cause solite, in ordine di frequenza:\n\n**Lavoro sul thread principale mentre scorri.** Decodificare un'immagine, formattare una data, un calcolo dentro `cellForRowAt`. Fallo altrove, o prima.\n\n**Un'ombra senza percorso.** `shadowOpacity` da sola fa calcolare al sistema la forma dell'ombra dal contenuto della view, a ogni fotogramma. Dargli lo `shadowPath` trasforma un calcolo in una lettura, ed è il guadagno singolo più grosso in un elenco di schede.\n\n**Angoli arrotondati con ritaglio.** `cornerRadius` più `masksToBounds` costringe a disegnare la view in una memoria a parte e poi a ricomporla. Su una view è niente; su cinquanta celle si vede.\n\n**Trasparenza.** Una view con `isOpaque = false` costringe il sistema a fondere quello che c'è dietro. Se la view in realtà è piena, dillo.\n\nPer capire quale sia, c'è **Instruments**, e lo strumento dipende dalla domanda: **Time Profiler** per \"cosa sta facendo il thread principale\", **Allocations** per \"cosa si sta mangiando la memoria\", **Leaks** per \"cosa non viene mai liberato\". E il Debug Navigator di Xcode mostra memoria e processore dal vivo, gratis, senza nessuna preparazione.",
+          "code": "// Il guadagno singolo più grosso in un elenco di schede\ncard.layer.shadowOpacity = 0.2\ncard.layer.shadowRadius = 8\ncard.layer.shadowPath = UIBezierPath(\n    roundedRect: card.bounds, cornerRadius: 12).cgPath   // non ricalcolata ogni fotogramma\n\n// Dillo quando una view è davvero piena\nlabel.isOpaque = true\nlabel.backgroundColor = .systemBackground   // non trasparente\n\n// Angoli arrotondati senza costringere a una memoria a parte\ncard.layer.cornerRadius = 12\ncard.layer.cornerCurve = .continuous\ncard.clipsToBounds = false                  // e ritaglia invece l'immagine stessa"
         },
         {
-          "heading": "frame, bounds e CALayer",
-          "body": "`frame` è il rettangolo della view nel sistema di coordinate della **superview**; `bounds` è nel sistema di coordinate **della view stessa** (origin di solito zero, cambia con lo scroll). Con un `transform` applicato il `frame` diventa il bounding box e non va usato per impostare la dimensione.\n\nOgni `UIView` è supportata da un `CALayer`, che si occupa del rendering e delle animazioni; la view ne è il delegate e aggiunge gestione degli eventi e layout.",
-          "code": null
-        },
-        {
-          "heading": "In colloquio",
-          "body": "Domanda tipica: **\"Come trovi e risolvi un memory leak?\"** Risposta concisa: verifico che `deinit` venga chiamato, uso il Memory Graph Debugger per trovare il riferimento strong, poi rompo il ciclo con `weak` sul delegate o `[weak self]` nella closure; per i timer uso `invalidate()`. Aggiungi Instruments (Leaks, Time Profiler) per dimostrare metodo, non solo teoria.",
-          "code": null
+          "heading": "Le domande di geometria che tornano sempre",
+          "language": null,
+          "body": "Due cose a questo livello le chiedono più di tutte, quindi vale la pena averle dritte.\n\n**`frame` contro `bounds`.** `frame` è la view vista da fuori: dov'è nelle coordinate del genitore. `bounds` è la view vista da dentro: il suo sistema di coordinate, con l'origine normalmente a zero.\n\nSi separano in due casi. Con un `transform`, il `bounds` non cambia — dentro, la view è lo stesso rettangolo — mentre il `frame` diventa il più piccolo rettangolo dritto che contiene la view ruotata, cioè più grande. E in una scroll view, scorrere muove il `bounds.origin`, che è esattamente il `contentOffset`, mentre il `frame` non si muove per niente.\n\nLa conseguenza pratica: **non impostare mai il `frame` su una view che ha un transform.** Usa `bounds` e `center`.\n\n**`UIView` contro `CALayer`.** Ogni view possiede un layer, ed è il layer a disegnare. La view ci mette sopra quello di cui un layer non sa niente: ricevere i tocchi, partecipare ad Auto Layout, stare nella catena dei responder. È per questo che angoli, ombre e bordi stanno tutti su `view.layer`.\n\nE un altro dettaglio: un layer non fa Auto Layout. Se aggiungi un layer con un gradiente, devi ridimensionarlo tu in `viewDidLayoutSubviews`, altrimenti resta della dimensione che aveva quando è nato.",
+          "code": "let v = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))\nv.transform = CGAffineTransform(rotationAngle: .pi / 4)\nprint(v.bounds.size)   // (100, 100) — invariato\nprint(v.frame.size)    // circa (141, 141) — il rettangolo che adesso la contiene\n\n// Un layer non partecipa ad Auto Layout: lo ridimensioni tu\noverride func viewDidLayoutSubviews() {\n    super.viewDidLayoutSubviews()\n    gradient.frame = headerView.bounds\n}"
         }
       ],
       "questions": [
         {
           "id": "uikit-memory-performance-1",
-          "prompt": "Qual è la differenza tra `frame` e `bounds`?",
+          "difficulty": 1,
+          "answer": 2,
+          "prompt": "Che differenza c'è fra `frame` e `bounds`?",
           "code": null,
           "options": [
-            "Sono sempre identici",
-            "`bounds` è nelle coordinate della window",
-            "`frame` usa le coordinate della superview, `bounds` le proprie",
-            "`frame` include il transform, `bounds` include la safe area"
+            "Sono sempre uguali",
+            "`bounds` è nelle coordinate della finestra",
+            "`frame` è nelle coordinate del genitore, `bounds` in quelle della view stessa",
+            "`frame` comprende il transform, `bounds` l'area sicura"
           ],
-          "answer": 2,
-          "explanation": "`bounds.origin` di norma è zero ma cambia, per esempio, con lo scroll di una `UIScrollView`.",
-          "difficulty": 1,
+          "explanation": "`frame` è la view vista da fuori: dov'è per il suo genitore. `bounds` è la view vista da dentro: le sue coordinate, dove comincia da zero. Sono della stessa dimensione finché non c'è un transform o uno scorrimento.",
           "whyWrong": [
-            "Coincidono solo in casi particolari: basta un'origine diversa da zero, un transform o uno scroll perché differiscano.",
-            "`bounds` usa il sistema di coordinate **proprio** della view; nessuno dei due è espresso in coordinate della window.",
+            "Coincidono nel caso semplice, ed è esattamente per questo che la differenza frega quando compare.",
+            "Nessuno dei due è nelle coordinate della finestra. Per quelle si converte apposta, con `convert(_:to:)`.",
             null,
-            "`bounds` non include la safe area, che si legge da `safeAreaInsets`; è vero invece che `frame` riflette il transform."
+            "È il contrario: è il `frame` a risentire del transform. L'area sicura è un'altra cosa ancora."
           ]
         },
         {
           "id": "uikit-memory-performance-2",
-          "prompt": "Cosa stampa questo codice?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "Che cosa stampa questo codice?",
           "code": "let v = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))\nv.transform = CGAffineTransform(rotationAngle: .pi / 4)\nprint(v.bounds.size, v.frame.size)",
           "options": [
             "(100, 100) e (100, 100)",
@@ -1998,119 +2000,119 @@
             "(0, 0) e (100, 100)",
             "(100, 100) e circa (141, 141)"
           ],
-          "answer": 3,
-          "explanation": "Il transform non tocca `bounds`, mentre `frame` diventa il bounding box della view ruotata.",
-          "difficulty": 2,
+          "explanation": "Dentro non è successo niente: il `bounds` è sempre 100 per 100. Fuori, il quadrato è inclinato, e il `frame` dev'essere un rettangolo dritto, quindi diventa il più piccolo che lo contiene: 100 per la radice di due, circa 141.",
           "whyWrong": [
-            "Il transform non cambia `bounds`, ma cambia `frame`: il bounding box di un quadrato ruotato di 45° è più grande.",
-            "Hai invertito i due valori: è `frame` a diventare il bounding box di circa 141 pt, mentre `bounds` resta 100×100.",
-            "`bounds` non si azzera con il transform: conserva la dimensione originale di 100×100.",
+            "Il `frame` cambia eccome: è tutto il senso della domanda.",
+            "Sono invertiti: quello che resta fermo è il `bounds`.",
+            "`bounds.size` non è mai zero: la view una dimensione ce l'ha.",
             null
           ]
         },
         {
           "id": "uikit-memory-performance-3",
-          "prompt": "Perché le property `delegate` sono di solito `weak`?",
+          "difficulty": 1,
+          "answer": 1,
+          "prompt": "Perché le proprietà `delegate` di solito sono `weak`?",
           "code": null,
           "options": [
-            "Per migliorare le performance di dispatch",
-            "Per evitare retain cycle tra oggetto e delegate",
-            "Perché i protocol non supportano riferimenti strong",
-            "Per renderle thread-safe"
+            "Per rendere le chiamate più veloci",
+            "Per evitare che i due oggetti si tengano in vita a vicenda",
+            "Perché i protocolli non supportano i riferimenti strong",
+            "Per renderle sicure fra thread"
           ],
-          "answer": 1,
-          "explanation": "Spesso il delegate possiede l'oggetto (il VC possiede la table): un riferimento strong di ritorno chiuderebbe il ciclo.",
-          "difficulty": 1,
+          "explanation": "Il genitore tiene il figlio, e al figlio serve poter raggiungere il genitore. Se tutti e due i legami fossero strong il conto non arriverebbe mai a zero e l'intera schermata resterebbe in memoria. Il `weak` sulla via del ritorno lo spezza.",
           "whyWrong": [
-            "`weak` non velocizza il dispatch: anzi, ogni accesso deve verificare che l'oggetto sia ancora vivo.",
+            "Di velocità non cambia niente. È tutta una questione di memoria.",
             null,
-            "I protocol supportano riferimenti strong senza problemi: `weak` è una scelta per evitare cicli, e richiede un protocol `AnyObject`.",
-            "Un riferimento `weak` non è di per sé thread-safe: serve a evitare retain cycle, non a proteggere dagli accessi concorrenti."
+            "I protocolli i riferimenti strong li supportano benissimo. La scelta è voluta.",
+            "`weak` coi thread non c'entra: un riferimento weak da solo non è sicuro fra thread."
           ]
         },
         {
           "id": "uikit-memory-performance-4",
-          "prompt": "Dopo il pop di questo VC, `deinit` non viene mai chiamato. Perché?",
+          "difficulty": 2,
+          "answer": 1,
+          "prompt": "Dopo che questo controller viene tolto dalla pila, il `deinit` non parte mai. Perché?",
           "code": "override func viewDidLoad() {\n    super.viewDidLoad()\n    timer = Timer.scheduledTimer(timeInterval: 1, target: self,\n        selector: #selector(tick), userInfo: nil, repeats: true)\n}\ndeinit { timer?.invalidate() }",
           "options": [
-            "`#selector` crea un riferimento circolare con la classe",
-            "Il timer, trattenuto dal run loop, trattiene `self`",
-            "Il navigation controller trattiene il VC",
-            "`userInfo: nil` impedisce la deallocazione"
+            "`#selector` crea un giro con la classe",
+            "Il timer tiene `self`, e il run loop tiene il timer",
+            "Il navigation controller tiene il controller",
+            "`userInfo: nil` impedisce la liberazione"
           ],
-          "answer": 1,
-          "explanation": "`invalidate` in `deinit` non arriva mai: va chiamato prima (es. `viewWillDisappear`) o si usa il timer a blocco con `[weak self]`.",
-          "difficulty": 2,
+          "explanation": "Quella forma di `Timer` tiene il suo target in modo strong, e il run loop tiene il timer. Quindi il controller non può mai essere liberato, quindi il `deinit` non parte mai, quindi l'`invalidate` che sta dentro non avviene mai. Un giro perfetto. Fermalo in `viewWillDisappear`, o usa la forma a closure con `[weak self]`.",
           "whyWrong": [
-            "`#selector` è solo un nome di metodo, non trattiene nulla: il riferimento strong a `self` lo tiene il timer tramite `target`.",
+            "Un selettore è solo il nome di un metodo. Da solo non tiene niente.",
             null,
-            "Dopo il pop il navigation controller rilascia il VC: è il timer, trattenuto dal run loop, a tenerlo in vita.",
-            "`userInfo` è solo un payload facoltativo: con `nil` non trattiene niente e non influisce sulla deallocazione."
+            "Il navigation controller lo molla quando la schermata viene tolta: è questo che vuol dire toglierla.",
+            "`userInfo` sono dati in più che il timer si porta dietro. Con la memoria non c'entra."
           ]
         },
         {
           "id": "uikit-memory-performance-5",
+          "difficulty": 3,
+          "answer": 1,
           "prompt": "Serve `[weak self]` in questa closure?",
           "code": "UIView.animate(withDuration: 0.3) {\n    self.panel.alpha = 0\n}",
           "options": [
-            "Sì, altrimenti il VC non viene mai deallocato",
-            "No: la closure non è trattenuta da `self`, quindi nessun ciclo",
+            "Sì, altrimenti il controller non viene mai liberato",
+            "No: la closure non la tiene niente di tuo, quindi non c'è nessun ciclo",
             "Sì, perché la closure è `@escaping`",
-            "No, perché `self` è sempre `unowned` nelle animazioni"
+            "No, perché le animazioni catturano sempre weak"
           ],
-          "answer": 1,
-          "explanation": "Un ciclo richiede che `self` trattenga la closure; qui la trattiene UIKit solo fino alla fine dell'animazione.",
-          "difficulty": 3,
+          "explanation": "La closure la tiene il sistema delle animazioni, che la rilascia quando l'animazione finisce. `self` non tiene l'animazione, quindi l'anello non si chiude. Ritarda la liberazione di un terzo di secondo, che non è una perdita. Mettere `[weak self]` qui aggiunge solo rumore.",
           "whyWrong": [
-            "Il VC non trattiene la closure, quindi non c'è ciclo: UIKit la tiene solo per la durata dell'animazione e poi la rilascia.",
+            "Viene liberato un attimo dopo rispetto a prima, che non è la stessa cosa di mai.",
             null,
-            "`@escaping` significa che la closure può sopravvivere alla chiamata, ma senza che `self` la trattenga non si forma alcun ciclo.",
-            "`self` non diventa mai `unowned` in automatico: la cattura è strong, ma qui è innocua perché temporanea."
+            "Escaping vuol dire solo che sopravvive alla chiamata. Per un ciclo serve che l'oggetto la tenga a sua volta, e qui non la tiene.",
+            "Cattura in modo strong, come qualsiasi closure. Ti salva il fatto che poi viene rilasciata."
           ]
         },
         {
           "id": "uikit-memory-performance-6",
-          "prompt": "Un'ombra su molte celle causa scroll a scatti. Qual è la correzione più efficace?",
+          "difficulty": 2,
+          "answer": 0,
+          "prompt": "Un'ombra su tante celle fa scattare lo scorrimento. Qual è la soluzione più efficace?",
           "code": null,
           "options": [
             "Impostare `layer.shadowPath`",
             "Impostare `layer.masksToBounds = true`",
             "Aumentare `shadowRadius`",
-            "Spostare l'ombra in `draw(_:)`"
+            "Disegnare l'ombra in `draw(_:)`"
           ],
-          "answer": 0,
-          "explanation": "Senza `shadowPath` Core Animation deve calcolare la forma dal contenuto in un passaggio offscreen a ogni frame.",
-          "difficulty": 2,
+          "explanation": "Senza percorso, il sistema calcola la forma dell'ombra dal contenuto della view, a ogni fotogramma, per ogni cella. Dargli la forma trasforma quel calcolo in una lettura. È il guadagno singolo più grosso in un elenco di schede.",
           "whyWrong": [
             null,
-            "`masksToBounds = true` taglia tutto ciò che sta fuori dai bounds, **ombra compresa**: l'ombra sparisce invece di diventare veloce.",
-            "Un raggio più grande rende l'ombra più costosa da calcolare, non meno: peggiorerebbe lo scroll.",
-            "Disegnare l'ombra in `draw(_:)` sposta il lavoro sulla CPU a ogni ridisegno: in genere è ancora più lento."
+            "`masksToBounds` ritaglia il contenuto, il che taglierebbe via l'ombra del tutto.",
+            "Un raggio più grande la rende più lenta, non più veloce: c'è più roba da sfumare.",
+            "Disegnarla a mano vuol dire che il tuo codice gira a ogni fotogramma, che è peggio."
           ]
         },
         {
           "id": "uikit-memory-performance-7",
-          "prompt": "Cosa succede accedendo a un riferimento `unowned` dopo che l'oggetto è stato deallocato?",
+          "difficulty": 3,
+          "answer": 3,
+          "prompt": "Che succede quando leggi un riferimento `unowned` dopo che l'oggetto è sparito?",
           "code": null,
           "options": [
-            "Restituisce `nil`",
-            "Restituisce l'ultimo valore valido",
-            "Errore di compilazione",
-            "Crash a runtime"
+            "Ti dà nil",
+            "Ti dà l'ultimo valore valido",
+            "Non si costruisce",
+            "L'app si ferma"
           ],
-          "answer": 3,
-          "explanation": "`unowned` presuppone che l'oggetto sia vivo; se non lo è l'accesso è un errore fatale. `weak` invece diventa `nil`.",
-          "difficulty": 3,
+          "explanation": "`unowned` è una promessa che l'oggetto ci sarà ancora, e non ha né opzionale né controlli. Se la promessa è rotta, leggerlo vuol dire leggere memoria liberata, e Swift ferma l'app apposta invece di andare avanti con spazzatura. `weak` è la versione che controlla.",
           "whyWrong": [
-            "Questo è il comportamento di `weak`: un riferimento `unowned` non diventa `nil` e non è nemmeno optional.",
-            "Non esiste un \"ultimo valore valido\": l'oggetto è deallocato e il runtime lo rileva con un errore fatale.",
-            "Il compilatore non può sapere quando l'oggetto verrà deallocato: il problema emerge solo a runtime.",
+            "`nil` è di `weak`. `unowned` di opzionale non ne ha.",
+            "Il valore vecchio non c'è più da un pezzo: in quella memoria adesso può esserci tutt'altro.",
+            "Si costruisce benissimo: il compilatore prende la tua promessa per buona.",
             null
           ]
         },
         {
           "id": "uikit-memory-performance-8",
-          "prompt": "Quale strumento di Instruments usi per capire cosa rallenta il main thread durante lo scroll?",
+          "difficulty": 2,
+          "answer": 3,
+          "prompt": "Quale strumento di Instruments ti dice cosa sta rallentando il thread principale mentre scorri?",
           "code": null,
           "options": [
             "Leaks",
@@ -2118,19 +2120,19 @@
             "Network",
             "Time Profiler"
           ],
-          "answer": 3,
-          "explanation": "Time Profiler campiona gli stack e mostra dove il main thread passa il tempo; Leaks e Allocations riguardano la memoria.",
-          "difficulty": 2,
+          "explanation": "Campiona lo stack tante volte al secondo e ti dice dove finisce davvero il tempo. Per uno scatto durante lo scorrimento, il colpevole è quasi sempre qualcosa dentro `cellForRowAt` che non dovrebbe starci.",
           "whyWrong": [
-            "Leaks cerca oggetti non più raggiungibili in memoria, ma non dice dove il main thread passa il tempo.",
-            "Allocations traccia quanta memoria allochi e dove, non quanto tempo impiega il codice sul main thread.",
-            "Network analizza le richieste di rete, che di norma non girano sul main e non spiegano gli scatti dello scroll.",
+            "Leaks risponde a \"cosa non viene mai liberato\", che è una domanda di memoria.",
+            "Allocations risponde a \"cosa sta occupando la memoria\", anche questa di memoria.",
+            "Network mostra le richieste e i loro tempi, non cosa sta facendo il processore.",
             null
           ]
         },
         {
           "id": "uikit-memory-performance-9",
-          "prompt": "Una JPEG da 4000×3000 pixel (file da 2 MB) viene mostrata in una thumbnail. Quanta memoria occupa circa una volta decodificata?",
+          "difficulty": 3,
+          "answer": 3,
+          "prompt": "Un JPEG da 4000 per 3000 pixel, 2 MB su disco, mostrato come miniatura. Quanta memoria occupa circa?",
           "code": null,
           "options": [
             "Circa 2 MB",
@@ -2138,34 +2140,32 @@
             "Circa 200 KB",
             "Circa 48 MB"
           ],
-          "answer": 3,
-          "explanation": "La bitmap decodificata costa larghezza × altezza × 4 byte: serve il downsampling alla dimensione mostrata.",
-          "difficulty": 3,
+          "explanation": "Per disegnarlo, il sistema lo decomprime in pixel grezzi: larghezza per altezza per 4 byte. Dodici milioni di pixel per quattro fa circa 48 MB. La dimensione del file non conta, e nemmeno quella della view: rimpicciolire la image view non cambia niente.",
           "whyWrong": [
-            "2 MB è la dimensione del file **compresso**: una volta decodificata, la bitmap occupa larghezza × altezza × 4 byte.",
-            "12 MB è il numero di pixel: ogni pixel però occupa 4 byte in RGBA, quindi il totale è circa quattro volte tanto.",
-            "Mostrarla piccola non riduce la memoria: senza downsampling viene decodificata tutta l'immagine a piena risoluzione.",
+            "2 MB è il file compresso. In memoria compresso non lo è per niente.",
+            "Dodici milioni è il numero di pixel, non di byte. Ogni pixel ne vuole quattro.",
+            "200 KB sarebbe la miniatura, ma solo se l'avessi decompressa apposta a quella dimensione.",
             null
           ]
         },
         {
           "id": "uikit-memory-performance-10",
-          "prompt": "Qual è la relazione tra `UIView` e `CALayer`?",
+          "difficulty": 1,
+          "answer": 2,
+          "prompt": "Che rapporto c'è fra `UIView` e `CALayer`?",
           "code": null,
           "options": [
-            "`CALayer` è una sottoclasse di `UIView`",
-            "Il layer esiste solo se si imposta `cornerRadius`",
-            "Ogni view ha un layer per il rendering e ne è il delegate",
+            "`CALayer` è un tipo di `UIView`",
+            "Il layer esiste solo se imposti `cornerRadius`",
+            "Ogni view possiede un layer che disegna, e ne fa da delegate",
             "La view disegna, il layer gestisce i tocchi"
           ],
-          "answer": 2,
-          "explanation": "Il layer gestisce contenuto e animazioni; la view aggiunge eventi, responder chain e layout.",
-          "difficulty": 1,
+          "explanation": "È il layer a disegnare. La view lo avvolge con quello di cui un layer non sa niente: i tocchi, Auto Layout, la catena dei responder. È per questo che angoli, ombre e bordi stanno tutti su `view.layer`.",
           "whyWrong": [
-            "`CALayer` viene da Core Animation e non deriva da `UIView`: è la view a possedere un layer, non il contrario.",
-            "Ogni view ha **sempre** un layer: `cornerRadius` è solo una delle sue property.",
+            "Sono classi che non c'entrano una con l'altra: un layer disegna, una view avvolge un layer.",
+            "Il layer c'è dal momento in cui la view nasce, qualunque cosa tu imposti.",
             null,
-            "È il contrario: il layer si occupa del contenuto e del rendering, mentre la view gestisce i tocchi e la responder chain."
+            "È esattamente il contrario: il layer disegna, la view gestisce i tocchi."
           ]
         }
       ]
