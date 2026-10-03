@@ -1,15 +1,87 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "%@ XP": {
+    "/ month": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ Monat"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ mes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ mois"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ mese"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ mês"
+          }
+        }
+      }
+    },
+    "%@ · © 2026 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ · © 2026 %2$@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · © 2026 %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · © 2026 %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · © 2026 %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · © 2026 %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · © 2026 %@"
+          }
+        }
+      },
       "shouldTranslate": false
     },
     "%@ lessons": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lezioni di %@"
+            "value": "%@-Lektionen"
           }
         },
         "es": {
@@ -24,10 +96,10 @@
             "value": "Leçons de %@"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@-Lektionen"
+            "value": "Lezioni di %@"
           }
         },
         "pt-BR": {
@@ -40,10 +112,10 @@
     },
     "%@ more XP to reach **%@**": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ancora %@ XP per diventare **%@**"
+            "value": "Noch %@ XP bis **%@**"
           }
         },
         "es": {
@@ -58,10 +130,10 @@
             "value": "Encore %@ XP pour atteindre **%@**"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Noch %@ XP bis **%@**"
+            "value": "Ancora %@ XP per diventare **%@**"
           }
         },
         "pt-BR": {
@@ -72,26 +144,116 @@
         }
       }
     },
-    "%@ · © 2026 %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ · © 2026 %2$@"
-          }
-        }
-      },
-      "shouldTranslate": false
-    },
-    "%lld": {
-      "shouldTranslate": false
-    },
-    "%lld cards, about %lld minutes": {
+    "%@ XP": {
+      "shouldTranslate": false,
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld schede, circa %lld minuti"
+            "value": "%@ XP"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ XP"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ XP"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ XP"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ XP"
+          }
+        }
+      }
+    },
+    "%@ XP this week": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ XP questa settimana"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ XP esta semana"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ XP cette semaine"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ XP diese Woche"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ XP esta semana"
+          }
+        }
+      }
+    },
+    "%lld": {
+      "shouldTranslate": false,
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld cards, about %lld minutes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Karten, etwa %lld Minuten"
           }
         },
         "es": {
@@ -106,10 +268,10 @@
             "value": "%lld fiches, environ %lld minutes"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Karten, etwa %lld Minuten"
+            "value": "%lld schede, circa %lld minuti"
           }
         },
         "pt-BR": {
@@ -122,10 +284,10 @@
     },
     "%lld day streak!": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld giorni di fila!"
+            "value": "%lld Tage in Folge!"
           }
         },
         "es": {
@@ -140,10 +302,10 @@
             "value": "%lld jours d'affilée !"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Tage in Folge!"
+            "value": "%lld giorni di fila!"
           }
         },
         "pt-BR": {
@@ -156,10 +318,10 @@
     },
     "%lld days in a row": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld giorni di fila"
+            "value": "%lld Tage in Folge"
           }
         },
         "es": {
@@ -174,10 +336,10 @@
             "value": "%lld jours d'affilée"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Tage in Folge"
+            "value": "%lld giorni di fila"
           }
         },
         "pt-BR": {
@@ -190,10 +352,10 @@
     },
     "%lld days without missing one. This is how an interview gets easy.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld giorni senza saltarne uno. È così che un colloquio diventa facile."
+            "value": "%lld Tage ohne Unterbrechung. So wird ein Gespräch leicht."
           }
         },
         "es": {
@@ -208,10 +370,10 @@
             "value": "%lld jours sans en manquer un. C'est comme ça qu'un entretien devient facile."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Tage ohne Unterbrechung. So wird ein Gespräch leicht."
+            "value": "%lld giorni senza saltarne uno. È così che un colloquio diventa facile."
           }
         },
         "pt-BR": {
@@ -224,10 +386,10 @@
     },
     "%lld locked topics open up right away, with their lessons and their quizzes.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld argomenti chiusi si aprono subito, con le loro lezioni e i loro quiz."
+            "value": "%lld gesperrte Themen öffnen sich sofort, mit ihren Lektionen und Quiz."
           }
         },
         "es": {
@@ -242,10 +404,10 @@
             "value": "%lld sujets verrouillés s'ouvrent tout de suite, avec leurs leçons et leurs quiz."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld gesperrte Themen öffnen sich sofort, mit ihren Lektionen und Quiz."
+            "value": "%lld argomenti chiusi si aprono subito, con le loro lezioni e i loro quiz."
           }
         },
         "pt-BR": {
@@ -258,10 +420,10 @@
     },
     "%lld questions": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld domande"
+            "value": "%lld Fragen"
           }
         },
         "es": {
@@ -276,10 +438,10 @@
             "value": "%lld questions"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Fragen"
+            "value": "%lld domande"
           }
         },
         "pt-BR": {
@@ -292,10 +454,10 @@
     },
     "%lld questions answered in total": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld domande risposte in totale"
+            "value": "%lld Fragen insgesamt beantwortet"
           }
         },
         "es": {
@@ -310,10 +472,10 @@
             "value": "%lld questions répondues en tout"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Fragen insgesamt beantwortet"
+            "value": "%lld domande risposte in totale"
           }
         },
         "pt-BR": {
@@ -326,10 +488,10 @@
     },
     "%lld questions for the %@ level": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld domande per il livello %@"
+            "value": "%lld Fragen für das Level %@"
           }
         },
         "es": {
@@ -344,10 +506,10 @@
             "value": "%lld questions pour le niveau %@"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Fragen für das Level %@"
+            "value": "%lld domande per il livello %@"
           }
         },
         "pt-BR": {
@@ -360,10 +522,10 @@
     },
     "%lld questions, about 2 minutes": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld domande, circa 2 minuti"
+            "value": "%lld Fragen, etwa 2 Minuten"
           }
         },
         "es": {
@@ -378,10 +540,10 @@
             "value": "%lld questions, environ 2 minutes"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Fragen, etwa 2 Minuten"
+            "value": "%lld domande, circa 2 minuti"
           }
         },
         "pt-BR": {
@@ -394,10 +556,10 @@
     },
     "%lld to review, with corrections": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld da ripassare, con la correzione"
+            "value": "%lld zum Wiederholen, mit Korrektur"
           }
         },
         "es": {
@@ -412,10 +574,10 @@
             "value": "%lld à revoir, avec la correction"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld zum Wiederholen, mit Korrektur"
+            "value": "%lld da ripassare, con la correzione"
           }
         },
         "pt-BR": {
@@ -433,53 +595,149 @@
             "state": "new",
             "value": "%1$lld/%2$lld"
           }
-        }
-      },
-      "shouldTranslate": false
-    },
-    "+%lld XP": {
-      "shouldTranslate": false
-    },
-    "/ month": {
-      "localizations": {
+        },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "/ mese"
+            "value": "%lld/%lld"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "/ mes"
+            "value": "%lld/%lld"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "/ mois"
+            "value": "%lld/%lld"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "/ Monat"
+            "value": "%lld/%lld"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "/ mês"
+            "value": "%lld/%lld"
+          }
+        }
+      },
+      "shouldTranslate": false
+    },
+    "+%lld XP": {
+      "shouldTranslate": false,
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld XP"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld XP"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld XP"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld XP"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld XP"
+          }
+        }
+      }
+    },
+    "🔥 %lld days in a row": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld Tage in Folge"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld días seguidos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld jours d'affilée"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld giorni di fila"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %lld dias seguidos"
+          }
+        }
+      }
+    },
+    "🔥 1 day in a row": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 Tag in Folge"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 día seguido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 jour d'affilée"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 giorno di fila"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 1 dia seguido"
           }
         }
       }
     },
     "1 day in a row": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "1 giorno di fila"
+            "value": "1 Tag in Folge"
           }
         },
         "es": {
@@ -494,10 +752,10 @@
             "value": "1 jour d'affilée"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "1 Tag in Folge"
+            "value": "1 giorno di fila"
           }
         },
         "pt-BR": {
@@ -510,10 +768,10 @@
     },
     "2 to 5 years, working on your own": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Da 2 a 5 anni, lavori in autonomia"
+            "value": "2 bis 5 Jahre, du arbeitest selbstständig"
           }
         },
         "es": {
@@ -528,10 +786,10 @@
             "value": "De 2 à 5 ans, tu travailles en autonomie"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "2 bis 5 Jahre, du arbeitest selbstständig"
+            "value": "Da 2 a 5 anni, lavori in autonomia"
           }
         },
         "pt-BR": {
@@ -544,10 +802,10 @@
     },
     "A daily quiz that grows with you": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un quiz del giorno che cresce con te"
+            "value": "Ein Tagesquiz, das mit dir wächst"
           }
         },
         "es": {
@@ -562,10 +820,10 @@
             "value": "Un quiz du jour qui grandit avec toi"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein Tagesquiz, das mit dir wächst"
+            "value": "Un quiz del giorno che cresce con te"
           }
         },
         "pt-BR": {
@@ -578,10 +836,10 @@
     },
     "A few things about the app": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Due cose sull'app"
+            "value": "Ein paar Dinge zur App"
           }
         },
         "es": {
@@ -596,10 +854,10 @@
             "value": "Deux mots sur l'app"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein paar Dinge zur App"
+            "value": "Due cose sull'app"
           }
         },
         "pt-BR": {
@@ -612,10 +870,10 @@
     },
     "A programming language made by Apple in 2014. Every app on the iPhone is written in it, and it took the place of the older Objective-C. You study: optionals, value and reference types, protocols and generics, closures, how memory is freed (ARC) and how to do two things at once (async/await).": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un linguaggio di programmazione fatto da Apple nel 2014. Tutte le app dell'iPhone sono scritte con questo, e ha preso il posto del più vecchio Objective-C. Studi: optional, tipi valore e tipi riferimento, protocolli e generics, closure, come viene liberata la memoria (ARC) e come fare due cose insieme (async/await)."
+            "value": "Eine Programmiersprache, die Apple 2014 gemacht hat. Jede App auf dem iPhone ist darin geschrieben, und sie hat das ältere Objective-C ersetzt. Du lernst: Optionals, Wert- und Referenztypen, Protokolle und Generics, Closures, wie Speicher freigegeben wird (ARC) und wie man zwei Dinge gleichzeitig tut (async/await)."
           }
         },
         "es": {
@@ -630,10 +888,10 @@
             "value": "Un langage de programmation créé par Apple en 2014. Toutes les apps de l'iPhone sont écrites avec, et il a pris la place de l'ancien Objective-C. Tu étudies : les optionnels, les types valeur et référence, les protocoles et les génériques, les closures, la libération de la mémoire (ARC) et comment faire deux choses à la fois (async/await)."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eine Programmiersprache, die Apple 2014 gemacht hat. Jede App auf dem iPhone ist darin geschrieben, und sie hat das ältere Objective-C ersetzt. Du lernst: Optionals, Wert- und Referenztypen, Protokolle und Generics, Closures, wie Speicher freigegeben wird (ARC) und wie man zwei Dinge gleichzeitig tut (async/await)."
+            "value": "Un linguaggio di programmazione fatto da Apple nel 2014. Tutte le app dell'iPhone sono scritte con questo, e ha preso il posto del più vecchio Objective-C. Studi: optional, tipi valore e tipi riferimento, protocolli e generics, closure, come viene liberata la memoria (ARC) e come fare due cose insieme (async/await)."
           }
         },
         "pt-BR": {
@@ -646,10 +904,10 @@
     },
     "A programming language made by JetBrains, and since 2017 the one Google recommends for Android apps. It took the place of Java, which is why interviewers compare the two. You study: avoiding the null crash, coroutines for work that takes time, data classes, collections, and the life of an Android screen with Jetpack.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un linguaggio di programmazione fatto da JetBrains e, dal 2017, quello che Google consiglia per le app Android. Ha preso il posto di Java, ed è per questo che ai colloqui li mettono a confronto. Studi: come evitare il crash da null, le coroutine per il lavoro che richiede tempo, le data class, le collection e la vita di una schermata Android con Jetpack."
+            "value": "Eine Programmiersprache von JetBrains und seit 2017 die, die Google für Android-Apps empfiehlt. Sie hat Java ersetzt, deshalb werden beide im Gespräch verglichen. Du lernst: den Null-Crash vermeiden, Coroutines für Arbeit, die dauert, Data Classes, Collections und das Leben eines Android-Bildschirms mit Jetpack."
           }
         },
         "es": {
@@ -664,10 +922,10 @@
             "value": "Un langage de programmation créé par JetBrains et, depuis 2017, celui que Google recommande pour les apps Android. Il a pris la place de Java, et c'est pour ça qu'en entretien on les compare. Tu étudies : comment éviter le crash dû au null, les coroutines pour le travail qui prend du temps, les data class, les collections et la vie d'un écran Android avec Jetpack."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eine Programmiersprache von JetBrains und seit 2017 die, die Google für Android-Apps empfiehlt. Sie hat Java ersetzt, deshalb werden beide im Gespräch verglichen. Du lernst: den Null-Crash vermeiden, Coroutines für Arbeit, die dauert, Data Classes, Collections und das Leben eines Android-Bildschirms mit Jetpack."
+            "value": "Un linguaggio di programmazione fatto da JetBrains e, dal 2017, quello che Google consiglia per le app Android. Ha preso il posto di Java, ed è per questo che ai colloqui li mettono a confronto. Studi: come evitare il crash da null, le coroutine per il lavoro che richiede tempo, le data class, le collection e la vita di una schermata Android con Jetpack."
           }
         },
         "pt-BR": {
@@ -680,10 +938,10 @@
     },
     "A recruiter could ask you tomorrow. Better to know it today.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un recruiter potrebbe chiedertelo domani. Meglio saperlo oggi."
+            "value": "Ein Recruiter könnte es dich morgen fragen. Besser, du weißt es heute."
           }
         },
         "es": {
@@ -698,10 +956,10 @@
             "value": "Un recruteur peut te le demander demain. Autant le savoir aujourd'hui."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein Recruiter könnte es dich morgen fragen. Besser, du weißt es heute."
+            "value": "Un recruiter potrebbe chiedertelo domani. Meglio saperlo oggi."
           }
         },
         "pt-BR": {
@@ -714,10 +972,10 @@
     },
     "A toolbox made by Google to write the app once and run it on both Android and iPhone. The language it uses is called Dart. You study: widgets and state, Dart and its asynchronous code, isolates for heavy work, how to organise a project, how to call native code and how to publish.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una cassetta degli attrezzi fatta da Google per scrivere l'app una volta sola e farla girare sia su Android sia su iPhone. Il linguaggio che usa si chiama Dart. Studi: i widget e lo stato, Dart e il suo codice asincrono, gli isolate per il lavoro pesante, come organizzare un progetto, come chiamare il codice nativo e come pubblicare."
+            "value": "Ein Werkzeugkasten von Google, um die App einmal zu schreiben und auf Android und iPhone laufen zu lassen. Die Sprache dazu heißt Dart. Du lernst: Widgets und State, Dart und seinen asynchronen Code, Isolates für schwere Arbeit, wie man ein Projekt ordnet, wie man native Code aufruft und wie man veröffentlicht."
           }
         },
         "es": {
@@ -732,10 +990,10 @@
             "value": "Une boîte à outils créée par Google pour écrire l'app une seule fois et la faire tourner sur Android comme sur iPhone. Le langage qu'elle utilise s'appelle Dart. Tu étudies : les widgets et l'état, Dart et son code asynchrone, les isolates pour le travail lourd, comment organiser un projet, comment appeler du code natif et comment publier."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein Werkzeugkasten von Google, um die App einmal zu schreiben und auf Android und iPhone laufen zu lassen. Die Sprache dazu heißt Dart. Du lernst: Widgets und State, Dart und seinen asynchronen Code, Isolates für schwere Arbeit, wie man ein Projekt ordnet, wie man native Code aufruft und wie man veröffentlicht."
+            "value": "Una cassetta degli attrezzi fatta da Google per scrivere l'app una volta sola e farla girare sia su Android sia su iPhone. Il linguaggio che usa si chiama Dart. Studi: i widget e lo stato, Dart e il suo codice asincrono, gli isolate per il lavoro pesante, come organizzare un progetto, come chiamare il codice nativo e come pubblicare."
           }
         },
         "pt-BR": {
@@ -748,10 +1006,10 @@
     },
     "About": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Informazioni"
+            "value": "Über die App"
           }
         },
         "es": {
@@ -766,10 +1024,10 @@
             "value": "À propos"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Über die App"
+            "value": "Informazioni"
           }
         },
         "pt-BR": {
@@ -782,10 +1040,10 @@
     },
     "Accuracy": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Precisione"
+            "value": "Treffer"
           }
         },
         "es": {
@@ -800,10 +1058,10 @@
             "value": "Précision"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Treffer"
+            "value": "Precisione"
           }
         },
         "pt-BR": {
@@ -814,12 +1072,46 @@
         }
       }
     },
-    "All the Mid and Senior topics": {
+    "All correct": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tutti gli argomenti Mid e Senior"
+            "value": "Tutto giusto"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo correcto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout juste"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles richtig"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tudo certo"
+          }
+        }
+      }
+    },
+    "All the Mid and Senior topics": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Mid- und Senior-Themen"
           }
         },
         "es": {
@@ -834,10 +1126,10 @@
             "value": "Tous les sujets Mid et Senior"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle Mid- und Senior-Themen"
+            "value": "Tutti gli argomenti Mid e Senior"
           }
         },
         "pt-BR": {
@@ -848,12 +1140,46 @@
         }
       }
     },
-    "Apple's standard EULA": {
+    "and": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "und"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "y"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "et"
+          }
+        },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "EULA standard di Apple"
+            "value": "e"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e"
+          }
+        }
+      }
+    },
+    "Apple's standard EULA": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apples Standard-EULA"
           }
         },
         "es": {
@@ -868,10 +1194,10 @@
             "value": "CLUF standard d'Apple"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apples Standard-EULA"
+            "value": "EULA standard di Apple"
           }
         },
         "pt-BR": {
@@ -884,10 +1210,10 @@
     },
     "Automatic": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automatico"
+            "value": "Automatisch"
           }
         },
         "es": {
@@ -902,10 +1228,10 @@
             "value": "Automatique"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automatisch"
+            "value": "Automatico"
           }
         },
         "pt-BR": {
@@ -918,10 +1244,10 @@
     },
     "Automatic follows your iPhone: it turns dark in the evening if you have set it that way.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automatico segue l'iPhone: diventa scuro di sera, se l'hai impostato così."
+            "value": "Automatisch folgt deinem iPhone: Abends wird es dunkel, wenn du das so eingestellt hast."
           }
         },
         "es": {
@@ -936,10 +1262,10 @@
             "value": "Automatique suit ton iPhone : il passe en sombre le soir, si tu l'as réglé ainsi."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automatisch folgt deinem iPhone: Abends wird es dunkel, wenn du das so eingestellt hast."
+            "value": "Automatico segue l'iPhone: diventa scuro di sera, se l'hai impostato così."
           }
         },
         "pt-BR": {
@@ -952,10 +1278,10 @@
     },
     "Best": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Record"
+            "value": "Bestwert"
           }
         },
         "es": {
@@ -970,10 +1296,10 @@
             "value": "Record"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bestwert"
+            "value": "Record"
           }
         },
         "pt-BR": {
@@ -986,10 +1312,10 @@
     },
     "Best %lld%%": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Record %lld%%"
+            "value": "Bestwert %lld%%"
           }
         },
         "es": {
@@ -1004,10 +1330,10 @@
             "value": "Record %lld%%"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bestwert %lld%%"
+            "value": "Record %lld%%"
           }
         },
         "pt-BR": {
@@ -1018,12 +1344,46 @@
         }
       }
     },
-    "Beyond senior": {
+    "Best streak": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oltre il senior"
+            "value": "Serie record"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mejor racha"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meilleure série"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beste Serie"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melhor sequência"
+          }
+        }
+      }
+    },
+    "Beyond senior": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jenseits von Senior"
           }
         },
         "es": {
@@ -1038,10 +1398,10 @@
             "value": "Au-delà du senior"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jenseits von Senior"
+            "value": "Oltre il senior"
           }
         },
         "pt-BR": {
@@ -1054,10 +1414,10 @@
     },
     "Both · Android and iPhone": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entrambi · Android e iPhone"
+            "value": "Beides · Android und iPhone"
           }
         },
         "es": {
@@ -1072,10 +1432,10 @@
             "value": "Les deux · Android et iPhone"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Beides · Android und iPhone"
+            "value": "Entrambi · Android e iPhone"
           }
         },
         "pt-BR": {
@@ -1088,10 +1448,10 @@
     },
     "Buttons, lessons, questions and reminders all switch. Your progress stays as it is.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cambiano bottoni, lezioni, domande e promemoria. I tuoi progressi restano come sono."
+            "value": "Buttons, Lektionen, Fragen und Erinnerungen wechseln mit. Dein Fortschritt bleibt, wie er ist."
           }
         },
         "es": {
@@ -1106,10 +1466,10 @@
             "value": "Les boutons, les leçons, les questions et les rappels changent. Ta progression reste la même."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buttons, Lektionen, Fragen und Erinnerungen wechseln mit. Dein Fortschritt bleibt, wie er ist."
+            "value": "Cambiano bottoni, lezioni, domande e promemoria. I tuoi progressi restano come sono."
           }
         },
         "pt-BR": {
@@ -1122,10 +1482,10 @@
     },
     "By continuing you accept": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continuando accetti"
+            "value": "Mit dem Fortfahren akzeptierst du"
           }
         },
         "es": {
@@ -1140,10 +1500,10 @@
             "value": "En continuant tu acceptes"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mit dem Fortfahren akzeptierst du"
+            "value": "Continuando accetti"
           }
         },
         "pt-BR": {
@@ -1156,10 +1516,10 @@
     },
     "By default the app follows your iPhone. If you prefer, you can fix it on light or on dark from the profile.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Di base l'app segue l'iPhone. Se preferisci, dal profilo puoi fissarla su chiaro o su scuro."
+            "value": "Standardmäßig folgt die App deinem iPhone. Wenn du willst, kannst du im Profil hell oder dunkel festlegen."
           }
         },
         "es": {
@@ -1174,10 +1534,10 @@
             "value": "Par défaut l'app suit ton iPhone. Si tu préfères, tu peux la fixer en clair ou en sombre depuis le profil."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standardmäßig folgt die App deinem iPhone. Wenn du willst, kannst du im Profil hell oder dunkel festlegen."
+            "value": "Di base l'app segue l'iPhone. Se preferisci, dal profilo puoi fissarla su chiaro o su scuro."
           }
         },
         "pt-BR": {
@@ -1190,10 +1550,10 @@
     },
     "Close": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chiudi"
+            "value": "Schließen"
           }
         },
         "es": {
@@ -1208,10 +1568,10 @@
             "value": "Fermer"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schließen"
+            "value": "Chiudi"
           }
         },
         "pt-BR": {
@@ -1224,10 +1584,10 @@
     },
     "Come back tomorrow for new questions. Meanwhile you can review.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Torna domani per le nuove domande. Intanto puoi ripassare."
+            "value": "Komm morgen für neue Fragen wieder. Bis dahin kannst du wiederholen."
           }
         },
         "es": {
@@ -1242,10 +1602,10 @@
             "value": "Reviens demain pour de nouvelles questions. En attendant, tu peux réviser."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Komm morgen für neue Fragen wieder. Bis dahin kannst du wiederholen."
+            "value": "Torna domani per le nuove domande. Intanto puoi ripassare."
           }
         },
         "pt-BR": {
@@ -1258,10 +1618,10 @@
     },
     "Contact support": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Contatta il supporto"
+            "value": "Support kontaktieren"
           }
         },
         "es": {
@@ -1276,10 +1636,10 @@
             "value": "Contacter le support"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Support kontaktieren"
+            "value": "Contatta il supporto"
           }
         },
         "pt-BR": {
@@ -1292,10 +1652,10 @@
     },
     "Continue": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Continua"
+            "value": "Weiter"
           }
         },
         "es": {
@@ -1310,10 +1670,10 @@
             "value": "Continuer"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Weiter"
+            "value": "Continua"
           }
         },
         "pt-BR": {
@@ -1324,12 +1684,46 @@
         }
       }
     },
-    "Correct!": {
+    "correct": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "richtig"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "correctas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "justes"
+          }
+        },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Esatto!"
+            "value": "giuste"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "certas"
+          }
+        }
+      }
+    },
+    "Correct!": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richtig!"
           }
         },
         "es": {
@@ -1344,10 +1738,10 @@
             "value": "Exact !"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Richtig!"
+            "value": "Esatto!"
           }
         },
         "pt-BR": {
@@ -1360,10 +1754,10 @@
     },
     "Daily quiz": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quiz del giorno"
+            "value": "Tagesquiz"
           }
         },
         "es": {
@@ -1378,10 +1772,10 @@
             "value": "Quiz du jour"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tagesquiz"
+            "value": "Quiz del giorno"
           }
         },
         "pt-BR": {
@@ -1394,10 +1788,10 @@
     },
     "Daily reminder": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Promemoria giornaliero"
+            "value": "Tägliche Erinnerung"
           }
         },
         "es": {
@@ -1412,10 +1806,10 @@
             "value": "Rappel quotidien"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tägliche Erinnerung"
+            "value": "Promemoria giornaliero"
           }
         },
         "pt-BR": {
@@ -1428,10 +1822,10 @@
     },
     "Dark": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Scuro"
+            "value": "Dunkel"
           }
         },
         "es": {
@@ -1446,10 +1840,10 @@
             "value": "Sombre"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dunkel"
+            "value": "Scuro"
           }
         },
         "pt-BR": {
@@ -1460,12 +1854,252 @@
         }
       }
     },
-    "Don't break the streak: 5 questions on %@ are waiting.": {
+    "day": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "día"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jour"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "giorno"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dia"
+          }
+        }
+      }
+    },
+    "Day": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Non spezzare la serie: 5 domande su %@ ti aspettano."
+            "value": "Giorno"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jour"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dia"
+          }
+        }
+      }
+    },
+    "day in a row": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "giorno di fila"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "día seguido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jour d'affilée"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag in Folge"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dia seguido"
+          }
+        }
+      }
+    },
+    "days": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tage"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "días"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jours"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "giorni"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dias"
+          }
+        }
+      }
+    },
+    "Days done": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giorni fatti"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Días hechos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jours faits"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigte Tage"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dias feitos"
+          }
+        }
+      }
+    },
+    "days in a row": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "giorni di fila"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "días seguidos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jours d'affilée"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tage in Folge"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dias seguidos"
+          }
+        }
+      }
+    },
+    "Do today's quiz and the streak starts again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fai il quiz di oggi e la serie riparte."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haz el test de hoy y la racha vuelve a empezar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fais le quiz du jour et la série repart."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mach das heutige Quiz und die Serie beginnt neu."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faça o quiz de hoje e a sequência recomeça."
+          }
+        }
+      }
+    },
+    "Don't break the streak: 5 questions on %@ are waiting.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unterbrich die Serie nicht: 5 Fragen zu %@ warten."
           }
         },
         "es": {
@@ -1480,10 +2114,10 @@
             "value": "Ne casse pas la série : 5 questions sur %@ t'attendent."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unterbrich die Serie nicht: 5 Fragen zu %@ warten."
+            "value": "Non spezzare la serie: 5 domande su %@ ti aspettano."
           }
         },
         "pt-BR": {
@@ -1496,10 +2130,10 @@
     },
     "Done": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fatto"
+            "value": "Fertig"
           }
         },
         "es": {
@@ -1514,10 +2148,10 @@
             "value": "Terminé"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fertig"
+            "value": "Fatto"
           }
         },
         "pt-BR": {
@@ -1530,10 +2164,10 @@
     },
     "Done! %lld/%lld correct": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fatto! %lld/%lld giuste"
+            "value": "Fertig! %lld/%lld richtig"
           }
         },
         "es": {
@@ -1548,10 +2182,10 @@
             "value": "Terminé ! %lld/%lld justes"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fertig! %lld/%lld richtig"
+            "value": "Fatto! %lld/%lld giuste"
           }
         },
         "pt-BR": {
@@ -1564,10 +2198,10 @@
     },
     "Each track has its own topics, in order from the fundamentals to senior material. The daily questions mix the active tracks, drawing only from the topics your rank has already reached. At least one track must stay on.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ogni percorso ha i suoi argomenti, in ordine dalle fondamenta ai temi da senior. Le domande del giorno mescolano i percorsi attivi, pescando solo dagli argomenti che il tuo grado ha già raggiunto. Almeno un percorso deve restare acceso."
+            "value": "Jeder Pfad hat seine Themen, geordnet von den Grundlagen bis zum Senior-Stoff. Die Tagesfragen mischen die aktiven Pfade und nehmen nur Themen, die dein Rang schon erreicht hat. Mindestens ein Pfad muss aktiv bleiben."
           }
         },
         "es": {
@@ -1582,10 +2216,10 @@
             "value": "Chaque parcours a ses sujets, dans l'ordre, des bases aux thèmes de senior. Les questions du jour mélangent les parcours actifs et ne piochent que dans les sujets que ton rang a déjà atteints. Au moins un parcours doit rester activé."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jeder Pfad hat seine Themen, geordnet von den Grundlagen bis zum Senior-Stoff. Die Tagesfragen mischen die aktiven Pfade und nehmen nur Themen, die dein Rang schon erreicht hat. Mindestens ein Pfad muss aktiv bleiben."
+            "value": "Ogni percorso ha i suoi argomenti, in ordine dalle fondamenta ai temi da senior. Le domande del giorno mescolano i percorsi attivi, pescando solo dagli argomenti che il tuo grado ha già raggiunto. Almeno un percorso deve restare acceso."
           }
         },
         "pt-BR": {
@@ -1598,10 +2232,10 @@
     },
     "Each track stands on its own, with its own topics and questions. Pick more than one: the daily quiz will mix them.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ogni percorso è a sé, con i suoi argomenti e le sue domande. Puoi sceglierne più di uno: il quiz del giorno li mescolerà."
+            "value": "Jeder Pfad steht für sich, mit eigenen Themen und Fragen. Du kannst mehrere wählen: Das Tagesquiz mischt sie."
           }
         },
         "es": {
@@ -1616,10 +2250,10 @@
             "value": "Chaque parcours est indépendant, avec ses sujets et ses questions. Tu peux en choisir plusieurs : le quiz du jour les mélangera."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jeder Pfad steht für sich, mit eigenen Themen und Fragen. Du kannst mehrere wählen: Das Tagesquiz mischt sie."
+            "value": "Ogni percorso è a sé, con i suoi argomenti e le sue domande. Puoi sceglierne più di uno: il quiz del giorno li mescolerà."
           }
         },
         "pt-BR": {
@@ -1632,10 +2266,10 @@
     },
     "English, Italiano, Español, Français, Deutsch, Português. You pick yours in the profile, whenever you want. Lessons and questions are written in English and Italian.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "English, Italiano, Español, Français, Deutsch, Português. La tua la scegli dal profilo, quando vuoi. Lezioni e domande sono scritte in inglese e in italiano."
+            "value": "English, Italiano, Español, Français, Deutsch, Português. Deine wählst du im Profil, wann du willst. Lektionen und Fragen sind auf Englisch und Italienisch geschrieben."
           }
         },
         "es": {
@@ -1650,10 +2284,10 @@
             "value": "English, Italiano, Español, Français, Deutsch, Português. Tu choisis la tienne dans le profil, quand tu veux. Les leçons et les questions sont écrites en anglais et en italien."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "English, Italiano, Español, Français, Deutsch, Português. Deine wählst du im Profil, wann du willst. Lektionen und Fragen sind auf Englisch und Italienisch geschrieben."
+            "value": "English, Italiano, Español, Français, Deutsch, Português. La tua la scegli dal profilo, quando vuoi. Lezioni e domande sono scritte in inglese e in italiano."
           }
         },
         "pt-BR": {
@@ -1666,10 +2300,10 @@
     },
     "Enters the daily quiz from the %@ rank": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entra nel quiz del giorno dal grado %@"
+            "value": "Kommt ab Rang %@ ins Tagesquiz"
           }
         },
         "es": {
@@ -1684,10 +2318,10 @@
             "value": "Entre dans le quiz du jour à partir du rang %@"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kommt ab Rang %@ ins Tagesquiz"
+            "value": "Entra nel quiz del giorno dal grado %@"
           }
         },
         "pt-BR": {
@@ -1698,46 +2332,12 @@
         }
       }
     },
-    "Every Junior topic of every track is free: the lessons, the quizzes and five questions a day. No trial that runs out.": {
+    "Every correct answer is worth 10, 20 or 30 XP depending on difficulty, in full only the first time. The daily quiz adds a bonus, larger when your streak is long. As your rank goes up the questions get harder.": {
       "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ogni argomento Junior di ogni percorso è gratis: le lezioni, i quiz e cinque domande al giorno. Nessuna prova che scade."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Todos los temas Junior de todas las rutas son gratis: las lecciones, los cuestionarios y cinco preguntas al día. Sin prueba que caduque."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tous les sujets Junior de chaque parcours sont gratuits : les leçons, les quiz et cinq questions par jour. Pas d'essai qui expire."
-          }
-        },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jedes Junior-Thema jedes Pfads ist kostenlos: die Lektionen, die Quiz und fünf Fragen am Tag. Keine Testphase, die abläuft."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Todos os tópicos Junior de cada trilha são gratuitos: as lições, os quizzes e cinco perguntas por dia. Sem teste que expira."
-          }
-        }
-      }
-    },
-    "Every correct answer is worth 10, 20 or 30 XP depending on difficulty, in full only the first time. The daily quiz adds a bonus, larger when your streak is long. As your rank goes up the questions get harder.": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ogni risposta giusta vale 10, 20 o 30 XP in base alla difficoltà, piena solo la prima volta. Il quiz del giorno aggiunge un bonus, più alto se lo streak è lungo. Salendo di grado le domande si fanno più difficili."
+            "value": "Jede richtige Antwort bringt 10, 20 oder 30 XP je nach Schwierigkeit, voll nur beim ersten Mal. Das Tagesquiz gibt einen Bonus, höher bei langer Serie. Mit steigendem Rang werden die Fragen schwerer."
           }
         },
         "es": {
@@ -1752,10 +2352,10 @@
             "value": "Chaque bonne réponse vaut 10, 20 ou 30 XP selon la difficulté, en entier seulement la première fois. Le quiz du jour ajoute un bonus, plus gros si ta série est longue. En montant de rang, les questions deviennent plus dures."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jede richtige Antwort bringt 10, 20 oder 30 XP je nach Schwierigkeit, voll nur beim ersten Mal. Das Tagesquiz gibt einen Bonus, höher bei langer Serie. Mit steigendem Rang werden die Fragen schwerer."
+            "value": "Ogni risposta giusta vale 10, 20 o 30 XP in base alla difficoltà, piena solo la prima volta. Il quiz del giorno aggiunge un bonus, più alto se lo streak è lungo. Salendo di grado le domande si fanno più difficili."
           }
         },
         "pt-BR": {
@@ -1766,12 +2366,46 @@
         }
       }
     },
-    "Every lesson and every question is open. Thank you, really.": {
+    "Every Junior topic of every track is free: the lessons, the quizzes and five questions a day. No trial that runs out.": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jedes Junior-Thema jedes Pfads ist kostenlos: die Lektionen, die Quiz und fünf Fragen am Tag. Keine Testphase, die abläuft."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos los temas Junior de todas las rutas son gratis: las lecciones, los cuestionarios y cinco preguntas al día. Sin prueba que caduque."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous les sujets Junior de chaque parcours sont gratuits : les leçons, les quiz et cinq questions par jour. Pas d'essai qui expire."
+          }
+        },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ogni lezione e ogni domanda sono aperte. Grazie davvero."
+            "value": "Ogni argomento Junior di ogni percorso è gratis: le lezioni, i quiz e cinque domande al giorno. Nessuna prova che scade."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos os tópicos Junior de cada trilha são gratuitos: as lições, os quizzes e cinco perguntas por dia. Sem teste que expira."
+          }
+        }
+      }
+    },
+    "Every lesson and every question is open. Thank you, really.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede Lektion und jede Frage ist offen. Danke, wirklich."
           }
         },
         "es": {
@@ -1786,10 +2420,10 @@
             "value": "Chaque leçon et chaque question sont ouvertes. Merci, vraiment."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jede Lektion und jede Frage ist offen. Danke, wirklich."
+            "value": "Ogni lezione e ogni domanda sono aperte. Grazie davvero."
           }
         },
         "pt-BR": {
@@ -1802,10 +2436,10 @@
     },
     "Every lesson, every question, on all four tracks.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ogni lezione, ogni domanda, su tutti e quattro i percorsi."
+            "value": "Jede Lektion, jede Frage, auf allen vier Pfaden."
           }
         },
         "es": {
@@ -1820,10 +2454,10 @@
             "value": "Chaque leçon, chaque question, sur les quatre parcours."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jede Lektion, jede Frage, auf allen vier Pfaden."
+            "value": "Ogni lezione, ogni domanda, su tutti e quattro i percorsi."
           }
         },
         "pt-BR": {
@@ -1836,10 +2470,10 @@
     },
     "Finish": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fine"
+            "value": "Fertig"
           }
         },
         "es": {
@@ -1854,10 +2488,10 @@
             "value": "Terminer"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fertig"
+            "value": "Fine"
           }
         },
         "pt-BR": {
@@ -1870,10 +2504,10 @@
     },
     "Five questions, two minutes. Your next interview will thank you.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cinque domande, due minuti. Il prossimo colloquio ringrazia."
+            "value": "Fünf Fragen, zwei Minuten. Dein nächstes Gespräch dankt dir."
           }
         },
         "es": {
@@ -1888,10 +2522,10 @@
             "value": "Cinq questions, deux minutes. Ton prochain entretien te dira merci."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fünf Fragen, zwei Minuten. Dein nächstes Gespräch dankt dir."
+            "value": "Cinque domande, due minuti. Il prossimo colloquio ringrazia."
           }
         },
         "pt-BR": {
@@ -1904,10 +2538,10 @@
     },
     "Free from the first day": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gratis dal primo giorno"
+            "value": "Ab dem ersten Tag kostenlos"
           }
         },
         "es": {
@@ -1922,10 +2556,10 @@
             "value": "Gratuit dès le premier jour"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ab dem ersten Tag kostenlos"
+            "value": "Gratis dal primo giorno"
           }
         },
         "pt-BR": {
@@ -1938,10 +2572,10 @@
     },
     "Get ready for mobile tech interviews,\nwith five questions a day and short lessons.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preparati ai colloqui tecnici mobile,\ncon cinque domande al giorno e lezioni brevi."
+            "value": "Bereite dich auf Mobile-Tech-Gespräche vor,\nmit fünf Fragen am Tag und kurzen Lektionen."
           }
         },
         "es": {
@@ -1956,10 +2590,10 @@
             "value": "Prépare-toi aux entretiens techniques mobile,\navec cinq questions par jour et des leçons courtes."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bereite dich auf Mobile-Tech-Gespräche vor,\nmit fünf Fragen am Tag und kurzen Lektionen."
+            "value": "Preparati ai colloqui tecnici mobile,\ncon cinque domande al giorno e lezioni brevi."
           }
         },
         "pt-BR": {
@@ -1972,10 +2606,10 @@
     },
     "Good afternoon": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buon pomeriggio"
+            "value": "Guten Tag"
           }
         },
         "es": {
@@ -1990,10 +2624,10 @@
             "value": "Bon après-midi"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Guten Tag"
+            "value": "Buon pomeriggio"
           }
         },
         "pt-BR": {
@@ -2006,10 +2640,10 @@
     },
     "Good evening": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buonasera"
+            "value": "Guten Abend"
           }
         },
         "es": {
@@ -2024,10 +2658,10 @@
             "value": "Bonsoir"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Guten Abend"
+            "value": "Buonasera"
           }
         },
         "pt-BR": {
@@ -2040,10 +2674,10 @@
     },
     "Good morning": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buongiorno"
+            "value": "Guten Morgen"
           }
         },
         "es": {
@@ -2058,10 +2692,10 @@
             "value": "Bonjour"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Guten Morgen"
+            "value": "Buongiorno"
           }
         },
         "pt-BR": {
@@ -2074,10 +2708,10 @@
     },
     "Great work, almost flawless.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ottimo lavoro, quasi senza sbavature."
+            "value": "Starke Arbeit, fast fehlerfrei."
           }
         },
         "es": {
@@ -2092,10 +2726,10 @@
             "value": "Beau travail, presque sans faute."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Starke Arbeit, fast fehlerfrei."
+            "value": "Ottimo lavoro, quasi senza sbavature."
           }
         },
         "pt-BR": {
@@ -2108,10 +2742,10 @@
     },
     "In order, from the fundamentals to senior topics.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "In ordine, dalle fondamenta ai temi da senior."
+            "value": "Der Reihe nach, von den Grundlagen bis zu Senior-Themen."
           }
         },
         "es": {
@@ -2126,10 +2760,10 @@
             "value": "Dans l'ordre, des bases aux sujets de senior."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Reihe nach, von den Grundlagen bis zu Senior-Themen."
+            "value": "In ordine, dalle fondamenta ai temi da senior."
           }
         },
         "pt-BR": {
@@ -2142,10 +2776,10 @@
     },
     "Interfaces · iPhone": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Interfacce · iPhone"
+            "value": "Oberflächen · iPhone"
           }
         },
         "es": {
@@ -2160,10 +2794,10 @@
             "value": "Interfaces · iPhone"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oberflächen · iPhone"
+            "value": "Interfacce · iPhone"
           }
         },
         "pt-BR": {
@@ -2175,11 +2809,43 @@
       }
     },
     "Interviews": {
-      "shouldTranslate": false
+      "shouldTranslate": false,
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interviews"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interviews"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interviews"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interviews"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interviews"
+          }
+        }
+      }
     },
     "Interviews Pro": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Interviews Pro"
@@ -2197,7 +2863,7 @@
             "value": "Interviews Pro"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Interviews Pro"
@@ -2213,10 +2879,10 @@
     },
     "Interviews Pro is active": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Interviews Pro è attivo"
+            "value": "Interviews Pro ist aktiv"
           }
         },
         "es": {
@@ -2231,10 +2897,10 @@
             "value": "Interviews Pro est actif"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Interviews Pro ist aktiv"
+            "value": "Interviews Pro è attivo"
           }
         },
         "pt-BR": {
@@ -2247,10 +2913,10 @@
     },
     "It only rings on days you haven't done the quiz yet.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suona solo nei giorni in cui non hai ancora fatto il quiz."
+            "value": "Es klingelt nur an Tagen, an denen du das Quiz noch nicht gemacht hast."
           }
         },
         "es": {
@@ -2265,10 +2931,10 @@
             "value": "Il ne sonne que les jours où tu n'as pas encore fait le quiz."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Es klingelt nur an Tagen, an denen du das Quiz noch nicht gemacht hast."
+            "value": "Suona solo nei giorni in cui non hai ancora fatto il quiz."
           }
         },
         "pt-BR": {
@@ -2281,10 +2947,10 @@
     },
     "It renews by itself every month until you cancel it, from Settings on your iPhone.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si rinnova da sé ogni mese finché non lo disdici, dalle Impostazioni dell'iPhone."
+            "value": "Es verlängert sich jeden Monat selbst, bis du es in den iPhone-Einstellungen kündigst."
           }
         },
         "es": {
@@ -2299,10 +2965,10 @@
             "value": "Il se renouvelle tout seul chaque mois jusqu'à ce que tu l'annules, depuis les Réglages de l'iPhone."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Es verlängert sich jeden Monat selbst, bis du es in den iPhone-Einstellungen kündigst."
+            "value": "Si rinnova da sé ogni mese finché non lo disdici, dalle Impostazioni dell'iPhone."
           }
         },
         "pt-BR": {
@@ -2315,10 +2981,10 @@
     },
     "It's a symbolic price to support an independent developer and push me to keep making this better.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "È un prezzo simbolico per sostenere una sviluppatrice indipendente e spingermi a fare sempre meglio."
+            "value": "Ein symbolischer Preis, um eine unabhängige Entwicklerin zu unterstützen und mich anzutreiben, es immer besser zu machen."
           }
         },
         "es": {
@@ -2333,10 +2999,10 @@
             "value": "C'est un prix symbolique pour soutenir une développeuse indépendante et me pousser à faire toujours mieux."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein symbolischer Preis, um eine unabhängige Entwicklerin zu unterstützen und mich anzutreiben, es immer besser zu machen."
+            "value": "È un prezzo simbolico per sostenere una sviluppatrice indipendente e spingermi a fare sempre meglio."
           }
         },
         "pt-BR": {
@@ -2349,10 +3015,10 @@
     },
     "Junior is free. Mid and Senior open with Interviews Pro.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Junior è gratis. Mid e Senior si aprono con Interviews Pro."
+            "value": "Junior ist kostenlos. Mid und Senior öffnen sich mit Interviews Pro."
           }
         },
         "es": {
@@ -2367,10 +3033,10 @@
             "value": "Junior est gratuit. Mid et Senior s'ouvrent avec Interviews Pro."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Junior ist kostenlos. Mid und Senior öffnen sich mit Interviews Pro."
+            "value": "Junior è gratis. Mid e Senior si aprono con Interviews Pro."
           }
         },
         "pt-BR": {
@@ -2383,10 +3049,10 @@
     },
     "Junior is free. Mid and Senior with Interviews Pro, %@ a month.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Junior è gratis. Mid e Senior con Interviews Pro, %@ al mese."
+            "value": "Junior ist kostenlos. Mid und Senior mit Interviews Pro, %@ im Monat."
           }
         },
         "es": {
@@ -2401,10 +3067,10 @@
             "value": "Junior est gratuit. Mid et Senior avec Interviews Pro, %@ par mois."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Junior ist kostenlos. Mid und Senior mit Interviews Pro, %@ im Monat."
+            "value": "Junior è gratis. Mid e Senior con Interviews Pro, %@ al mese."
           }
         },
         "pt-BR": {
@@ -2417,10 +3083,10 @@
     },
     "Keep going": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vai avanti così"
+            "value": "Weiter so"
           }
         },
         "es": {
@@ -2435,10 +3101,10 @@
             "value": "Continue comme ça"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Weiter so"
+            "value": "Vai avanti così"
           }
         },
         "pt-BR": {
@@ -2451,10 +3117,10 @@
     },
     "Language": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lingua"
+            "value": "Sprache"
           }
         },
         "es": {
@@ -2469,10 +3135,10 @@
             "value": "Langue"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sprache"
+            "value": "Lingua"
           }
         },
         "pt-BR": {
@@ -2485,10 +3151,10 @@
     },
     "Language · Android": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Linguaggio · Android"
+            "value": "Sprache · Android"
           }
         },
         "es": {
@@ -2503,10 +3169,10 @@
             "value": "Langage · Android"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sprache · Android"
+            "value": "Linguaggio · Android"
           }
         },
         "pt-BR": {
@@ -2519,10 +3185,10 @@
     },
     "Language · iPhone": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Linguaggio · iPhone"
+            "value": "Sprache · iPhone"
           }
         },
         "es": {
@@ -2537,10 +3203,10 @@
             "value": "Langage · iPhone"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sprache · iPhone"
+            "value": "Linguaggio · iPhone"
           }
         },
         "pt-BR": {
@@ -2553,10 +3219,10 @@
     },
     "Later": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Più tardi"
+            "value": "Später"
           }
         },
         "es": {
@@ -2571,10 +3237,10 @@
             "value": "Plus tard"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Später"
+            "value": "Più tardi"
           }
         },
         "pt-BR": {
@@ -2587,10 +3253,10 @@
     },
     "Less than 2 years, or looking for your first job": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Meno di 2 anni, o stai cercando il primo lavoro"
+            "value": "Weniger als 2 Jahre, oder du suchst deinen ersten Job"
           }
         },
         "es": {
@@ -2605,10 +3271,10 @@
             "value": "Moins de 2 ans, ou tu cherches ton premier poste"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Weniger als 2 Jahre, oder du suchst deinen ersten Job"
+            "value": "Meno di 2 anni, o stai cercando il primo lavoro"
           }
         },
         "pt-BR": {
@@ -2621,10 +3287,10 @@
     },
     "Lesson read": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lezione letta"
+            "value": "Lektion gelesen"
           }
         },
         "es": {
@@ -2639,10 +3305,10 @@
             "value": "Leçon lue"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lektion gelesen"
+            "value": "Lezione letta"
           }
         },
         "pt-BR": {
@@ -2655,10 +3321,10 @@
     },
     "Lessons and questions are inside the app. Nothing of yours leaves your iPhone: there is no account and no sign-up.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lezioni e domande stanno dentro l'app. Niente di tuo esce dall'iPhone: non c'è account e non c'è registrazione."
+            "value": "Lektionen und Fragen stecken in der App. Nichts von dir verlässt dein iPhone: kein Konto, keine Anmeldung."
           }
         },
         "es": {
@@ -2673,10 +3339,10 @@
             "value": "Les leçons et les questions sont dans l'app. Rien de toi ne quitte l'iPhone : pas de compte, pas d'inscription."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lektionen und Fragen stecken in der App. Nichts von dir verlässt dein iPhone: kein Konto, keine Anmeldung."
+            "value": "Lezioni e domande stanno dentro l'app. Niente di tuo esce dall'iPhone: non c'è account e non c'è registrazione."
           }
         },
         "pt-BR": {
@@ -2689,10 +3355,10 @@
     },
     "Let's start": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Iniziamo"
+            "value": "Los geht's"
           }
         },
         "es": {
@@ -2707,10 +3373,10 @@
             "value": "On commence"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los geht's"
+            "value": "Iniziamo"
           }
         },
         "pt-BR": {
@@ -2723,10 +3389,10 @@
     },
     "Level %@ · %@": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Livello %@ · %@"
+            "value": "Level %@ · %@"
           }
         },
         "es": {
@@ -2741,10 +3407,10 @@
             "value": "Niveau %@ · %@"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Level %@ · %@"
+            "value": "Livello %@ · %@"
           }
         },
         "pt-BR": {
@@ -2757,10 +3423,10 @@
     },
     "Light": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chiaro"
+            "value": "Hell"
           }
         },
         "es": {
@@ -2775,10 +3441,10 @@
             "value": "Clair"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hell"
+            "value": "Chiaro"
           }
         },
         "pt-BR": {
@@ -2791,10 +3457,10 @@
     },
     "Light and dark": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chiaro e scuro"
+            "value": "Hell und dunkel"
           }
         },
         "es": {
@@ -2809,10 +3475,10 @@
             "value": "Clair et sombre"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hell und dunkel"
+            "value": "Chiaro e scuro"
           }
         },
         "pt-BR": {
@@ -2825,10 +3491,10 @@
     },
     "Manage subscription": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gestisci l'abbonamento"
+            "value": "Abo verwalten"
           }
         },
         "es": {
@@ -2843,10 +3509,10 @@
             "value": "Gérer l'abonnement"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abo verwalten"
+            "value": "Gestisci l'abbonamento"
           }
         },
         "pt-BR": {
@@ -2859,10 +3525,10 @@
     },
     "Mid and Senior with Interviews Pro": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mid e Senior con Interviews Pro"
+            "value": "Mid und Senior mit Interviews Pro"
           }
         },
         "es": {
@@ -2877,10 +3543,10 @@
             "value": "Mid et Senior avec Interviews Pro"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mid und Senior mit Interviews Pro"
+            "value": "Mid e Senior con Interviews Pro"
           }
         },
         "pt-BR": {
@@ -2893,10 +3559,10 @@
     },
     "Mobile dev prep": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preparazione mobile dev"
+            "value": "Mobile-Dev-Vorbereitung"
           }
         },
         "es": {
@@ -2911,10 +3577,10 @@
             "value": "Préparation mobile dev"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mobile-Dev-Vorbereitung"
+            "value": "Preparazione mobile dev"
           }
         },
         "pt-BR": {
@@ -2927,10 +3593,10 @@
     },
     "More than 5 years, leading technical decisions": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Più di 5 anni, guidi scelte tecniche"
+            "value": "Mehr als 5 Jahre, du führst technische Entscheidungen"
           }
         },
         "es": {
@@ -2945,10 +3611,10 @@
             "value": "Plus de 5 ans, tu mènes les choix techniques"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mehr als 5 Jahre, du führst technische Entscheidungen"
+            "value": "Più di 5 anni, guidi scelte tecniche"
           }
         },
         "pt-BR": {
@@ -2961,10 +3627,10 @@
     },
     "New rank!": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nuovo grado!"
+            "value": "Neuer Rang!"
           }
         },
         "es": {
@@ -2979,10 +3645,10 @@
             "value": "Nouveau rang !"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Neuer Rang!"
+            "value": "Nuovo grado!"
           }
         },
         "pt-BR": {
@@ -2995,10 +3661,10 @@
     },
     "No": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "No"
+            "value": "Nein"
           }
         },
         "es": {
@@ -3013,10 +3679,10 @@
             "value": "Non"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nein"
+            "value": "No"
           }
         },
         "pt-BR": {
@@ -3027,46 +3693,12 @@
         }
       }
     },
-    "No XP this time": {
+    "No active subscription found on this Apple Account.": {
       "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nessun XP questa volta"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ningún XP esta vez"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aucun XP cette fois"
-          }
-        },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diesmal kein XP"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nenhum XP desta vez"
-          }
-        }
-      }
-    },
-    "No active subscription found on this Apple Account.": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nessun abbonamento attivo su questo Apple Account."
+            "value": "Kein aktives Abo auf diesem Apple-Account gefunden."
           }
         },
         "es": {
@@ -3081,10 +3713,10 @@
             "value": "Aucun abonnement actif sur ce compte Apple."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein aktives Abo auf diesem Apple-Account gefunden."
+            "value": "Nessun abbonamento attivo su questo Apple Account."
           }
         },
         "pt-BR": {
@@ -3097,10 +3729,10 @@
     },
     "No mistakes to review": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nessun errore da ripassare"
+            "value": "Keine Fehler zum Wiederholen"
           }
         },
         "es": {
@@ -3115,10 +3747,10 @@
             "value": "Aucune erreur à revoir"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keine Fehler zum Wiederholen"
+            "value": "Nessun errore da ripassare"
           }
         },
         "pt-BR": {
@@ -3131,10 +3763,10 @@
     },
     "No problem: that's exactly what the lessons are for.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nessun problema: le lezioni sono lì apposta."
+            "value": "Kein Problem: Genau dafür sind die Lektionen da."
           }
         },
         "es": {
@@ -3149,10 +3781,10 @@
             "value": "Pas de souci : les leçons sont là pour ça."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein Problem: Genau dafür sind die Lektionen da."
+            "value": "Nessun problema: le lezioni sono lì apposta."
           }
         },
         "pt-BR": {
@@ -3163,12 +3795,46 @@
         }
       }
     },
-    "Not quite": {
+    "No XP this time": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesmal kein XP"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ningún XP esta vez"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun XP cette fois"
+          }
+        },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Non proprio"
+            "value": "Nessun XP questa volta"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum XP desta vez"
+          }
+        }
+      }
+    },
+    "Not quite": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht ganz"
           }
         },
         "es": {
@@ -3183,10 +3849,10 @@
             "value": "Pas tout à fait"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nicht ganz"
+            "value": "Non proprio"
           }
         },
         "pt-BR": {
@@ -3197,12 +3863,46 @@
         }
       }
     },
-    "Nothing hidden: this is what you get, and what costs money.": {
+    "Nothing here yet. Every quiz you do adds a bar.": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Niente di nascosto: ecco cosa trovi e cosa costa."
+            "value": "Qui non c'è ancora niente. Ogni quiz che fai aggiunge una barra."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aquí todavía no hay nada. Cada test que haces añade una barra."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien ici pour l'instant. Chaque quiz ajoute une barre."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier ist noch nichts. Jedes Quiz fügt einen Balken hinzu."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ainda não há nada aqui. Cada quiz que você faz adiciona uma barra."
+          }
+        }
+      }
+    },
+    "Nothing hidden: this is what you get, and what costs money.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nichts versteckt: Das bekommst du, und das kostet Geld."
           }
         },
         "es": {
@@ -3217,10 +3917,10 @@
             "value": "Rien de caché : voilà ce que tu as, et ce qui coûte."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nichts versteckt: Das bekommst du, und das kostet Geld."
+            "value": "Niente di nascosto: ecco cosa trovi e cosa costa."
           }
         },
         "pt-BR": {
@@ -3233,10 +3933,10 @@
     },
     "Notifications": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notifiche"
+            "value": "Mitteilungen"
           }
         },
         "es": {
@@ -3251,10 +3951,10 @@
             "value": "Notifications"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mitteilungen"
+            "value": "Notifiche"
           }
         },
         "pt-BR": {
@@ -3267,10 +3967,10 @@
     },
     "Notifications are turned off in iOS Settings: turn them on there for Interviews.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le notifiche sono disattivate nelle Impostazioni di iOS: attivale lì per Interviews."
+            "value": "Mitteilungen sind in den iOS-Einstellungen aus: Schalte sie dort für Interviews ein."
           }
         },
         "es": {
@@ -3285,10 +3985,10 @@
             "value": "Les notifications sont désactivées dans les Réglages iOS : active-les là pour Interviews."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mitteilungen sind in den iOS-Einstellungen aus: Schalte sie dort für Interviews ein."
+            "value": "Le notifiche sono disattivate nelle Impostazioni di iOS: attivale lì per Interviews."
           }
         },
         "pt-BR": {
@@ -3301,7 +4001,7 @@
     },
     "OK": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
             "value": "OK"
@@ -3319,7 +4019,7 @@
             "value": "OK"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
             "value": "OK"
@@ -3335,10 +4035,10 @@
     },
     "One app for Android and iPhone together": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una sola app per Android e iPhone insieme"
+            "value": "Eine App für Android und iPhone zugleich"
           }
         },
         "es": {
@@ -3353,10 +4053,10 @@
             "value": "Une seule app pour Android et iPhone à la fois"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eine App für Android und iPhone zugleich"
+            "value": "Una sola app per Android e iPhone insieme"
           }
         },
         "pt-BR": {
@@ -3369,10 +4069,10 @@
     },
     "One day done. Come back tomorrow and it becomes two.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un giorno fatto. Torna domani e diventano due."
+            "value": "Ein Tag geschafft. Komm morgen wieder, dann sind es zwei."
           }
         },
         "es": {
@@ -3387,10 +4087,10 @@
             "value": "Un jour fait. Reviens demain et ça en fera deux."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein Tag geschafft. Komm morgen wieder, dann sind es zwei."
+            "value": "Un giorno fatto. Torna domani e diventano due."
           }
         },
         "pt-BR": {
@@ -3403,10 +4103,10 @@
     },
     "One more day in a row. See you tomorrow, same time.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un altro giorno di fila. Ci vediamo domani, stessa ora."
+            "value": "Noch ein Tag in Folge. Bis morgen, gleiche Zeit."
           }
         },
         "es": {
@@ -3421,10 +4121,10 @@
             "value": "Un jour de plus d'affilée. À demain, même heure."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Noch ein Tag in Folge. Bis morgen, gleiche Zeit."
+            "value": "Un altro giorno di fila. Ci vediamo domani, stessa ora."
           }
         },
         "pt-BR": {
@@ -3437,10 +4137,10 @@
     },
     "Perfect. That interview is yours 🎉": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Perfetto. Il colloquio è tuo 🎉"
+            "value": "Perfekt. Das Gespräch ist deins 🎉"
           }
         },
         "es": {
@@ -3455,10 +4155,10 @@
             "value": "Parfait. Cet entretien est à toi 🎉"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Perfekt. Das Gespräch ist deins 🎉"
+            "value": "Perfetto. Il colloquio è tuo 🎉"
           }
         },
         "pt-BR": {
@@ -3471,10 +4171,10 @@
     },
     "Pick up today's questions on %@.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Riparti con le domande di oggi su %@."
+            "value": "Mach mit den heutigen Fragen zu %@ weiter."
           }
         },
         "es": {
@@ -3489,10 +4189,10 @@
             "value": "Reprends les questions du jour sur %@."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mach mit den heutigen Fragen zu %@ weiter."
+            "value": "Riparti con le domande di oggi su %@."
           }
         },
         "pt-BR": {
@@ -3505,10 +4205,10 @@
     },
     "Practice of the day": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allenamento del giorno"
+            "value": "Training des Tages"
           }
         },
         "es": {
@@ -3523,10 +4223,10 @@
             "value": "Entraînement du jour"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Training des Tages"
+            "value": "Allenamento del giorno"
           }
         },
         "pt-BR": {
@@ -3539,10 +4239,10 @@
     },
     "Privacy": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Privacy"
+            "value": "Datenschutz"
           }
         },
         "es": {
@@ -3557,10 +4257,10 @@
             "value": "Confidentialité"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Datenschutz"
+            "value": "Privacy"
           }
         },
         "pt-BR": {
@@ -3573,10 +4273,10 @@
     },
     "Privacy Policy": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Informativa sulla privacy"
+            "value": "Datenschutzerklärung"
           }
         },
         "es": {
@@ -3591,10 +4291,10 @@
             "value": "Politique de confidentialité"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Datenschutzerklärung"
+            "value": "Informativa sulla privacy"
           }
         },
         "pt-BR": {
@@ -3607,10 +4307,10 @@
     },
     "Profile": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profilo"
+            "value": "Profil"
           }
         },
         "es": {
@@ -3625,10 +4325,10 @@
             "value": "Profil"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Profil"
+            "value": "Profilo"
           }
         },
         "pt-BR": {
@@ -3641,10 +4341,10 @@
     },
     "Questions adapt to you. Answering earns XP and raises your rank, all the way to Staff.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le domande si adattano a te. Rispondendo guadagni XP e sali di grado, fino a Staff."
+            "value": "Die Fragen passen sich dir an. Antworten bringt XP und hebt deinen Rang, bis Staff."
           }
         },
         "es": {
@@ -3659,10 +4359,10 @@
             "value": "Les questions s'adaptent à toi. En répondant tu gagnes des XP et tu montes de rang, jusqu'à Staff."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Fragen passen sich dir an. Antworten bringt XP und hebt deinen Rang, bis Staff."
+            "value": "Le domande si adattano a te. Rispondendo guadagni XP e sali di grado, fino a Staff."
           }
         },
         "pt-BR": {
@@ -3673,12 +4373,46 @@
         }
       }
     },
-    "Quizzes taken": {
+    "Questions answered": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quiz fatti"
+            "value": "Domande risposte"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preguntas respondidas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questions répondues"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beantwortete Fragen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perguntas respondidas"
+          }
+        }
+      }
+    },
+    "Quizzes taken": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiz gemacht"
           }
         },
         "es": {
@@ -3693,10 +4427,10 @@
             "value": "Quiz faits"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quiz gemacht"
+            "value": "Quiz fatti"
           }
         },
         "pt-BR": {
@@ -3709,10 +4443,10 @@
     },
     "Ranks": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gradi"
+            "value": "Ränge"
           }
         },
         "es": {
@@ -3727,10 +4461,10 @@
             "value": "Rangs"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ränge"
+            "value": "Gradi"
           }
         },
         "pt-BR": {
@@ -3743,10 +4477,10 @@
     },
     "Read the corrections, then try again: once you answer correctly, the mistake disappears from here.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Leggi le correzioni, poi riprova: quando rispondi giusto l'errore sparisce da qui."
+            "value": "Lies die Korrekturen und versuch es nochmal: Sobald du richtig antwortest, verschwindet der Fehler hier."
           }
         },
         "es": {
@@ -3761,10 +4495,10 @@
             "value": "Lis les corrections, puis réessaie : dès que tu réponds juste, l'erreur disparaît d'ici."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lies die Korrekturen und versuch es nochmal: Sobald du richtig antwortest, verschwindet der Fehler hier."
+            "value": "Leggi le correzioni, poi riprova: quando rispondi giusto l'errore sparisce da qui."
           }
         },
         "pt-BR": {
@@ -3777,10 +4511,10 @@
     },
     "Ready for the interview?": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pronto per il colloquio?"
+            "value": "Bereit für das Gespräch?"
           }
         },
         "es": {
@@ -3795,10 +4529,10 @@
             "value": "Prêt pour l'entretien ?"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bereit für das Gespräch?"
+            "value": "Pronto per il colloquio?"
           }
         },
         "pt-BR": {
@@ -3811,10 +4545,10 @@
     },
     "Ready for today?": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pronto per oggi?"
+            "value": "Bereit für heute?"
           }
         },
         "es": {
@@ -3829,10 +4563,10 @@
             "value": "Prêt pour aujourd'hui ?"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bereit für heute?"
+            "value": "Pronto per oggi?"
           }
         },
         "pt-BR": {
@@ -3846,10 +4580,10 @@
     "Redo onboarding": {
       "extractionState": "stale",
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rifai l'onboarding"
+            "value": "Onboarding wiederholen"
           }
         },
         "es": {
@@ -3864,10 +4598,10 @@
             "value": "Refaire l'onboarding"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Onboarding wiederholen"
+            "value": "Rifai l'onboarding"
           }
         },
         "pt-BR": {
@@ -3880,10 +4614,10 @@
     },
     "Renews every month. Cancel whenever you like, from Settings on your iPhone.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si rinnova ogni mese. Lo disdici quando vuoi, dalle Impostazioni dell'iPhone."
+            "value": "Verlängert sich monatlich. Du kündigst, wann du willst, in den iPhone-Einstellungen."
           }
         },
         "es": {
@@ -3898,10 +4632,10 @@
             "value": "Il se renouvelle chaque mois. Tu l'annules quand tu veux, depuis les Réglages de l'iPhone."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verlängert sich monatlich. Du kündigst, wann du willst, in den iPhone-Einstellungen."
+            "value": "Si rinnova ogni mese. Lo disdici quando vuoi, dalle Impostazioni dell'iPhone."
           }
         },
         "pt-BR": {
@@ -3914,10 +4648,10 @@
     },
     "Reset": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Azzera"
+            "value": "Zurücksetzen"
           }
         },
         "es": {
@@ -3932,10 +4666,10 @@
             "value": "Réinitialiser"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zurücksetzen"
+            "value": "Azzera"
           }
         },
         "pt-BR": {
@@ -3948,10 +4682,10 @@
     },
     "Reset progress": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Azzera i progressi"
+            "value": "Fortschritt zurücksetzen"
           }
         },
         "es": {
@@ -3966,10 +4700,10 @@
             "value": "Réinitialiser la progression"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fortschritt zurücksetzen"
+            "value": "Azzera i progressi"
           }
         },
         "pt-BR": {
@@ -3982,10 +4716,10 @@
     },
     "Reset streak, stats and mistakes?": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Azzerare streak, statistiche ed errori?"
+            "value": "Serie, Statistiken und Fehler zurücksetzen?"
           }
         },
         "es": {
@@ -4000,10 +4734,10 @@
             "value": "Réinitialiser la série, les stats et les erreurs ?"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Serie, Statistiken und Fehler zurücksetzen?"
+            "value": "Azzerare streak, statistiche ed errori?"
           }
         },
         "pt-BR": {
@@ -4016,10 +4750,10 @@
     },
     "Restore purchases": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ripristina gli acquisti"
+            "value": "Käufe wiederherstellen"
           }
         },
         "es": {
@@ -4034,10 +4768,10 @@
             "value": "Restaurer les achats"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Käufe wiederherstellen"
+            "value": "Ripristina gli acquisti"
           }
         },
         "pt-BR": {
@@ -4050,10 +4784,10 @@
     },
     "Retry %lld mistakes": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Riprova %lld errori"
+            "value": "%lld Fehler neu versuchen"
           }
         },
         "es": {
@@ -4068,10 +4802,10 @@
             "value": "Réessayer %lld erreurs"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld Fehler neu versuchen"
+            "value": "Riprova %lld errori"
           }
         },
         "pt-BR": {
@@ -4084,10 +4818,10 @@
     },
     "Review": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ripasso"
+            "value": "Wiederholen"
           }
         },
         "es": {
@@ -4102,10 +4836,10 @@
             "value": "Révision"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wiederholen"
+            "value": "Ripasso"
           }
         },
         "pt-BR": {
@@ -4118,10 +4852,10 @@
     },
     "Review the %lld corrections": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rivedi le %lld correzioni"
+            "value": "Die %lld Korrekturen ansehen"
           }
         },
         "es": {
@@ -4136,10 +4870,10 @@
             "value": "Revois les %lld corrections"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die %lld Korrekturen ansehen"
+            "value": "Rivedi le %lld correzioni"
           }
         },
         "pt-BR": {
@@ -4152,10 +4886,10 @@
     },
     "Review the correction": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rivedi la correzione"
+            "value": "Die Korrektur ansehen"
           }
         },
         "es": {
@@ -4170,10 +4904,10 @@
             "value": "Revois la correction"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Korrektur ansehen"
+            "value": "Rivedi la correzione"
           }
         },
         "pt-BR": {
@@ -4184,12 +4918,46 @@
         }
       }
     },
-    "See your result": {
+    "Right answers": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vedi il risultato"
+            "value": "Risposte giuste"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respuestas correctas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonnes réponses"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richtige Antworten"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respostas certas"
+          }
+        }
+      }
+    },
+    "See your result": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ergebnis ansehen"
           }
         },
         "es": {
@@ -4204,10 +4972,10 @@
             "value": "Voir le résultat"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ergebnis ansehen"
+            "value": "Vedi il risultato"
           }
         },
         "pt-BR": {
@@ -4220,10 +4988,10 @@
     },
     "Six languages": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sei lingue"
+            "value": "Sechs Sprachen"
           }
         },
         "es": {
@@ -4238,10 +5006,10 @@
             "value": "Six langues"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sechs Sprachen"
+            "value": "Sei lingue"
           }
         },
         "pt-BR": {
@@ -4254,10 +5022,10 @@
     },
     "Solid base. One review and you're there.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Buona base. Un ripasso e ci sei."
+            "value": "Gute Basis. Eine Wiederholung und du bist da."
           }
         },
         "es": {
@@ -4272,10 +5040,10 @@
             "value": "Bonne base. Une révision et c'est bon."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gute Basis. Eine Wiederholung und du bist da."
+            "value": "Buona base. Un ripasso e ci sei."
           }
         },
         "pt-BR": {
@@ -4288,10 +5056,10 @@
     },
     "Something went wrong": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Qualcosa è andato storto"
+            "value": "Etwas ist schiefgelaufen"
           }
         },
         "es": {
@@ -4306,10 +5074,10 @@
             "value": "Quelque chose n'a pas marché"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Etwas ist schiefgelaufen"
+            "value": "Qualcosa è andato storto"
           }
         },
         "pt-BR": {
@@ -4322,10 +5090,10 @@
     },
     "Start": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inizia"
+            "value": "Starten"
           }
         },
         "es": {
@@ -4340,10 +5108,10 @@
             "value": "Commencer"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Starten"
+            "value": "Inizia"
           }
         },
         "pt-BR": {
@@ -4355,14 +5123,46 @@
       }
     },
     "Streak": {
-      "shouldTranslate": false
-    },
-    "Streak started!": {
+      "shouldTranslate": false,
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Serie iniziata!"
+            "value": "Serie"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Racha"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Série"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sequência"
+          }
+        }
+      }
+    },
+    "Streak started!": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie gestartet!"
           }
         },
         "es": {
@@ -4377,10 +5177,10 @@
             "value": "Série lancée !"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Serie gestartet!"
+            "value": "Serie iniziata!"
           }
         },
         "pt-BR": {
@@ -4391,12 +5191,46 @@
         }
       }
     },
-    "Study the lesson": {
+    "Streak: %lld days": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Studia la lezione"
+            "value": "Serie: %lld giorni"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Racha: %lld días"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Série : %lld jours"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie: %lld Tage"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sequência: %lld dias"
+          }
+        }
+      }
+    },
+    "Study the lesson": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lektion lernen"
           }
         },
         "es": {
@@ -4411,10 +5245,10 @@
             "value": "Étudier la leçon"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lektion lernen"
+            "value": "Studia la lezione"
           }
         },
         "pt-BR": {
@@ -4427,10 +5261,10 @@
     },
     "Subscription": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abbonamento"
+            "value": "Abo"
           }
         },
         "es": {
@@ -4445,10 +5279,10 @@
             "value": "Abonnement"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abo"
+            "value": "Abbonamento"
           }
         },
         "pt-BR": {
@@ -4461,10 +5295,10 @@
     },
     "Take it again for practice": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rifallo per allenarti"
+            "value": "Nochmal zum Üben"
           }
         },
         "es": {
@@ -4479,10 +5313,10 @@
             "value": "Refais-le pour t'entraîner"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nochmal zum Üben"
+            "value": "Rifallo per allenarti"
           }
         },
         "pt-BR": {
@@ -4495,10 +5329,10 @@
     },
     "Take the quiz": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fai il quiz"
+            "value": "Quiz machen"
           }
         },
         "es": {
@@ -4513,10 +5347,10 @@
             "value": "Faire le quiz"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quiz machen"
+            "value": "Fai il quiz"
           }
         },
         "pt-BR": {
@@ -4529,10 +5363,10 @@
     },
     "Tap to see what opens up.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tocca per vedere cosa si apre."
+            "value": "Tippe, um zu sehen, was sich öffnet."
           }
         },
         "es": {
@@ -4547,10 +5381,10 @@
             "value": "Touche pour voir ce qui s'ouvre."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tippe, um zu sehen, was sich öffnet."
+            "value": "Tocca per vedere cosa si apre."
           }
         },
         "pt-BR": {
@@ -4563,10 +5397,10 @@
     },
     "Terms": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Termini"
+            "value": "Nutzungsbedingungen"
           }
         },
         "es": {
@@ -4581,10 +5415,10 @@
             "value": "Conditions"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nutzungsbedingungen"
+            "value": "Termini"
           }
         },
         "pt-BR": {
@@ -4597,10 +5431,10 @@
     },
     "Terms of Use": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Termini d'uso"
+            "value": "Nutzungsbedingungen"
           }
         },
         "es": {
@@ -4615,10 +5449,10 @@
             "value": "Conditions d'utilisation"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nutzungsbedingungen"
+            "value": "Termini d'uso"
           }
         },
         "pt-BR": {
@@ -4631,10 +5465,10 @@
     },
     "Test yourself": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mettiti alla prova"
+            "value": "Teste dich"
           }
         },
         "es": {
@@ -4649,10 +5483,10 @@
             "value": "Teste-toi"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Teste dich"
+            "value": "Mettiti alla prova"
           }
         },
         "pt-BR": {
@@ -4665,16 +5499,16 @@
     },
     "The %@ lessons of %@ are part of Interviews Pro.": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die %1$@-Lektionen von %2$@ gehören zu Interviews Pro."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
             "value": "The %1$@ lessons of %2$@ are part of Interviews Pro."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le lezioni %1$@ di %2$@ fanno parte di Interviews Pro."
           }
         },
         "es": {
@@ -4689,10 +5523,10 @@
             "value": "Les leçons %1$@ de %2$@ font partie d'Interviews Pro."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die %1$@-Lektionen von %2$@ gehören zu Interviews Pro."
+            "value": "Le lezioni %1$@ di %2$@ fanno parte di Interviews Pro."
           }
         },
         "pt-BR": {
@@ -4705,16 +5539,16 @@
     },
     "The %@ topics of %@ are part of Interviews Pro.": {
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die %1$@-Themen von %2$@ gehören zu Interviews Pro."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "new",
             "value": "The %1$@ topics of %2$@ are part of Interviews Pro."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gli argomenti %1$@ di %2$@ fanno parte di Interviews Pro."
           }
         },
         "es": {
@@ -4729,10 +5563,10 @@
             "value": "Les sujets %1$@ de %2$@ font partie d'Interviews Pro."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die %1$@-Themen von %2$@ gehören zu Interviews Pro."
+            "value": "Gli argomenti %1$@ di %2$@ fanno parte di Interviews Pro."
           }
         },
         "pt-BR": {
@@ -4745,10 +5579,10 @@
     },
     "The app switches language. Lessons and questions are written by hand in English and Italian, so in this language you read them in English: better than a machine translation of a hard idea.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "L'app cambia lingua. Lezioni e domande sono scritte a mano in inglese e in italiano, quindi in questa lingua le leggi in inglese: meglio di una traduzione automatica di un concetto difficile."
+            "value": "Die App wechselt die Sprache. Lektionen und Fragen sind von Hand auf Englisch und Italienisch geschrieben, in dieser Sprache liest du sie also auf Englisch: besser als eine maschinelle Übersetzung eines schweren Themas."
           }
         },
         "es": {
@@ -4763,10 +5597,10 @@
             "value": "L'app change de langue. Les leçons et les questions sont écrites à la main en anglais et en italien, donc dans cette langue tu les lis en anglais : mieux qu'une traduction automatique d'une notion difficile."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die App wechselt die Sprache. Lektionen und Fragen sind von Hand auf Englisch und Italienisch geschrieben, in dieser Sprache liest du sie also auf Englisch: besser als eine maschinelle Übersetzung eines schweren Themas."
+            "value": "L'app cambia lingua. Lezioni e domande sono scritte a mano in inglese e in italiano, quindi in questa lingua le leggi in inglese: meglio di una traduzione automatica di un concetto difficile."
           }
         },
         "pt-BR": {
@@ -4779,10 +5613,10 @@
     },
     "The classic way to build iPhone screens": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il modo classico di costruire le schermate iPhone"
+            "value": "Der klassische Weg, iPhone-Bildschirme zu bauen"
           }
         },
         "es": {
@@ -4797,10 +5631,10 @@
             "value": "La façon classique de construire les écrans iPhone"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der klassische Weg, iPhone-Bildschirme zu bauen"
+            "value": "Il modo classico di costruire le schermate iPhone"
           }
         },
         "pt-BR": {
@@ -4813,10 +5647,10 @@
     },
     "The fundamentals: start here.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le fondamenta: si parte da qui."
+            "value": "Die Grundlagen: hier geht's los."
           }
         },
         "es": {
@@ -4831,10 +5665,10 @@
             "value": "Les bases : on commence ici."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Grundlagen: hier geht's los."
+            "value": "Le fondamenta: si parte da qui."
           }
         },
         "pt-BR": {
@@ -4847,10 +5681,10 @@
     },
     "The harder topics are part of a subscription at %@ a month. It's a symbolic price to support an independent developer. You can look at it later, from your profile.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gli argomenti più difficili fanno parte di un abbonamento da %@ al mese. È un prezzo simbolico per sostenere una sviluppatrice indipendente. Puoi guardarlo più tardi, dal profilo."
+            "value": "Die schwereren Themen gehören zu einem Abo für %@ im Monat. Ein symbolischer Preis, um eine unabhängige Entwicklerin zu unterstützen. Du kannst es später im Profil ansehen."
           }
         },
         "es": {
@@ -4865,10 +5699,10 @@
             "value": "Les sujets plus difficiles font partie d'un abonnement à %@ par mois. C'est un prix symbolique pour soutenir une développeuse indépendante. Tu peux le regarder plus tard, depuis le profil."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die schwereren Themen gehören zu einem Abo für %@ im Monat. Ein symbolischer Preis, um eine unabhängige Entwicklerin zu unterstützen. Du kannst es später im Profil ansehen."
+            "value": "Gli argomenti più difficili fanno parte di un abbonamento da %@ al mese. È un prezzo simbolico per sostenere una sviluppatrice indipendente. Puoi guardarlo più tardi, dal profilo."
           }
         },
         "pt-BR": {
@@ -4881,10 +5715,10 @@
     },
     "The language of Android apps": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il linguaggio delle app Android"
+            "value": "Die Sprache der Android-Apps"
           }
         },
         "es": {
@@ -4899,10 +5733,10 @@
             "value": "Le langage des apps Android"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Sprache der Android-Apps"
+            "value": "Il linguaggio delle app Android"
           }
         },
         "pt-BR": {
@@ -4915,10 +5749,10 @@
     },
     "The language of iPhone apps": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il linguaggio delle app iPhone"
+            "value": "Die Sprache der iPhone-Apps"
           }
         },
         "es": {
@@ -4933,10 +5767,10 @@
             "value": "Le langage des apps iPhone"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Sprache der iPhone-Apps"
+            "value": "Il linguaggio delle app iPhone"
           }
         },
         "pt-BR": {
@@ -4947,12 +5781,46 @@
         }
       }
     },
-    "The lessons and quizzes beyond the fundamentals, on every track.": {
+    "The last five weeks": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le lezioni e i quiz oltre le fondamenta, su ogni percorso."
+            "value": "Le ultime cinque settimane"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las últimas cinco semanas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les cinq dernières semaines"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die letzten fünf Wochen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As últimas cinco semanas"
+          }
+        }
+      }
+    },
+    "The lessons and quizzes beyond the fundamentals, on every track.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Lektionen und Quiz jenseits der Grundlagen, auf jedem Pfad."
           }
         },
         "es": {
@@ -4967,10 +5835,10 @@
             "value": "Les leçons et les quiz au-delà des bases, sur chaque parcours."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Lektionen und Quiz jenseits der Grundlagen, auf jedem Pfad."
+            "value": "Le lezioni e i quiz oltre le fondamenta, su ogni percorso."
           }
         },
         "pt-BR": {
@@ -4983,10 +5851,10 @@
     },
     "The toolbox that draws the screens of an iPhone app: buttons, lists, the passage from one screen to the next. It has been there since the first iPhone in 2008, so most apps already on the App Store use it. SwiftUI is the newer toolbox that is slowly taking its place, but interviews still ask about this one. You study: the life of a screen, Auto Layout, long lists, navigation and the common ways of organising the code.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "La cassetta degli attrezzi che disegna le schermate di un'app iPhone: bottoni, elenchi, il passaggio da una schermata all'altra. C'è dal primo iPhone, nel 2008, perciò la maggior parte delle app già sull'App Store la usa. SwiftUI è la cassetta più nuova che le sta prendendo il posto, ma ai colloqui chiedono ancora questa. Studi: la vita di una schermata, Auto Layout, gli elenchi lunghi, la navigazione e i modi soliti di organizzare il codice."
+            "value": "Der Werkzeugkasten, der die Bildschirme einer iPhone-App zeichnet: Buttons, Listen, den Wechsel von einem Bildschirm zum nächsten. Es gibt ihn seit dem ersten iPhone 2008, deshalb nutzen ihn die meisten Apps, die schon im App Store sind. SwiftUI ist der neuere Kasten, der ihn langsam ersetzt, aber in Gesprächen wird noch nach diesem gefragt. Du lernst: das Leben eines Bildschirms, Auto Layout, lange Listen, Navigation und die üblichen Wege, Code zu ordnen."
           }
         },
         "es": {
@@ -5001,10 +5869,10 @@
             "value": "La boîte à outils qui dessine les écrans d'une app iPhone : boutons, listes, passage d'un écran à l'autre. Elle existe depuis le premier iPhone, en 2008, donc la plupart des apps déjà sur l'App Store l'utilisent. SwiftUI est la boîte plus récente qui prend sa place, mais les entretiens posent encore des questions sur celle-ci. Tu étudies : la vie d'un écran, Auto Layout, les longues listes, la navigation et les façons habituelles d'organiser le code."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Werkzeugkasten, der die Bildschirme einer iPhone-App zeichnet: Buttons, Listen, den Wechsel von einem Bildschirm zum nächsten. Es gibt ihn seit dem ersten iPhone 2008, deshalb nutzen ihn die meisten Apps, die schon im App Store sind. SwiftUI ist der neuere Kasten, der ihn langsam ersetzt, aber in Gesprächen wird noch nach diesem gefragt. Du lernst: das Leben eines Bildschirms, Auto Layout, lange Listen, Navigation und die üblichen Wege, Code zu ordnen."
+            "value": "La cassetta degli attrezzi che disegna le schermate di un'app iPhone: bottoni, elenchi, il passaggio da una schermata all'altra. C'è dal primo iPhone, nel 2008, perciò la maggior parte delle app già sull'App Store la usa. SwiftUI è la cassetta più nuova che le sta prendendo il posto, ma ai colloqui chiedono ancora questa. Studi: la vita di una schermata, Auto Layout, gli elenchi lunghi, la navigazione e i modi soliti di organizzare il codice."
           }
         },
         "pt-BR": {
@@ -5017,10 +5885,10 @@
     },
     "Theme": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tema"
+            "value": "Erscheinungsbild"
           }
         },
         "es": {
@@ -5035,10 +5903,10 @@
             "value": "Thème"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erscheinungsbild"
+            "value": "Tema"
           }
         },
         "pt-BR": {
@@ -5051,10 +5919,10 @@
     },
     "These lessons are in Interviews Pro": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Queste lezioni sono in Interviews Pro"
+            "value": "Diese Lektionen gehören zu Interviews Pro"
           }
         },
         "es": {
@@ -5069,10 +5937,10 @@
             "value": "Ces leçons sont dans Interviews Pro"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diese Lektionen gehören zu Interviews Pro"
+            "value": "Queste lezioni sono in Interviews Pro"
           }
         },
         "pt-BR": {
@@ -5085,10 +5953,10 @@
     },
     "Time": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ora"
+            "value": "Uhrzeit"
           }
         },
         "es": {
@@ -5103,10 +5971,10 @@
             "value": "Heure"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uhrzeit"
+            "value": "Ora"
           }
         },
         "pt-BR": {
@@ -5119,10 +5987,10 @@
     },
     "Today": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oggi"
+            "value": "Heute"
           }
         },
         "es": {
@@ -5137,10 +6005,10 @@
             "value": "Aujourd'hui"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Heute"
+            "value": "Oggi"
           }
         },
         "pt-BR": {
@@ -5151,12 +6019,80 @@
         }
       }
     },
-    "Today's questions have arrived.": {
+    "Today is done. Come back tomorrow and it becomes %lld.": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le domande del giorno sono arrivate."
+            "value": "Oggi è fatto. Torna domani e diventano %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy ya está. Vuelve mañana y serán %lld."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aujourd'hui est fait. Reviens demain et ça fera %lld."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute ist erledigt. Komm morgen wieder, dann sind es %lld."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoje está feito. Volte amanhã e vira %lld."
+          }
+        }
+      }
+    },
+    "Today is still missing: do the quiz before midnight and the streak holds.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oggi manca ancora: fai il quiz prima di mezzanotte e la serie tiene."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy todavía falta: haz el test antes de medianoche y la racha aguanta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il manque aujourd'hui : fais le quiz avant minuit et la série tient."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute fehlt noch: Mach das Quiz vor Mitternacht und die Serie hält."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoje ainda falta: faça o quiz antes da meia-noite e a sequência se mantém."
+          }
+        }
+      }
+    },
+    "Today's questions have arrived.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Fragen des Tages sind da."
           }
         },
         "es": {
@@ -5171,10 +6107,10 @@
             "value": "Les questions du jour sont arrivées."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Fragen des Tages sind da."
+            "value": "Le domande del giorno sono arrivate."
           }
         },
         "pt-BR": {
@@ -5187,10 +6123,10 @@
     },
     "Today's quiz": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quiz di oggi"
+            "value": "Quiz von heute"
           }
         },
         "es": {
@@ -5205,10 +6141,10 @@
             "value": "Quiz d'aujourd'hui"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quiz von heute"
+            "value": "Quiz di oggi"
           }
         },
         "pt-BR": {
@@ -5221,10 +6157,10 @@
     },
     "Today's quiz is ready": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il quiz di oggi è pronto"
+            "value": "Das Quiz von heute ist bereit"
           }
         },
         "es": {
@@ -5239,10 +6175,10 @@
             "value": "Le quiz d'aujourd'hui est prêt"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Das Quiz von heute ist bereit"
+            "value": "Il quiz di oggi è pronto"
           }
         },
         "pt-BR": {
@@ -5255,10 +6191,10 @@
     },
     "Top rank reached. Respect.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Grado massimo raggiunto. Rispetto."
+            "value": "Höchster Rang erreicht. Respekt."
           }
         },
         "es": {
@@ -5273,10 +6209,10 @@
             "value": "Rang maximum atteint. Respect."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Höchster Rang erreicht. Respekt."
+            "value": "Grado massimo raggiunto. Rispetto."
           }
         },
         "pt-BR": {
@@ -5289,10 +6225,10 @@
     },
     "Topics are in order: each one builds on the one before.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gli argomenti sono in ordine: ognuno dà per letto quello prima."
+            "value": "Die Themen sind geordnet: Jedes setzt das vorige voraus."
           }
         },
         "es": {
@@ -5307,10 +6243,10 @@
             "value": "Les sujets sont dans l'ordre : chacun suppose le précédent lu."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Themen sind geordnet: Jedes setzt das vorige voraus."
+            "value": "Gli argomenti sono in ordine: ognuno dà per letto quello prima."
           }
         },
         "pt-BR": {
@@ -5321,12 +6257,46 @@
         }
       }
     },
-    "Turn on reminders": {
+    "Total XP": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Attiva i promemoria"
+            "value": "XP totali"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP totales"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP au total"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP gesamt"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP no total"
+          }
+        }
+      }
+    },
+    "Turn on reminders": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erinnerungen einschalten"
           }
         },
         "es": {
@@ -5341,10 +6311,10 @@
             "value": "Activer les rappels"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erinnerungen einschalten"
+            "value": "Attiva i promemoria"
           }
         },
         "pt-BR": {
@@ -5357,10 +6327,10 @@
     },
     "Two minutes for you": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Due minuti per te"
+            "value": "Zwei Minuten für dich"
           }
         },
         "es": {
@@ -5375,10 +6345,10 @@
             "value": "Deux minutes pour toi"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zwei Minuten für dich"
+            "value": "Due minuti per te"
           }
         },
         "pt-BR": {
@@ -5391,10 +6361,10 @@
     },
     "Unlock every lesson": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sblocca tutte le lezioni"
+            "value": "Alle Lektionen freischalten"
           }
         },
         "es": {
@@ -5409,10 +6379,10 @@
             "value": "Débloque toutes les leçons"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alle Lektionen freischalten"
+            "value": "Sblocca tutte le lezioni"
           }
         },
         "pt-BR": {
@@ -5425,10 +6395,10 @@
     },
     "Unlock everything": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sblocca tutto"
+            "value": "Alles freischalten"
           }
         },
         "es": {
@@ -5443,10 +6413,10 @@
             "value": "Tout débloquer"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alles freischalten"
+            "value": "Sblocca tutto"
           }
         },
         "pt-BR": {
@@ -5459,10 +6429,10 @@
     },
     "Version %@ (%@)": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Versione %@ (%@)"
+            "value": "Version %@ (%@)"
           }
         },
         "es": {
@@ -5477,10 +6447,10 @@
             "value": "Version %@ (%@)"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Version %@ (%@)"
+            "value": "Versione %@ (%@)"
           }
         },
         "pt-BR": {
@@ -5493,10 +6463,10 @@
     },
     "We couldn't verify the purchase with App Store. Try again.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Non è stato possibile verificare l'acquisto con App Store. Riprova."
+            "value": "Der Kauf konnte nicht beim App Store geprüft werden. Versuch es nochmal."
           }
         },
         "es": {
@@ -5511,10 +6481,10 @@
             "value": "Impossible de vérifier l'achat auprès de l'App Store. Réessaie."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Kauf konnte nicht beim App Store geprüft werden. Versuch es nochmal."
+            "value": "Non è stato possibile verificare l'acquisto con App Store. Riprova."
           }
         },
         "pt-BR": {
@@ -5527,10 +6497,10 @@
     },
     "We send a reminder at the time you prefer, only on days you haven't done the quiz yet.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ti mandiamo un promemoria all'ora che preferisci, solo nei giorni in cui non hai ancora fatto il quiz."
+            "value": "Wir schicken eine Erinnerung zur Uhrzeit deiner Wahl, nur an Tagen ohne Quiz."
           }
         },
         "es": {
@@ -5545,10 +6515,10 @@
             "value": "On t'envoie un rappel à l'heure que tu veux, seulement les jours où tu n'as pas encore fait le quiz."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wir schicken eine Erinnerung zur Uhrzeit deiner Wahl, nur an Tagen ohne Quiz."
+            "value": "Ti mandiamo un promemoria all'ora che preferisci, solo nei giorni in cui non hai ancora fatto il quiz."
           }
         },
         "pt-BR": {
@@ -5561,10 +6531,10 @@
     },
     "What you need every day.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quello che serve tutti i giorni."
+            "value": "Was du jeden Tag brauchst."
           }
         },
         "es": {
@@ -5579,10 +6549,10 @@
             "value": "Ce qui sert tous les jours."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Was du jeden Tag brauchst."
+            "value": "Quello che serve tutti i giorni."
           }
         },
         "pt-BR": {
@@ -5595,10 +6565,10 @@
     },
     "What's your focus?": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Su cosa ti prepari?"
+            "value": "Worauf bereitest du dich vor?"
           }
         },
         "es": {
@@ -5613,10 +6583,10 @@
             "value": "Sur quoi tu te prépares ?"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Worauf bereitest du dich vor?"
+            "value": "Su cosa ti prepari?"
           }
         },
         "pt-BR": {
@@ -5629,10 +6599,10 @@
     },
     "What's your level?": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Qual è il tuo livello?"
+            "value": "Was ist dein Level?"
           }
         },
         "es": {
@@ -5647,10 +6617,10 @@
             "value": "Quel est ton niveau ?"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Was ist dein Level?"
+            "value": "Qual è il tuo livello?"
           }
         },
         "pt-BR": {
@@ -5663,10 +6633,10 @@
     },
     "When do you practice?": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quando ti alleni?"
+            "value": "Wann trainierst du?"
           }
         },
         "es": {
@@ -5681,10 +6651,10 @@
             "value": "Quand tu t'entraînes ?"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wann trainierst du?"
+            "value": "Quando ti alleni?"
           }
         },
         "pt-BR": {
@@ -5697,10 +6667,10 @@
     },
     "When you get a question wrong it shows up here, with the correction.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quando sbagli una domanda la trovi qui, con la correzione."
+            "value": "Wenn du eine Frage falsch hast, erscheint sie hier, mit der Korrektur."
           }
         },
         "es": {
@@ -5715,10 +6685,10 @@
             "value": "Quand tu te trompes sur une question, elle apparaît ici, avec la correction."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wenn du eine Frage falsch hast, erscheint sie hier, mit der Korrektur."
+            "value": "Quando sbagli una domanda la trovi qui, con la correzione."
           }
         },
         "pt-BR": {
@@ -5731,10 +6701,10 @@
     },
     "Where experience shows.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "I temi su cui si vede l'esperienza."
+            "value": "Themen, bei denen man Erfahrung merkt."
           }
         },
         "es": {
@@ -5749,10 +6719,10 @@
             "value": "Les sujets où l'expérience se voit."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Themen, bei denen man Erfahrung merkt."
+            "value": "I temi su cui si vede l'esperienza."
           }
         },
         "pt-BR": {
@@ -5765,10 +6735,10 @@
     },
     "Without Pro the daily questions stay on the Junior topics. With Pro they follow your rank, all the way to Staff.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Senza Pro le domande del giorno restano sugli argomenti Junior. Con Pro seguono il tuo grado, fino a Staff."
+            "value": "Ohne Pro bleiben die Tagesfragen bei den Junior-Themen. Mit Pro folgen sie deinem Rang, bis Staff."
           }
         },
         "es": {
@@ -5783,10 +6753,10 @@
             "value": "Sans Pro les questions du jour restent sur les sujets Junior. Avec Pro elles suivent ton rang, jusqu'à Staff."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ohne Pro bleiben die Tagesfragen bei den Junior-Themen. Mit Pro folgen sie deinem Rang, bis Staff."
+            "value": "Senza Pro le domande del giorno restano sugli argomenti Junior. Con Pro seguono il tuo grado, fino a Staff."
           }
         },
         "pt-BR": {
@@ -5799,10 +6769,10 @@
     },
     "Without the subscription you keep all the Junior topics, forever, and five questions a day.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Senza abbonamento ti restano tutti gli argomenti Junior, per sempre, e cinque domande al giorno."
+            "value": "Ohne Abo bleiben dir alle Junior-Themen, dauerhaft, und fünf Fragen am Tag."
           }
         },
         "es": {
@@ -5817,10 +6787,10 @@
             "value": "Sans abonnement il te reste tous les sujets Junior, pour toujours, et cinq questions par jour."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ohne Abo bleiben dir alle Junior-Themen, dauerhaft, und fünf Fragen am Tag."
+            "value": "Senza abbonamento ti restano tutti gli argomenti Junior, per sempre, e cinque domande al giorno."
           }
         },
         "pt-BR": {
@@ -5833,10 +6803,10 @@
     },
     "Works with no internet": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Funziona senza internet"
+            "value": "Funktioniert ohne Internet"
           }
         },
         "es": {
@@ -5851,10 +6821,10 @@
             "value": "Marche sans internet"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Funktioniert ohne Internet"
+            "value": "Funziona senza internet"
           }
         },
         "pt-BR": {
@@ -5867,10 +6837,10 @@
     },
     "Write to %@": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Scrivi a %@"
+            "value": "Schreib an %@"
           }
         },
         "es": {
@@ -5885,10 +6855,10 @@
             "value": "Écris à %@"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schreib an %@"
+            "value": "Scrivi a %@"
           }
         },
         "pt-BR": {
@@ -5899,12 +6869,80 @@
         }
       }
     },
-    "Yes": {
+    "XP": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sì"
+            "value": "XP"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP"
+          }
+        }
+      }
+    },
+    "XP per day": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP al giorno"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP por día"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP par jour"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP pro Tag"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "XP por dia"
+          }
+        }
+      }
+    },
+    "Yes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ja"
           }
         },
         "es": {
@@ -5919,10 +6957,10 @@
             "value": "Oui"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ja"
+            "value": "Sì"
           }
         },
         "pt-BR": {
@@ -5935,10 +6973,10 @@
     },
     "You're here": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sei qui"
+            "value": "Du bist hier"
           }
         },
         "es": {
@@ -5953,10 +6991,10 @@
             "value": "Tu es ici"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du bist hier"
+            "value": "Sei qui"
           }
         },
         "pt-BR": {
@@ -5969,10 +7007,10 @@
     },
     "You've read them all. Now test yourself with the quizzes.": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le hai lette tutte. Ora mettiti alla prova coi quiz."
+            "value": "Du hast alle gelesen. Jetzt teste dich mit den Quiz."
           }
         },
         "es": {
@@ -5987,10 +7025,10 @@
             "value": "Tu les as toutes lues. Maintenant teste-toi avec les quiz."
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du hast alle gelesen. Jetzt teste dich mit den Quiz."
+            "value": "Le hai lette tutte. Ora mettiti alla prova coi quiz."
           }
         },
         "pt-BR": {
@@ -6003,10 +7041,10 @@
     },
     "Your corrections": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le tue correzioni"
+            "value": "Deine Korrekturen"
           }
         },
         "es": {
@@ -6021,10 +7059,10 @@
             "value": "Tes corrections"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine Korrekturen"
+            "value": "Le tue correzioni"
           }
         },
         "pt-BR": {
@@ -6037,10 +7075,10 @@
     },
     "Your mistakes": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "I tuoi errori"
+            "value": "Deine Fehler"
           }
         },
         "es": {
@@ -6055,10 +7093,10 @@
             "value": "Tes erreurs"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine Fehler"
+            "value": "I tuoi errori"
           }
         },
         "pt-BR": {
@@ -6071,10 +7109,10 @@
     },
     "Your path": {
       "localizations": {
-        "it": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il tuo percorso"
+            "value": "Dein Pfad"
           }
         },
         "es": {
@@ -6089,10 +7127,10 @@
             "value": "Ton parcours"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Pfad"
+            "value": "Il tuo percorso"
           }
         },
         "pt-BR": {
@@ -6103,12 +7141,46 @@
         }
       }
     },
-    "Your tracks": {
+    "Your streak": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "I tuoi percorsi"
+            "value": "La tua serie"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu racha"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta série"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Serie"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sua sequência"
+          }
+        }
+      }
+    },
+    "Your tracks": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Pfade"
           }
         },
         "es": {
@@ -6123,220 +7195,16 @@
             "value": "Tes parcours"
           }
         },
-        "de": {
+        "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine Pfade"
+            "value": "I tuoi percorsi"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
             "value": "Suas trilhas"
-          }
-        }
-      }
-    },
-    "and": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "e"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "y"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "et"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "und"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "e"
-          }
-        }
-      }
-    },
-    "correct": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "giuste"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "correctas"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "justes"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "richtig"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "certas"
-          }
-        }
-      }
-    },
-    "day": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "giorno"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "día"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "jour"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tag"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "dia"
-          }
-        }
-      }
-    },
-    "days": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "giorni"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "días"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "jours"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tage"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "dias"
-          }
-        }
-      }
-    },
-    "🔥 %lld days in a row": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 %lld giorni di fila"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 %lld días seguidos"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 %lld jours d'affilée"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 %lld Tage in Folge"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 %lld dias seguidos"
-          }
-        }
-      }
-    },
-    "🔥 1 day in a row": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 giorno di fila"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 día seguido"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 jour d'affilée"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 Tag in Folge"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "🔥 1 dia seguido"
           }
         }
       }

@@ -29,7 +29,6 @@ struct HomeView: View {
                     header
                     TrackSwitcher()
                         .padding(.horizontal, -20)
-                    StreakCard()
                     RankCard()
                     dailyCard
                     if !state.isPremium { proCard }
@@ -57,15 +56,8 @@ struct HomeView: View {
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
             }
             Spacer()
-            HStack(spacing: 4) {
-                Image(systemName: "flame.fill")
-                    .foregroundStyle(state.didDailyToday ? Color.flame : .secondary)
-                Text("\(state.currentStreak)")
-                    .font(.headline.monospacedDigit())
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+            NavigationLink { StreakView() } label: { StreakPill() }
+                .buttonStyle(.plain)
         }
         .padding(.top, 12)
     }
@@ -336,62 +328,5 @@ struct TopicTile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
         .opacity(locked ? 0.62 : 1)
-    }
-}
-
-/// La settimana corrente con i giorni fatti accesi.
-struct StreakCard: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        let days = (0..<7).map { Day.today.adding($0 - 6) }
-        HStack(spacing: 16) {
-            VStack(spacing: 2) {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 34))
-                    .foregroundStyle(
-                        state.currentStreak > 0
-                            ? AnyShapeStyle(LinearGradient(colors: [.yellow, .flame, .red], startPoint: .top, endPoint: .bottom))
-                            : AnyShapeStyle(Color.secondary.opacity(0.4))
-                    )
-                    .symbolEffect(.bounce, value: state.currentStreak)
-                Text("\(state.currentStreak)")
-                    .font(.system(.title2, design: .rounded).weight(.heavy).monospacedDigit())
-                Text(state.currentStreak == 1 ? "day" : "days")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .frame(width: 64)
-
-            HStack(spacing: 0) {
-                ForEach(days, id: \.self) { day in
-                    let done = state.isCompleted(day)
-                    let isToday = day == .today
-                    VStack(spacing: 6) {
-                        Text(day.date.formatted(.dateTime.weekday(.abbreviated).locale(.app)).prefix(1).uppercased())
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(isToday ? .primary : .secondary)
-                        ZStack {
-                            Circle()
-                                .fill(done ? AnyShapeStyle(Color.flame) : AnyShapeStyle(Color.secondary.opacity(0.12)))
-                            if done {
-                                Image(systemName: "checkmark")
-                                    .font(.caption.bold())
-                                    .foregroundStyle(.white)
-                            }
-                        }
-                        .frame(width: 30, height: 30)
-                        .overlay {
-                            if isToday && !done {
-                                Circle().strokeBorder(Color.flame, style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-        }
-        .padding(16)
-        .card()
     }
 }

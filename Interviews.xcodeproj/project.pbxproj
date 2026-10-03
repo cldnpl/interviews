@@ -35,6 +35,7 @@
 		E9ED0DD37CACAB5F511EA4A0 /* TopicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9353310960A4F3945BC0FA1 /* TopicView.swift */; };
 		EF9496900DBB804B403FEAD8 /* PremiumView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4438D6E9DED76617AFDF6495 /* PremiumView.swift */; };
 		F3854E15394303915EC44302 /* uikit.json in Resources */ = {isa = PBXBuildFile; fileRef = CF947D2460B4DDC3AA8609DC /* uikit.json */; };
+		F8D7D4DD1EB0CB95C49F8C08 /* StreakView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7459C18B71004C00A981BB9 /* StreakView.swift */; };
 		FAED87184401ADD44699FD37 /* swift.json in Resources */ = {isa = PBXBuildFile; fileRef = 1026B7833DA03FCF26BE134B /* swift.json */; };
 		FD40E519A3E061E5BBE2F32E /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8827FF8184DC7E47AD7C2C /* ReviewView.swift */; };
 		FFEDFF9BD194A271CE86FFFC /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F8370B876CE88CB318A84F0E /* Localizable.xcstrings */; };
@@ -65,6 +66,7 @@
 		AF65938DB5959045C45877D5 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = it; path = it.lproj/flutter.json; sourceTree = "<group>"; };
 		B469AF0E9F78EB51C3D1F749 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		B6C00B3D49ED5B7D6A8913D3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = en; path = en.lproj/uikit.json; sourceTree = "<group>"; };
+		B7459C18B71004C00A981BB9 /* StreakView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakView.swift; sourceTree = "<group>"; };
 		B82AAC82D30CFE7A42387AD8 /* Content.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Content.swift; sourceTree = "<group>"; };
 		BB617E6C22C19174024D25DF /* Reminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminders.swift; sourceTree = "<group>"; };
 		BE17DF9E5F6BF3F1D24B3437 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = en; path = en.lproj/kotlin.json; sourceTree = "<group>"; };
@@ -128,6 +130,7 @@
 				3B8827FF8184DC7E47AD7C2C /* ReviewView.swift */,
 				B469AF0E9F78EB51C3D1F749 /* SplashView.swift */,
 				A54CAF74706EB5A5A5715546 /* StreakCelebrationView.swift */,
+				B7459C18B71004C00A981BB9 /* StreakView.swift */,
 				E9353310960A4F3945BC0FA1 /* TopicView.swift */,
 			);
 			path = Views;
@@ -285,6 +288,7 @@
 				CD4BE01487AF08CDF40AF151 /* SplashView.swift in Sources */,
 				0115F149301D737A760BCF63 /* Store.swift in Sources */,
 				DC18CC1313CA19C941289BE7 /* StreakCelebrationView.swift in Sources */,
+				F8D7D4DD1EB0CB95C49F8C08 /* StreakView.swift in Sources */,
 				7E637E0B16EC45C58329F299 /* Theme.swift in Sources */,
 				E9ED0DD37CACAB5F511EA4A0 /* TopicView.swift in Sources */,
 				8389AFA4DF85E66498560A62 /* TrackMark.swift in Sources */,

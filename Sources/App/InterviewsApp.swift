@@ -40,10 +40,11 @@ struct RootView: View {
                         .transition(.opacity)
                 }
             }
-            // Il locale dell'ambiente decide la lingua di ogni Text; l'id ricostruisce le view,
-            // che così rileggono anche i contenuti e le stringhe calcolate nella lingua nuova.
+            // Il locale dell'ambiente decide la lingua di ogni Text. Le view che
+            // mostrano contenuti si ricostruiscono con un `.id` più in basso, sui
+            // singoli tab: metterlo qui ricostruiva anche il Profilo, e cambiare
+            // lingua faceva risalire la schermata in cima a ogni tocco.
             .environment(\.locale, state.language.locale)
-            .id(state.language)
             .animation(.easeInOut(duration: 0.35), value: state.hasOnboarded)
             .tint(state.activeTrack.theme.primary)
 
@@ -68,16 +69,24 @@ enum AppTab: Hashable {
 }
 
 struct MainTabView: View {
+    @Environment(AppState.self) private var state
     @Binding var selection: AppTab
 
     var body: some View {
         TabView(selection: $selection) {
+            // Qui dentro si leggono lezioni e domande, che non arrivano dal
+            // catalogo delle stringhe: l'`.id` le fa rileggere nella lingua nuova.
             HomeView()
+                .id(state.language)
                 .tabItem { Label("Today", systemImage: "flame.fill") }
                 .tag(AppTab.today)
             ReviewView()
+                .id(state.language)
                 .tabItem { Label("Review", systemImage: "book.fill") }
                 .tag(AppTab.review)
+            // Il Profilo no: è dove si cambia lingua, e ricostruirlo riportava
+            // l'elenco in cima a ogni scelta. Qui i testi sono tutti `Text`
+            // letterali, che seguono da soli il locale dell'ambiente.
             ProfileView()
                 .tabItem { Label("Profile", systemImage: "person.crop.circle.fill") }
                 .tag(AppTab.profile)

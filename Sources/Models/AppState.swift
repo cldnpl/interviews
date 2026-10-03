@@ -36,6 +36,10 @@ struct SavedState: Codable {
     var mastered: Set<String> = []
     /// Per ogni domanda sbagliata, l'ultima risposta data: serve a mostrare la correzione.
     var wrongChoices: [String: Int] = [:]
+    /// Gli XP guadagnati giorno per giorno: è quello che disegna il grafico
+    /// nella schermata dello streak. Chi aggiorna l'app parte da vuoto, e il
+    /// grafico si riempie da lì in avanti.
+    var xpByDay: [String: Int] = [:]
 
     init() {}
 
@@ -66,6 +70,7 @@ struct SavedState: Codable {
         xp = v(.xp, d.xp)
         mastered = v(.mastered, d.mastered)
         wrongChoices = v(.wrongChoices, d.wrongChoices)
+        xpByDay = v(.xpByDay, d.xpByDay)
     }
 }
 
@@ -199,6 +204,28 @@ final class AppState {
 
     var bestStreak: Int { max(saved.bestStreak, currentStreak) }
 
+    /// Quanti giorni in tutto si è fatto il quiz: il numero che dice da quanto
+    /// si sta andando avanti, indipendentemente dalle interruzioni.
+    var activeDays: Int { saved.completedDays.count }
+
+    /// I giorni in cui il quiz è uscito tutto giusto.
+    var perfectDays: Int {
+        saved.dailyResults.values.count { $0.total > 0 && $0.correct == $0.total }
+    }
+
+    /// Il primo giorno con un quiz fatto: da lì parte "sei qui da…".
+    var firstActiveDay: Day? { saved.completedDays.min() }
+
+    /// Il risultato del quiz di un giorno, se quel giorno è stato fatto.
+    func result(on day: Day) -> DailyResult? { saved.dailyResults[day.description] }
+
+    /// Gli XP guadagnati in un giorno. Zero anche per i giorni precedenti
+    /// all'aggiornamento che ha introdotto il conteggio: non si inventano.
+    func xp(on day: Day) -> Int { saved.xpByDay[day.description] ?? 0 }
+
+    /// Vero appena c'è qualcosa da disegnare nel grafico.
+    var hasXPHistory: Bool { saved.xpByDay.values.contains { $0 > 0 } }
+
     func isCompleted(_ day: Day) -> Bool { saved.completedDays.contains(day) }
 
     var todayResult: DailyResult? { saved.dailyResults[Day.today.description] }
@@ -224,7 +251,10 @@ final class AppState {
 
     var xpToNextRank: Int? { rank.next.map { $0.minXP - saved.xp } }
 
-    private func addXP(_ amount: Int) { saved.xp += amount }
+    private func addXP(_ amount: Int) {
+        saved.xp += amount
+        saved.xpByDay[Day.today.description, default: 0] += amount
+    }
 
     // MARK: Risultati
 
