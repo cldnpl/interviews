@@ -348,11 +348,19 @@ a tenere insieme abbonamenti fra cui si può passare: qui ce n'è uno solo, ma i
 | Campo | Valore |
 | --- | --- |
 | Reference Name (gruppo) | `Interviews Pro` — interno, non lo vede nessuno |
-| Group Display Name (en-US) | `Interviews Pro` |
-| Group Display Name (it) | `Interviews Pro` |
+| Subscription Group Display Name (English U.S.) | `Interviews Pro` |
+| Subscription Group Display Name (Italian) | `Interviews Pro` |
+| App Name Display Option | lascia il nome dell'app |
 
-Il *Display Name* del gruppo è quello che l'utente legge in **Impostazioni ›
-Abbonamenti**: è l'unico nome visibile quando qualcuno va a disdire.
+Attenzione a non confonderlo col *Display Name* del prodotto: sono due schermate
+diverse con lo stesso titolo «Display Name and Description». Quello del **gruppo** sta
+nella pagina del gruppo (sotto l'elenco delle subscription, col pulsante *Create*) ed è
+quello che si legge in **Impostazioni › il tuo nome › Abbonamenti** quando qualcuno va
+a disdire; quello del **prodotto** sta dentro la singola subscription ed è quello che
+si legge nella finestra di acquisto. Il limite qui è 30 caratteri.
+
+Il *Subscription Group ID* che compare in fondo (`22437993`) è informativo: in codice
+non serve, perché StoreKit lavora sul Product ID.
 
 #### Il prodotto
 
