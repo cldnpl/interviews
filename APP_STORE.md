@@ -192,6 +192,14 @@ daily quiz follow your rank: 1.99 EUR per month, cancel any time from Settings.
 It is a symbolic price, to support an independent developer.
 
 Available in English and Italian.
+
+Interviews Pro is an auto-renewing subscription: 1.99 EUR per month, or the
+equivalent in your currency. It renews automatically unless cancelled at least
+24 hours before the end of the current period. Manage or cancel it in Settings
+on your iPhone.
+
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://cldnpl.github.io/interviews/privacy.html
 ```
 
 **What's New** (2.0)
@@ -298,6 +306,14 @@ quiz del giorno il tuo grado: 1,99 € al mese, si disdice quando vuoi da Impost
 È un prezzo simbolico, per sostenere una sviluppatrice indipendente.
 
 Disponibile in inglese e in italiano: la lingua si cambia in Profilo.
+
+Interviews Pro è un abbonamento a rinnovo automatico: 1,99 € al mese, o
+l'equivalente nella tua valuta. Si rinnova da sé se non lo disdici almeno 24 ore
+prima della fine del periodo in corso. Lo gestisci e lo disdici da Impostazioni
+sul tuo iPhone.
+
+Termini d'uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Informativa sulla privacy: https://cldnpl.github.io/interviews/it/privacy.html
 ```
 
 **Novità di questa versione** (2.0)
@@ -489,9 +505,27 @@ lo screenshot) resta *Missing Metadata*.
 #### Cosa cambia nella scheda
 
 Il prezzo dell'app resta **Gratis**: Connect spunta da sé *Offers In-App Purchases* e
-sulla scheda compare l'elenco degli acquisti. Il *License Agreement* resta l'EULA
-standard di Apple — è quello che soddisfa il link ai Termini d'uso che la Linea guida
-3.1.2 pretende nei metadati; la Privacy Policy URL è già compilata.
+sulla scheda compare l'elenco degli acquisti.
+
+**Il link ai Termini d'uso va scritto a mano nella Descrizione.** Tenere l'EULA
+standard di Apple nel campo *License Agreement* **non basta**: quel campo non produce
+nessun link sulla pagina pubblica dell'app, e la review rifiuta con
+
+> «does not include a functional link to the Terms of Use (EULA) in the app metadata
+> that appears on the app's App Store product page»
+
+La regola, per un'app con abbonamenti, è che sulla **product page** si devono leggere
+nome, durata e prezzo dell'abbonamento *e* due link funzionanti: Termini d'uso e
+Privacy. L'unico posto in cui ci stanno è la Descrizione, in fondo — per questo le
+descrizioni qui sopra finiscono con:
+
+```
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://cldnpl.github.io/interviews/privacy.html
+```
+
+È un rifiuto solo di metadati: non serve una build nuova, si corregge la Descrizione e
+si rimanda in review la stessa build.
 
 ## Rischi residui, da sapere
 
