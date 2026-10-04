@@ -400,6 +400,12 @@ si legge nella finestra di acquisto. Il limite qui è 30 caratteri.
 Il *Subscription Group ID* che compare in fondo (`22437993`) è informativo: in codice
 non serve, perché StoreKit lavora sul Product ID.
 
+**English (U.S.) non è facoltativo.** È la lingua principale dell'app, quindi deve
+esserci sia nelle localizzazioni del gruppo sia in quelle del prodotto. Se manca,
+Connect non dice niente di esplicito: lo stato torna semplicemente da *Ready for
+Review* a *Prepare for Submission*, e il pulsante *Add for Review* resta spento senza
+spiegare perché. L'italiano da solo non basta mai.
+
 #### Il prodotto
 
 | Campo | Valore |
