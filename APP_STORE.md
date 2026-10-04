@@ -48,14 +48,24 @@ spuntato; quello che resta va fatto a mano su App Store Connect.
 
 ### 1. Pubblicare le pagine
 
-Fatto: GitHub Pages pubblica `main` / `/docs`. Queste pagine rispondono:
+Le pagine stanno in `docs/`, generate da `./scripts/make_legal_pages.sh`. Perché siano
+davvero online, su GitHub la sorgente di Pages deve essere **branch `main`, cartella
+`/docs`** (Settings › Pages › Build and deployment › Source: *Deploy from a branch*).
 
-- https://cldnpl.github.io/interviews/privacy.html
-- https://cldnpl.github.io/interviews/terms.html
-- https://cldnpl.github.io/interviews/support.html
+Con la sorgente sulla radice (`/`) GitHub costruisce il sito con Jekyll a partire dal
+README: `https://cldnpl.github.io/interviews/` risponde 200 e sembra tutto a posto, ma
+`privacy.html` e `terms.html` danno **404**. È un errore che non si vede, perché la
+home funziona: controlla sempre i link profondi, non solo la radice.
 
-Se cambi indirizzo, gli URL stanno in un punto solo: `Legal.siteURL` e le tre costanti
-sotto, in `Sources/Models/Legal.swift`. Poi rilancia `./scripts/make_legal_pages.sh`.
+```bash
+for u in "" privacy.html terms.html support.html it/privacy.html it/terms.html; do
+  printf '%s -> ' "$u"
+  curl -s -o /dev/null -w '%{http_code}\n' "https://cldnpl.github.io/interviews/$u"
+done
+```
+
+Devono rispondere tutte **200**: la Privacy Policy URL su App Store Connect e i link
+nella Descrizione puntano lì, e un 404 su quelli è un rifiuto garantito.
 
 ### 2. Campi di App Store Connect
 
